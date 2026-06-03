@@ -372,6 +372,44 @@ pub fn get_audit_log(case_id: String) -> Result<Vec<serde_json::Value>, String> 
     Ok(entries)
 }
 
+// ─── Bookmarks & Tags ───
+
+#[tauri::command]
+pub fn add_bookmark(case_id: String, file_path: String, offset: i64, tag: Option<String>, note: Option<String>) -> Result<i64, String> {
+    let db = crate::db::conn();
+    db.execute(
+        "INSERT INTO bookmarks (case_id, file_path, offset, tag, note) VALUES (?1, ?2, ?3, ?4, ?5)",
+        rusqlite::params![case_id, file_path, offset, tag, note],
+    ).map_err(|e| e.to_string())?;
+    Ok(db.last_insert_rowid())
+}
+
+#[tauri::command]
+pub fn list_bookmarks(case_id: String) -> Result<Vec<serde_json::Value>, String> {
+    let db = crate::db::conn();
+    let mut stmt = db.prepare(
+        "SELECT id, file_path, offset, tag, note, created_at FROM bookmarks WHERE case_id = ?1 ORDER BY created_at DESC"
+    ).map_err(|e| e.to_string())?;
+    let bm = stmt.query_map([case_id], |row| {
+        Ok(serde_json::json!({
+            "id": row.get::<_, i64>(0)?,
+            "filePath": row.get::<_, String>(1)?,
+            "offset": row.get::<_, i64>(2)?,
+            "tag": row.get::<_, Option<String>>(3)?,
+            "note": row.get::<_, Option<String>>(4)?,
+            "createdAt": row.get::<_, String>(5)?,
+        }))
+    }).map_err(|e| e.to_string())?.filter_map(|r| r.ok()).collect();
+    Ok(bm)
+}
+
+#[tauri::command]
+pub fn delete_bookmark(id: i64) -> Result<(), String> {
+    crate::db::conn().execute("DELETE FROM bookmarks WHERE id = ?1", [id])
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 #[tauri::command]
 pub fn about_info() -> serde_json::Value {
     serde_json::json!({

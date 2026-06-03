@@ -46,6 +46,15 @@ static DB: Lazy<Mutex<Connection>> = Lazy::new(|| {
             action TEXT NOT NULL,
             detail TEXT DEFAULT ''
         );
+        CREATE TABLE IF NOT EXISTS bookmarks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            case_id TEXT REFERENCES cases(id),
+            file_path TEXT NOT NULL,
+            offset INTEGER DEFAULT 0,
+            tag TEXT,
+            note TEXT DEFAULT '',
+            created_at TEXT DEFAULT (datetime('now'))
+        );
     ").expect("Schema creation failed");
     Mutex::new(conn)
 });

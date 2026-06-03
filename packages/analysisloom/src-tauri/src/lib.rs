@@ -31,6 +31,9 @@ pub fn run() {
             commands::generate_case_report,
             commands::log_action,
             commands::get_audit_log,
+            commands::add_bookmark,
+            commands::list_bookmarks,
+            commands::delete_bookmark,
             commands::about_info,
         ])
         .run(tauri::generate_context!())

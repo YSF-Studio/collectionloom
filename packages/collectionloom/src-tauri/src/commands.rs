@@ -188,6 +188,37 @@ pub fn generate_coc_report(evidence_id: String) -> Result<String, String> {
     Ok(report_path)
 }
 
+// ─── Hash Verification ───
+
+#[tauri::command]
+pub fn verify_hash(path: String, expected_hash: String, algorithm: String) -> Result<serde_json::Value, String> {
+    use std::io::Read;
+
+    let mut file = std::fs::File::open(&path)
+        .map_err(|e| format!("Cannot open file: {e}"))?;
+    let mut data = Vec::new();
+    file.read_to_end(&mut data).map_err(|e| format!("Read error: {e}"))?;
+
+    let hashes = ysf_core::hashing::multi_hash_buffer(&data);
+    let actual = match algorithm.as_str() {
+        "sha256" => hashes.sha256.clone(),
+        "sha1" => hashes.sha1.clone(),
+        "md5" => hashes.md5.clone(),
+        _ => return Err(format!("Unknown algorithm: {algorithm}. Use sha256, sha1, or md5.")),
+    }.unwrap_or_default();
+
+    let matched = actual.to_lowercase() == expected_hash.to_lowercase();
+
+    Ok(serde_json::json!({
+        "path": path,
+        "algorithm": algorithm,
+        "expected": expected_hash.to_lowercase(),
+        "actual": actual.to_lowercase(),
+        "matched": matched,
+        "size": data.len() as u64,
+    }))
+}
+
 #[tauri::command]
 pub fn about_info() -> serde_json::Value {
     serde_json::json!({
