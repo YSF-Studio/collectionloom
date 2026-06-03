@@ -1,5 +1,7 @@
 <script>
 import { invoke } from "@tauri-apps/api/core";
+import GuideCard from "./GuideCard.svelte";
+import { encryptionGuide } from "../guides.js";
 let { sharedState, busy, setBusy, setMsg, timeoutPromise } = $props();
 
 let report = $state(null);
@@ -55,6 +57,7 @@ async function scanNow() {
     {/if}
   </div>
   {/if}
+  <GuideCard title={encryptionGuide.title} icon={encryptionGuide.icon} steps={encryptionGuide.steps} references={encryptionGuide.references} />
 </div>
 
 <style>

@@ -69,6 +69,10 @@ pub fn run() {
             commands::compare_snapshot,
             commands::create_cloud_snapshot,
             commands::verify_hash,
+            commands::sign_coc,
+            commands::hpa_dco_detect,
+            commands::generate_evidence_id,
+            commands::compute_file_hash,
         ])
         .run(tauri::generate_context!())
         .expect("error while running CollectionLoom");

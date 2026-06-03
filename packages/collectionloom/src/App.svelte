@@ -11,6 +11,7 @@ import VerificationTab from "./lib/components/VerificationTab.svelte";
 import CocTab from "./lib/components/CocTab.svelte";
 import SnapshotTab from "./lib/components/SnapshotTab.svelte";
 import DisclaimerTab from "./lib/components/DisclaimerTab.svelte";
+import AcquireAllTab from "./lib/components/AcquireAllTab.svelte";
 
 let activeSection = $state("disk");
 let msg = $state("");
@@ -24,6 +25,7 @@ let ramState = {};
 let encryptionState = {};
 let cocState = {};
 let wbState = { active: false };
+let acquireAllState = {};
 
 function timeoutPromise(promise, ms) {
   let timer;
@@ -46,6 +48,7 @@ const sidebarSections = [
       { id: "cloud", icon: "☁️", label: "Cloud Snapshot" },
       { id: "network", icon: "🌐", label: "Network Capture" },
       { id: "snapshot", icon: "📸", label: "System Snapshot" },
+      { id: "acquire-all", icon: "⭐", label: "Acquire All" },
     ]
   },
   {
@@ -117,6 +120,8 @@ $effect(() => {
         <NetworkTab busy={busy} {setBusy} {setMsg} {timeoutPromise} />
       {:else if activeSection === "snapshot"}
         <SnapshotTab busy={busy} {setBusy} {setMsg} {timeoutPromise} />
+      {:else if activeSection === "acquire-all"}
+        <AcquireAllTab sharedState={acquireAllState} busy={busy} {setBusy} {setMsg} {timeoutPromise} />
       {:else if activeSection === "encryption"}
         <EncryptionTab busy={busy} sharedState={encryptionState} {setBusy} {setMsg} {timeoutPromise} />
       {:else if activeSection === "verify"}

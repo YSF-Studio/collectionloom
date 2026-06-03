@@ -1,6 +1,8 @@
 <script>
   import { invoke } from "@tauri-apps/api/core";
   import { open } from "@tauri-apps/plugin-dialog";
+  import GuideCard from "./GuideCard.svelte";
+  import { verificationGuide } from "../guides.js";
 
   let filePath = $state("");
   let expectedHash = $state("");
@@ -102,6 +104,7 @@
       </div>
     </div>
   {/if}
+  <GuideCard title={verificationGuide.title} icon={verificationGuide.icon} steps={verificationGuide.steps} references={verificationGuide.references} />
 </div>
 
 <style>
