@@ -8,6 +8,7 @@ import CloudTab from "./lib/components/CloudTab.svelte";
 import NetworkTab from "./lib/components/NetworkTab.svelte";
 import EncryptionTab from "./lib/components/EncryptionTab.svelte";
 import CocTab from "./lib/components/CocTab.svelte";
+import SnapshotTab from "./lib/components/SnapshotTab.svelte";
 import DisclaimerTab from "./lib/components/DisclaimerTab.svelte";
 
 let activeSection = $state("disk");
@@ -110,11 +111,7 @@ $effect(() => {
       {:else if activeSection === "network"}
         <NetworkTab bind:busy bind:msg {timeoutPromise} />
       {:else if activeSection === "snapshot"}
-        <div class="snapshot-placeholder">
-          <h3>📸 System Snapshot</h3>
-          <p>Capture point-in-time system state for forensic preservation.</p>
-          <div class="dropzone">🖥️ Drop target or click to capture</div>
-        </div>
+        <SnapshotTab bind:busy bind:msg {timeoutPromise} />
       {:else if activeSection === "encryption"}
         <EncryptionTab bind:state={encryptionState} bind:busy bind:msg {timeoutPromise} />
       {:else if activeSection === "coc"}

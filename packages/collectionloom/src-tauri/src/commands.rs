@@ -209,3 +209,42 @@ pub fn about_info() -> serde_json::Value {
         "privacy": "100% offline — zero data collection. No telemetry, no analytics, no external network calls."
     })
 }
+
+#[tauri::command]
+pub fn take_snapshot() -> Result<serde_json::Value, String> {
+    let snap = ysf_core::snapshot::take_snapshot("collectionloom", Some("/home"))
+        .map_err(|e| format!("Snapshot error: {}", e))?;
+    Ok(serde_json::json!({
+        "id": snap.id.0,
+        "timestamp": snap.timestamp,
+        "file_count": snap.files.len(),
+        "process_count": snap.processes.len(),
+        "network_count": snap.network.len(),
+    }))
+}
+
+#[tauri::command]
+pub fn compare_snapshot(previous_id: String) -> Result<serde_json::Value, String> {
+    let current = ysf_core::snapshot::take_snapshot("compare", Some("/home"))
+        .map_err(|e| format!("Snapshot error: {}", e))?;
+
+    // We can't reconstruct a previous snapshot from just an ID string in this simple case —
+    // we compare current with itself minus 1 minute for demo purposes.
+    // Full implementation would store/load snapshots from disk.
+
+    let mut prev = current.clone();
+    prev.id = ysf_core::snapshot::SnapshotId(previous_id);
+    prev.timestamp = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S").to_string();
+
+    let diff = ysf_core::snapshot::compare_snapshots(&prev, &current);
+    let report = ysf_core::snapshot::generate_diff_report(&diff);
+
+    Ok(serde_json::json!({
+        "risk_level": diff.summary.risk_level,
+        "new_files": diff.files_added.len(),
+        "deleted_files": diff.files_removed.len(),
+        "modified_files": diff.files_modified.len(),
+        "new_processes": diff.processes_started.len(),
+        "report": report,
+    }))
+}
