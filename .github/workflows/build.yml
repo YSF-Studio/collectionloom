@@ -17,6 +17,7 @@ jobs:
     outputs:
       app_dir: ${{ steps.detect.outputs.app_dir }}
       cargo_ws: ${{ steps.detect.outputs.cargo_ws }}
+      npm_lock: ${{ steps.detect.outputs.npm_lock }}
     steps:
       - uses: actions/checkout@v4
       - id: detect
@@ -25,19 +26,32 @@ jobs:
           REPO_NAME="${GITHUB_REPOSITORY#*/}"
           echo "Repository: $GITHUB_REPOSITORY → app: $REPO_NAME"
 
-          # Check monorepo structure first (packages/<app>/)
-          if [ -f "packages/$REPO_NAME/package.json" ]; then
-            echo "Monorepo mode: packages/$REPO_NAME"
-            echo "app_dir=packages/$REPO_NAME" >> $GITHUB_OUTPUT
-            echo "cargo_ws=packages/$REPO_NAME/src-tauri" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          # Check standalone structure (root level)
+          # Check standalone structure (root level) — highest priority
           if [ -f "src-tauri/Cargo.toml" ]; then
             echo "Standalone mode: root"
             echo "app_dir=." >> $GITHUB_OUTPUT
             echo "cargo_ws=src-tauri" >> $GITHUB_OUTPUT
+            if [ -f "package-lock.json" ]; then
+              echo "npm_lock=package-lock.json" >> $GITHUB_OUTPUT
+            else
+              echo "npm_lock=." >> $GITHUB_OUTPUT
+            fi
+            exit 0
+          fi
+
+          # Check monorepo structure (packages/<app>/)
+          if [ -d "packages/$REPO_NAME" ] && [ -f "packages/$REPO_NAME/src-tauri/Cargo.toml" ]; then
+            echo "Monorepo mode: packages/$REPO_NAME"
+            echo "app_dir=packages/$REPO_NAME" >> $GITHUB_OUTPUT
+            echo "cargo_ws=packages/$REPO_NAME/src-tauri" >> $GITHUB_OUTPUT
+            # npm workspace: root has the lock file
+            if [ -f "packages/$REPO_NAME/package-lock.json" ]; then
+              echo "npm_lock=packages/$REPO_NAME/package-lock.json" >> $GITHUB_OUTPUT
+            elif [ -f "package-lock.json" ]; then
+              echo "npm_lock=package-lock.json" >> $GITHUB_OUTPUT
+            else
+              echo "npm_lock=." >> $GITHUB_OUTPUT
+            fi
             exit 0
           fi
 
@@ -47,12 +61,20 @@ jobs:
               echo "Fallback detected: $dir"
               echo "app_dir=$dir" >> $GITHUB_OUTPUT
               echo "cargo_ws=$dir/src-tauri" >> $GITHUB_OUTPUT
+              if [ -f "$dir/package-lock.json" ]; then
+                echo "npm_lock=$dir/package-lock.json" >> $GITHUB_OUTPUT
+              elif [ -f "package-lock.json" ]; then
+                echo "npm_lock=package-lock.json" >> $GITHUB_OUTPUT
+              else
+                echo "npm_lock=." >> $GITHUB_OUTPUT
+              fi
               exit 0
             fi
           done
 
           echo "app_dir=." >> $GITHUB_OUTPUT
           echo "cargo_ws=." >> $GITHUB_OUTPUT
+          echo "npm_lock=." >> $GITHUB_OUTPUT
           echo "Warning: No app structure found, using root"
 
   build:
@@ -79,7 +101,7 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-          cache-dependency-path: ${{ needs.detect.outputs.app_dir }}/package-lock.json
+          cache-dependency-path: ${{ needs.detect.outputs.npm_lock }}
 
       - name: Install npm deps
         working-directory: ${{ needs.detect.outputs.app_dir }}
