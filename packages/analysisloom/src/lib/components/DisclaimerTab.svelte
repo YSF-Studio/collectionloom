@@ -15,12 +15,12 @@ $effect(() => { load(); });
 
 <div class="about">
     <header class="hero">
-        <div class="icon">🔬</div>
+        <img src="/src-tauri/icons/icon.png" class="logo-hero" alt="AnalysisLoom" />
         <h1>{info.appName || "AnalysisLoom"}</h1>
         <span class="version">v{info.version || "0.1.0"}</span>
     </header>
 
-    <p class="subtitle">Forensic Analysis Workstation — ISO 27042 · 17043 · 17025</p>
+    <p class="subtitle">Forensic Analysis Workstation</p>
 
     <section class="card">
         <h3>🚀 Features</h3>
@@ -57,6 +57,7 @@ $effect(() => { load(); });
 .about { max-width: 640px; margin: 0 auto; padding: 20px; }
 .hero { text-align: center; margin-bottom: 24px; }
 .hero .icon { font-size: 48px; margin-bottom: 8px; }
+.logo-hero { width: 72px; height: 72px; border-radius: 16px; margin-bottom: 8px; }
 .hero h1 { margin: 0; font-size: 28px; color: #e0e0e0; display: inline; }
 .version { font-size: 14px; color: var(--text-secondary); margin-left: 8px; }
 .subtitle { text-align: center; color: var(--text-secondary); font-size: 13px; margin-bottom: 28px; }

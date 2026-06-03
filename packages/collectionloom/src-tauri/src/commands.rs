@@ -196,14 +196,13 @@ pub fn about_info() -> serde_json::Value {
         "developer": "YSF Studio — Built with ❤️ by Yusuf Shalahuddin",
         "build": "Master Build — All Features Unlocked",
         "features": [
-            "ISO 27037 Forensic Acquisition & Collection",
-            "ISO 17025 Quality Control & Tool Validation",
-            "Write Blocker — Hardware & Software Protection",
-            "100% Offline — Zero Data Collection. All processing runs locally.",
             "Bit-for-bit Disk Imaging with SHA-256 Verification",
-            "RAM Capture, Mobile Triage (ADB/iOS), Cloud Acquisition",
+            "RAM Capture & Memory Acquisition",
+            "Mobile Device Triage (Android & iOS)",
             "Network Packet Capture & Encryption Detection",
-            "End-to-End Chain of Custody with PDF Reporting"
+            "Write Blocker — Hardware & Software Protection",
+            "System Snapshot for point-in-time preservation",
+            "100% Offline — Zero Data Collection. All processing runs locally."
         ],
         "disclaimer": "This software is provided 'AS-IS'. Results should be independently verified before use in legal proceedings.",
         "offline": true,

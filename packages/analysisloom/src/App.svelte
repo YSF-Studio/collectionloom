@@ -156,7 +156,6 @@ function handleSearchSubmit() {
     </div>
     <div class="sb-right">
       <span class="offline-badge">🔒 Offline</span>
-      <span>ISO 27042</span>
     </div>
   </div>
 

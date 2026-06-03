@@ -172,14 +172,13 @@ pub fn about_info() -> serde_json::Value {
         "developer": "YSF Studio — Built with ❤️ by Yusuf Shalahuddin",
         "build": "Master Build — All Features Unlocked",
         "features": [
-            "ISO 27042 Forensic Analysis Workstation",
-            "ISO 17043 Tool Validation & Proficiency Testing",
-            "ISO 17025 Laboratory Competence Compliance",
-            "100% Offline — Zero Data Collection. All processing runs locally.",
-            "End-to-End Chain of Custody with SHA-256 hashing",
-            "NTFS/MFT Parser, File Carving, Timeline Analysis",
+            "Forensic-grade NTFS/MFT Parser & File Browser",
+            "File Carving with multi-format signature detection",
+            "Timeline Analysis & Event Correlation",
             "Multi-format file preview (text, image, hex, archive)",
-            "SQLite-based Case Management with Audit Trail"
+            "SQLite-based Case Management with Audit Trail",
+            "Chain of Custody tracking with SHA-256 verification",
+            "100% Offline — Zero Data Collection. All processing runs locally."
         ],
         "disclaimer": "This software is provided 'AS-IS'. Results should be independently verified before use in legal proceedings.",
         "offline": true,

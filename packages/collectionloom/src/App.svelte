@@ -40,6 +40,7 @@ const sidebarSections = [
       { id: "mobile", icon: "📱", label: "Mobile Triage" },
       { id: "cloud", icon: "☁️", label: "Cloud Snapshot" },
       { id: "network", icon: "🌐", label: "Network Capture" },
+      { id: "snapshot", icon: "📸", label: "System Snapshot" },
     ]
   },
   {
@@ -108,6 +109,12 @@ $effect(() => {
         <CloudTab bind:busy bind:msg {timeoutPromise} />
       {:else if activeSection === "network"}
         <NetworkTab bind:busy bind:msg {timeoutPromise} />
+      {:else if activeSection === "snapshot"}
+        <div class="snapshot-placeholder">
+          <h3>📸 System Snapshot</h3>
+          <p>Capture point-in-time system state for forensic preservation.</p>
+          <div class="dropzone">🖥️ Drop target or click to capture</div>
+        </div>
       {:else if activeSection === "encryption"}
         <EncryptionTab bind:state={encryptionState} bind:busy bind:msg {timeoutPromise} />
       {:else if activeSection === "coc"}
@@ -130,7 +137,6 @@ $effect(() => {
     </div>
     <div class="sb-right">
       <span class="offline-badge">🔒 Offline</span>
-      <span>ISO 27037</span>
     </div>
   </div>
 
@@ -228,6 +234,16 @@ $effect(() => {
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 .spinner { display: inline-block; animation: spin 1s linear infinite; }
+
+/* Snapshot dropzone */
+.snapshot-placeholder { max-width: 600px; }
+.snapshot-placeholder h3 { margin: 0 0 8px; font-size: 16px; }
+.snapshot-placeholder p { font-size: 13px; color: var(--text-secondary); margin: 0 0 16px; }
+.dropzone {
+  display: flex; align-items: center; justify-content: center;
+  height: 140px; border: 2px dashed var(--border); border-radius: 10px;
+  background: #111; color: var(--text-secondary); font-size: 14px;
+}
 
 /* Toast */
 .toast {

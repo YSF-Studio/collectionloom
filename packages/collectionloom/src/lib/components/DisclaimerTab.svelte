@@ -15,12 +15,12 @@ $effect(() => { load(); });
 
 <div class="about" style="max-width:580px;margin:0 auto">
     <div style="text-align:center;margin-bottom:24px">
-        <div style="font-size:48px;margin-bottom:8px">🟢</div>
+        <img src="/src-tauri/icons/icon.png" style="width:72px;height:72px;border-radius:16px;margin-bottom:8px" alt="CollectionLoom" />
         <h3 style="margin:0 0 4px;font-size:20px">
             {info.appName}
             <span style="color:var(--text-muted);font-size:12px;margin-left:8px">v{info.version}</span>
         </h3>
-        <p style="color:var(--text-secondary);font-size:13px;margin:0">Portable Forensic Acquisition Toolkit — ISO 27037 · 17025</p>
+        <p style="color:var(--text-secondary);font-size:13px;margin:0">Portable Forensic Acquisition Toolkit</p>
     </div>
 
     <div class="card" style="margin-bottom:12px">

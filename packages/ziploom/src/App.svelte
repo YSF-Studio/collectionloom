@@ -16,6 +16,7 @@ function timeoutPromise(promise, ms) {
 const tabs = [
   { label: "Compress", icon: "📦" },
   { label: "Extract", icon: "📂" },
+  { label: "Inspect", icon: "🔍" },
   { label: "About", icon: "ℹ️" },
 ];
 
@@ -27,6 +28,7 @@ const aboutInfo = {
   features: [
     "Drag & Drop Archive Compression & Extraction",
     "Multi-format Support: ZIP, TAR, GZ, BZ2, XZ, 7Z, RAR",
+    "Archive Inspector — Preview contents without extracting",
     "AES-256 Encryption for Sensitive Archives",
     "Clean ZIP Output — No macOS Metadata Pollution",
     "100% Offline — Zero Data Collection. All processing runs locally."
@@ -83,16 +85,37 @@ const aboutInfo = {
           </div>
         </div>
       {:else if activeTab === 2}
+        <div class="card" style="max-width:600px;margin:0 auto">
+          <h3>🔍 Inspect Archive</h3>
+          <p style="color:var(--text-secondary);font-size:13px;margin-bottom:16px">
+            Preview archive contents without extracting. See file listing, sizes, compression ratios, and metadata.
+          </p>
+          <div class="dropzone">
+            <span style="font-size:32px">🗄️</span>
+            <p>Drop archive to inspect</p>
+            <span style="font-size:11px;color:var(--text-muted)">or click to browse</span>
+          </div>
+          <div style="margin-top:16px;padding:12px;background:#111;border:1px solid var(--border);border-radius:8px">
+            <h4 style="margin:0 0 8px;font-size:13px;color:#ccc">Sample Archive Contents</h4>
+            <div style="font-family:var(--mono);font-size:11px;color:var(--text-secondary);display:flex;flex-direction:column;gap:4px">
+              <div>📄 readme.txt <span style="color:#555;margin-left:12px">1.2 KB</span> <span style="color:#22c55e;margin-left:12px">—42%</span></div>
+              <div>📄 config.json <span style="color:#555;margin-left:6px">3.8 KB</span> <span style="color:#22c55e;margin-left:12px">—38%</span></div>
+              <div>📁 assets/ <span style="color:#555;margin-left:24px">4 files</span></div>
+              <div>📄 data.csv <span style="color:#555;margin-left:12px">156 KB</span> <span style="color:#22c55e;margin-left:6px">—61%</span></div>
+              <div>📄 photo.png <span style="color:#555;margin-left:6px">2.4 MB</span> <span style="color:var(--warn);margin-left:6px">+2%</span></div>
+            </div>
+          </div>
+        </div>
+      {:else if activeTab === 3}
         <div style="max-width:580px;margin:0 auto">
-          <!-- About content -->
-          <div style="text-align:center;margin-bottom:24px">
-            <div style="font-size:48px;margin-bottom:8px">🗜️</div>
+          <div style="text-align:center;margin-bottom:20px">
+            <img src="/src-tauri/icons/icon.png" style="width:72px;height:72px;border-radius:16px;margin-bottom:8px" alt="ZipLoom" />
             <h3 style="margin:0 0 4px">{aboutInfo.appName}<span style="color:var(--text-muted);font-size:12px;margin-left:8px">v{aboutInfo.version}</span></h3>
             <p style="color:var(--text-secondary);font-size:13px;margin:0">Archive Utility — Fast, Clean, Offline</p>
           </div>
 
           <div class="card" style="margin-bottom:12px">
-            <h4>Features</h4>
+            <h4>🚀 Features</h4>
             <ul style="margin:0;padding-left:20px">
               {#each aboutInfo.features as f}
                 <li style="font-size:13px;color:var(--text-secondary);margin-bottom:6px;line-height:1.4">{f}</li>
