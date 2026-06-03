@@ -17,6 +17,8 @@ pub fn run() {
             commands::inspect_archive,
             commands::compress_files,
             commands::extract_archive,
+            commands::encrypt_file,
+            commands::decrypt_file,
             commands::about_info,
         ])
         .run(tauri::generate_context!())

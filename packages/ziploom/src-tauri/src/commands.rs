@@ -311,6 +311,34 @@ pub fn extract_archive(archive_path: String, output_dir: String) -> Result<Opera
     })
 }
 
+// ─── AES-256 Encryption ───
+
+#[tauri::command]
+pub fn encrypt_file(path: String, password: String) -> Result<String, String> {
+    let data = std::fs::read(&path)
+        .map_err(|e| format!("Cannot read file: {e}"))?;
+    let encrypted = ysf_core::crypto::aes_encrypt(&data, &password)?;
+    let out_path = format!("{}.aes256", path);
+    std::fs::write(&out_path, &encrypted)
+        .map_err(|e| format!("Cannot write encrypted file: {e}"))?;
+    Ok(out_path)
+}
+
+#[tauri::command]
+pub fn decrypt_file(path: String, password: String) -> Result<String, String> {
+    let encrypted = std::fs::read(&path)
+        .map_err(|e| format!("Cannot read file: {e}"))?;
+    let decrypted = ysf_core::crypto::aes_decrypt(&encrypted, &password)?;
+    let out_path = if path.ends_with(".aes256") {
+        path[..path.len() - 7].to_string()
+    } else {
+        format!("{}.decrypted", path)
+    };
+    std::fs::write(&out_path, &decrypted)
+        .map_err(|e| format!("Cannot write decrypted file: {e}"))?;
+    Ok(out_path)
+}
+
 // ─── About ───
 
 #[tauri::command]

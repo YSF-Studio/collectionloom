@@ -1,66 +1,78 @@
 <script>
-import { invoke } from "@tauri-apps/api/core";
-import CaseTab from "./lib/components/CaseTab.svelte";
-import FileBrowserTab from "./lib/components/FileBrowserTab.svelte";
-import CarvingTab from "./lib/components/CarvingTab.svelte";
-import TimelineTab from "./lib/components/TimelineTab.svelte";
-import SearchTab from "./lib/components/SearchTab.svelte";
-import ReportTab from "./lib/components/ReportTab.svelte";
-import DisclaimerTab from "./lib/components/DisclaimerTab.svelte";
-import InspectorPanel from "./lib/components/InspectorPanel.svelte";
+  import CaseTab from "./lib/components/CaseTab.svelte";
+  import FileBrowserTab from "./lib/components/FileBrowserTab.svelte";
+  import CarvingTab from "./lib/components/CarvingTab.svelte";
+  import TimelineTab from "./lib/components/TimelineTab.svelte";
+  import SearchTab from "./lib/components/SearchTab.svelte";
+  import ReportTab from "./lib/components/ReportTab.svelte";
+  import DisclaimerTab from "./lib/components/DisclaimerTab.svelte";
 
-let activeView = $state("files");
-let msg = $state("");
-let busy = $state(false);
-let activeCase = $state(null);
-let selectedFile = $state(null);
-let inspectorMeta = $state(null);
-let searchQuery = $state("");
-let density = $state("compact");
+  let msg = $state("");
+  let busy = $state(false);
+  let activeCase = $state(null);
+  let searchQuery = $state("");
+  let density = $state("compact");
 
-function timeoutPromise(promise, ms) {
-  let timer;
-  const timeout = new Promise((_, reject) => {
-    timer = setTimeout(() => reject("TIMEOUT"), ms);
-  });
-  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
-}
+  // Tab system
+  let tabs = $state([
+    { id: "files", icon: "🗂️", label: "File Browser" }
+  ]);
+  let activeView = $state("files");
 
-const sidebarSections = [
-  {
-    label: "SOURCES",
-    items: [
-      { id: "cases", icon: "📁", label: "Case Manager" },
-      { id: "files", icon: "🗂️", label: "File Browser" },
-    ]
-  },
-  {
-    label: "VIEWS",
-    items: [
-      { id: "timeline", icon: "📊", label: "Timeline" },
-      { id: "carving", icon: "🔍", label: "Carved Files" },
-      { id: "search", icon: "🔎", label: "Search" },
-      { id: "report", icon: "📄", label: "Report" },
-    ]
-  },
-  {
-    label: "INFO",
-    items: [
-      { id: "about", icon: "ℹ️", label: "About" },
-    ]
+  function timeoutPromise(promise, ms) {
+    let timer;
+    const timeout = new Promise((_, reject) => {
+      timer = setTimeout(() => reject("TIMEOUT"), ms);
+    });
+    return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
   }
-];
 
-function onFileSelect(path, meta) {
-  selectedFile = path;
-  if (meta) inspectorMeta = meta;
-}
+  const sidebarSections = [
+    {
+      label: "SOURCES",
+      items: [
+        { id: "cases", icon: "📁", label: "Case Manager" },
+        { id: "files", icon: "🗂️", label: "File Browser" },
+      ]
+    },
+    {
+      label: "VIEWS",
+      items: [
+        { id: "timeline", icon: "📊", label: "Timeline" },
+        { id: "carving", icon: "🔍", label: "Carved Files" },
+        { id: "search", icon: "🔎", label: "Search" },
+        { id: "report", icon: "📄", label: "Report" },
+      ]
+    },
+    {
+      label: "INFO",
+      items: [
+        { id: "about", icon: "ℹ️", label: "About" },
+      ]
+    }
+  ];
 
-function handleSearchSubmit() {
-  if (searchQuery.trim()) {
-    activeView = "search";
+  function openTab(id, icon, label) {
+    if (!tabs.find(t => t.id === id)) {
+      tabs = [...tabs, { id, icon, label }];
+    }
+    activeView = id;
   }
-}
+
+  function closeTab(id) {
+    const idx = tabs.findIndex(t => t.id === id);
+    if (idx < 0) return;
+    tabs = tabs.filter(t => t.id !== id);
+    if (activeView === id && tabs.length > 0) {
+      activeView = tabs[Math.min(idx, tabs.length - 1)].id;
+    }
+  }
+
+  function handleSearchSubmit() {
+    if (searchQuery.trim()) {
+      openTab("search", "🔎", "Search");
+    }
+  }
 </script>
 
 <div class="app-shell">
@@ -98,7 +110,19 @@ function handleSearchSubmit() {
     </div>
   </div>
 
-  <!-- Three-Pane Layout -->
+  <!-- Tab Bar -->
+  <div class="tab-bar">
+    {#each tabs as tab}
+      <button class="tab" class:active={activeView === tab.id}
+        onclick={() => activeView = tab.id}>
+        <span class="tab-icon">{tab.icon}</span>
+        <span class="tab-label">{tab.label}</span>
+        <span class="tab-close" onclick={(e) => { e.stopPropagation(); closeTab(tab.id); }}>✕</span>
+      </button>
+    {/each}
+  </div>
+
+  <!-- Main Layout -->
   <div class="three-pane">
     <!-- Left Sidebar -->
     <aside class="sidebar">
@@ -107,7 +131,7 @@ function handleSearchSubmit() {
           <span class="sidebar-label">{section.label}</span>
           {#each section.items as item}
             <button class="sidebar-item" class:active={activeView === item.id}
-              onclick={() => activeView = item.id}>
+              onclick={() => openTab(item.id, item.icon, item.label)}>
               {item.icon} {item.label}
             </button>
           {/each}
@@ -120,7 +144,7 @@ function handleSearchSubmit() {
       {#if activeView === "cases"}
         <CaseTab bind:activeCase bind:busy bind:msg {timeoutPromise} />
       {:else if activeView === "files"}
-        <FileBrowserTab bind:activeCase bind:busy bind:msg {timeoutPromise} {density} {onFileSelect} />
+        <FileBrowserTab bind:activeCase bind:busy bind:msg {timeoutPromise} {density} />
       {:else if activeView === "timeline"}
         <TimelineTab bind:activeCase bind:busy bind:msg {timeoutPromise} />
       {:else if activeView === "carving"}
@@ -133,17 +157,6 @@ function handleSearchSubmit() {
         <DisclaimerTab />
       {/if}
     </div>
-
-    <!-- Right Inspector -->
-    {#if inspectorMeta || selectedFile}
-      <aside class="inspector-pane">
-        <div class="inspector-head">
-          <span>📋 Inspector</span>
-          <button class="inspector-close" onclick={() => { inspectorMeta = null; selectedFile = null; }}>✕</button>
-        </div>
-        <InspectorPanel metadata={inspectorMeta} visible={true} />
-      </aside>
-    {/if}
   </div>
 
   <!-- Status Bar -->
@@ -151,11 +164,9 @@ function handleSearchSubmit() {
     <div class="sb-left">
       <span class="status-dot" class:on={!!activeCase} class:busy={busy}></span>
       {activeCase?.name || "AnalysisLoom"}
-      {#if selectedFile}
-        <span style="opacity:0.4;margin:0 6px">›</span>
-        <span class="file-path" title={selectedFile}>
-          {selectedFile.split("/").pop() || selectedFile}
-        </span>
+      {#if tabs.length > 1}
+        <span style="opacity:0.4;margin:0 6px">—</span>
+        <span style="font-size:10px">{tabs.length} tabs</span>
       {/if}
     </div>
     <div class="sb-right">
@@ -232,6 +243,40 @@ function handleSearchSubmit() {
 }
 .toolbar-btn:hover { background: rgba(255,255,255,0.08); color: #ccc; }
 
+/* Tab Bar */
+.tab-bar {
+  display: flex; align-items: center; gap: 0;
+  height: 32px; padding: 0 8px;
+  background: rgba(12,12,12,0.8);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  overflow-x: auto;
+  flex-shrink: 0;
+}
+.tab-bar::-webkit-scrollbar { height: 0; }
+.tab {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 12px; height: 28px;
+  border: none; border-radius: 6px 6px 0 0;
+  background: transparent; color: #888;
+  font-size: 12px; cursor: pointer;
+  white-space: nowrap; transition: all 0.12s;
+  flex-shrink: 0;
+}
+.tab:hover { background: rgba(255,255,255,0.04); color: #ccc; }
+.tab.active {
+  background: #1a1a1a; color: #e0e0e0;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-bottom-color: #1a1a1a;
+}
+.tab-icon { font-size: 12px; }
+.tab-label { font-size: 12px; }
+.tab-close {
+  display: flex; align-items: center; justify-content: center;
+  width: 16px; height: 16px; border-radius: 3px;
+  font-size: 9px; color: #555; margin-left: 4px;
+}
+.tab-close:hover { background: rgba(239,68,68,0.15); color: #ef4444; }
+
 /* Three-Pane */
 .three-pane { display: flex; flex: 1; overflow: hidden; }
 
@@ -262,27 +307,7 @@ function handleSearchSubmit() {
 /* Main Content */
 .main-content {
   flex: 1; overflow-y: auto; padding: 16px 20px;
-  border-right: 1px solid rgba(255,255,255,0.04);
 }
-
-/* Inspector Pane */
-.inspector-pane {
-  width: 280px; min-width: 280px;
-  background: rgba(10,10,10,0.9);
-  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-  border-left: 1px solid rgba(255,255,255,0.06);
-  overflow-y: auto; display: flex; flex-direction: column;
-}
-.inspector-head {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,0.06);
-  font-size: 12px; color: #aaa;
-}
-.inspector-close {
-  background: none; border: none; color: #555; cursor: pointer;
-  font-size: 13px; padding: 2px 4px;
-}
-.inspector-close:hover { color: #aaa; }
 
 /* Status Bar */
 .statusbar {
@@ -302,12 +327,6 @@ function handleSearchSubmit() {
   padding: 0 6px; background: rgba(34,197,94,0.1); color: #22c55e;
   border-radius: 8px; font-size: 10px; font-weight: 600;
 }
-.file-path {
-  max-width: 200px; overflow: hidden; text-overflow: ellipsis;
-  white-space: nowrap; font-family: "SF Mono", Menlo, monospace; font-size: 10px;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-.spinner { display: inline-block; animation: spin 1s linear infinite; }
 
 /* Toast */
 .toast {
