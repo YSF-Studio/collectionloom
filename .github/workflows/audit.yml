@@ -1,0 +1,60 @@
+name: 🔒 Security Audit
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"   # Every Monday at 06:00 UTC
+  push:
+    branches: [main]
+    paths:
+      - "**/Cargo.toml"
+      - "**/Cargo.lock"
+      - ".gitleaks.toml"
+  workflow_dispatch:
+
+jobs:
+  cargo-audit:
+    name: 📋 Cargo Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+      - name: Install cargo-audit
+        run: cargo install cargo-audit --locked
+      - name: Audit core
+        run: cargo audit --deny warnings
+        working-directory: packages/core
+      - name: Audit ziploom
+        run: cargo audit --deny warnings
+        working-directory: packages/ziploom/src-tauri
+      - name: Audit collectionloom
+        run: cargo audit --deny warnings
+        working-directory: packages/collectionloom/src-tauri
+      - name: Audit analysisloom
+        run: cargo audit --deny warnings
+        working-directory: packages/analysisloom/src-tauri
+
+  sbom:
+    name: 📦 SBOM Generation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+      - name: Install cargo-cyclonedx
+        run: cargo install cargo-cyclonedx --locked
+      - name: Generate SBOM for each package
+        run: |
+          for dir in packages/core packages/ziploom/src-tauri packages/collectionloom/src-tauri packages/analysisloom/src-tauri; do
+            cd $dir
+            cargo cyclonedx
+            cd - 2>/dev/null
+          done
+      - name: Upload SBOM artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: "**/*.cdx.xml"
+          retention-days: 30

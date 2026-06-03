@@ -1,0 +1,129 @@
+name: CI/CD — Build, Test & Security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: "-D warnings"
+
+jobs:
+  # ─── Code Quality & Security Gates ───
+  gitleaks:
+    name: 🔍 Gitleaks Secret Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+
+  # ─── ZipLoom Build & Test ───
+  ziploom:
+    name: 📦 ZipLoom
+    needs: gitleaks
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/ziploom
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+      - name: Install system deps (Tauri)
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libssl-dev
+      - name: Build Rust backend
+        run: cargo build --manifest-path src-tauri/Cargo.toml
+      - name: Run Rust tests
+        run: cargo test --manifest-path src-tauri/Cargo.toml
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+          cache-dependency-path: packages/ziploom/package-lock.json
+      - name: Install JS deps
+        run: npm ci
+      - name: Build frontend
+        run: npm run build
+
+  # ─── CollectionLoom Build & Test ───
+  collectionloom:
+    name: 📀 CollectionLoom
+    needs: gitleaks
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/collectionloom
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+      - name: Install system deps (Tauri)
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libssl-dev
+      - name: Build Rust backend
+        run: cargo build --manifest-path src-tauri/Cargo.toml
+      - name: Run Rust tests
+        run: cargo test --manifest-path src-tauri/Cargo.toml
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+          cache-dependency-path: packages/collectionloom/package-lock.json
+      - name: Install JS deps
+        run: npm ci
+      - name: Build frontend
+        run: npm run build
+
+  # ─── AnalysisLoom Build & Test ───
+  analysisloom:
+    name: 🔬 AnalysisLoom
+    needs: gitleaks
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/analysisloom
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+      - name: Install system deps (Tauri)
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libssl-dev
+      - name: Build Rust backend
+        run: cargo build --manifest-path src-tauri/Cargo.toml
+      - name: Run Rust tests
+        run: cargo test --manifest-path src-tauri/Cargo.toml
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+          cache-dependency-path: packages/analysisloom/package-lock.json
+      - name: Install JS deps
+        run: npm ci
+      - name: Build frontend
+        run: npm run build
+
+  # ─── Shared Core Tests ───
+  core-test:
+    name: 🧩 ysf-core Tests
+    needs: gitleaks
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/core
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+      - name: Run all core tests
+        run: cargo test
