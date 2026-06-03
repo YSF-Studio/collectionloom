@@ -9,9 +9,13 @@
 
 ## Screenshots
 
-| Compress — Main Interface |
-|:---:|
-| ![Compress Tab](https://raw.githubusercontent.com/YSF-Studio/ziploom/main/screenshot_compress.png) |
+| Compress | Extract |
+|:--------:|:-------:|
+| ![Compress](https://raw.githubusercontent.com/YSF-Studio/ziploom/main/screenshots/compress.png) | ![Extract](https://raw.githubusercontent.com/YSF-Studio/ziploom/main/screenshots/extract.png) |
+
+| Inspect | About |
+|:-------:|:-----:|
+| ![Inspect](https://raw.githubusercontent.com/YSF-Studio/ziploom/main/screenshots/inspect.png) | ![About](https://raw.githubusercontent.com/YSF-Studio/ziploom/main/screenshots/about.png) |
 
 ## ✨ Features
 
