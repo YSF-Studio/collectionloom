@@ -37,11 +37,11 @@
   }
 
   const tabs = [
-    { label: "Compress", icon: "📦" },
-    { label: "Extract", icon: "📂" },
-    { label: "Inspect", icon: "🔍" },
-    { label: "About", icon: "ℹ️" },
-    { label: "Encrypt", icon: "🔐" },
+    { label: "Compress", icon: "▤" },
+    { label: "Extract", icon: "▸" },
+    { label: "Inspect", icon: "◎" },
+    { label: "About", icon: "ⓘ" },
+    { label: "Encrypt", icon: "⚷" },
   ];
 
   const formats = [

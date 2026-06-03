@@ -31,23 +31,23 @@
     {
       label: "SOURCES",
       items: [
-        { id: "cases", icon: "📁", label: "Case Manager" },
-        { id: "files", icon: "🗂️", label: "File Browser" },
+        { id: "cases", icon: "▣", label: "Case Manager" },
+        { id: "files", icon: "▤", label: "File Browser" },
       ]
     },
     {
       label: "VIEWS",
       items: [
-        { id: "timeline", icon: "📊", label: "Timeline" },
-        { id: "carving", icon: "🔍", label: "Carved Files" },
-        { id: "search", icon: "🔎", label: "Search" },
-        { id: "report", icon: "📄", label: "Report" },
+        { id: "timeline", icon: "▦", label: "Timeline" },
+        { id: "carving", icon: "◎", label: "Carved Files" },
+        { id: "search", icon: "◈", label: "Search" },
+        { id: "report", icon: "▭", label: "Report" },
       ]
     },
     {
       label: "INFO",
       items: [
-        { id: "about", icon: "ℹ️", label: "About" },
+        { id: "about", icon: "ⓘ", label: "About" },
       ]
     }
   ];
@@ -73,6 +73,10 @@
       openTab("search", "🔎", "Search");
     }
   }
+
+  // Screenshot navigation helper
+  window.__goToView = (id) => { activeView = id; openTab(id, "●", id.charAt(0).toUpperCase()+id.slice(1)); };
+  window.__views = ["cases","files","timeline","carving","search","report","about"];
 </script>
 
 <div class="app-shell">

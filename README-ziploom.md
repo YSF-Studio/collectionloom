@@ -11,11 +11,11 @@
 
 | Compress | Extract |
 |:--------:|:-------:|
-| ![Compress](https://raw.githubusercontent.com/YSF-Studio/ziploom/main/screenshots/compress.png) | ![Extract](https://raw.githubusercontent.com/YSF-Studio/ziploom/main/screenshots/extract.png) |
+| ![Compress](screenshots/compress.png) | ![Extract](screenshots/extract.png) |
 
-| Inspect | About |
-|:-------:|:-----:|
-| ![Inspect](https://raw.githubusercontent.com/YSF-Studio/ziploom/main/screenshots/inspect.png) | ![About](https://raw.githubusercontent.com/YSF-Studio/ziploom/main/screenshots/about.png) |
+| Inspect | About | Encrypt |
+|:-------:|:-----:|:-------:|
+| ![Inspect](screenshots/inspect.png) | ![About](screenshots/about.png) | ![Encrypt](screenshots/encrypt.png) |
 
 ## ✨ Features
 

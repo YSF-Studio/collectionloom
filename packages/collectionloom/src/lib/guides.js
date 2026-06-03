@@ -19,7 +19,7 @@
 /** @type {Guide} */
 export const diskImagingGuide = {
   title: "Disk Imaging Guide",
-  icon: "💿",
+  icon: "●",   // disk
   steps: [
     {
       title: "Verify write blocker",
@@ -59,7 +59,7 @@ export const diskImagingGuide = {
 /** @type {Guide} */
 export const ramCaptureGuide = {
   title: "RAM Capture Guide",
-  icon: "🧠",
+  icon: "◇",   // ram
   steps: [
     {
       title: "Check available tools",
@@ -96,7 +96,7 @@ export const ramCaptureGuide = {
 /** @type {Guide} */
 export const mobileTriageGuide = {
   title: "Mobile Triage Guide",
-  icon: "📱",
+  icon: "☎",   // mobile
   steps: [
     {
       title: "Isolate device from network",
@@ -131,7 +131,7 @@ export const mobileTriageGuide = {
 /** @type {Guide} */
 export const cloudEvidenceGuide = {
   title: "Cloud Evidence Guide",
-  icon: "☁️",
+  icon: "☁",   // cloud
   steps: [
     {
       title: "Generate temporary API credentials",
@@ -166,7 +166,7 @@ export const cloudEvidenceGuide = {
 /** @type {Guide} */
 export const networkCaptureGuide = {
   title: "Network Capture Guide",
-  icon: "🌐",
+  icon: "⊙",   // network
   steps: [
     {
       title: "Configure SPAN / port mirroring",
@@ -201,7 +201,7 @@ export const networkCaptureGuide = {
 /** @type {Guide} */
 export const writeBlockerGuide = {
   title: "Write Blocker Guide",
-  icon: "🔒",
+  icon: "⚷",   // password/encrypt
   steps: [
     {
       title: "Inspect the write blocker hardware",
@@ -231,7 +231,7 @@ export const writeBlockerGuide = {
 /** @type {Guide} */
 export const snapshotGuide = {
   title: "Snapshot Guide",
-  icon: "📸",
+  icon: "◈",   // snapshot
   steps: [
     {
       title: "Take baseline snapshot of clean system",
@@ -264,7 +264,7 @@ export const snapshotGuide = {
 /** @type {Guide} */
 export const verificationGuide = {
   title: "Evidence Verification Guide",
-  icon: "✅",
+  icon: "✓",   // verify
   steps: [
     {
       title: "Select verification algorithm",
@@ -299,7 +299,7 @@ export const verificationGuide = {
 /** @type {Guide} */
 export const encryptionGuide = {
   title: "Encryption Assessment Guide",
-  icon: "🔐",
+  icon: "⚷",   // encryption
   steps: [
     {
       title: "Scan target for encrypted volumes / containers",

@@ -11,31 +11,27 @@
 
 | Feature | Details |
 |---------|---------|
-| **NTFS/MFT Parser** | File browser with sorted deleted file recovery |
-| **File Preview** | Text, image, hex (interactive with byte select), archive |
-| **File Carving** | Multi-format signature-based recovery with progress |
-| **Timeline Analysis** | Chronological event correlation (MACE timestamps) |
-| **Keyword Search** | Regex-based search across evidence files |
-| **Case Management** | SQLite-based with evidence & findings tracking |
+| **NTFS File Browser** | Browse, sort, and preview files from disk images with deleted file detection |
+| **File Preview** | Text, Image, Hex (interactive), and Archive preview |
+| **Timeline Analysis** | Chronological event reconstruction from parsed metadata |
+| **File Carving** | Recover deleted files by header/footer signature matching |
+| **Keyword Search** | Regex-powered search across all files in the image |
 | **Report Generation** | PDF & HTML reports with full audit trail |
 | **Bookmarks & Tags** | Mark files of interest with color-coded notes |
-| **Hex Viewer** | Interactive byte-level inspection with bookmarks |
+| **Hex Viewer** | Interactive byte-level inspection |
 | **Audit Trail** | ISO 27042-compliant action logging |
 
 ## 🖥️ Screenshots
 
-| NTFS Browser | File Carving | Timeline |
-|--------------|--------------|----------|
-| _Coming soon_ | _Coming soon_ | _Coming soon_ |
+| File Browser |
+|:------------:|
+| ![Files](screenshots/analysis_file_browser.png) |
 
-| Keyword Search | Case Dashboard | Report |
-|----------------|----------------|--------|
-| _Coming soon_ | _Coming soon_ | _Coming soon_ |
+> ℹ️ More screenshots coming soon — some views require the Tauri backend runtime.
 
 ## 🚀 Quick Start
 
 ```bash
-# Build from source
 git clone https://github.com/YSF-Studio/analysisloom.git
 cd analysisloom/packages/analysisloom
 npm install
@@ -48,11 +44,6 @@ Or download the latest release from the [Releases](https://github.com/YSF-Studio
 
 - **Backend:** Rust with Tauri v2
 - **Frontend:** SvelteKit 5
-- **NTFS:** Custom MFT parser in Rust
-- **Carving:** Multi-signature matching engine
-- **Storage:** SQLite via `rusqlite`
-- **Reports:** PDF generation via Rust
-
-## 📄 License
-
-MIT © YSF Studio — Built with ❤️ by Yusuf Shalahuddin
+- **Parsing:** NTFS via `ntfs` crate
+- **Hashing:** SHA-256, SHA-1 via Rust crypto crates
+- **Reporting:** PDF generation via `printpdf`, HTML via templates

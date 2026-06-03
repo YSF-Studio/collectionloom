@@ -42,27 +42,27 @@ const sidebarSections = [
   {
     label: "ACQUISITION",
     items: [
-      { id: "disk", icon: "💿", label: "Disk Imaging" },
-      { id: "ram", icon: "🧠", label: "RAM Capture" },
-      { id: "mobile", icon: "📱", label: "Mobile Triage" },
-      { id: "cloud", icon: "☁️", label: "Cloud Snapshot" },
-      { id: "network", icon: "🌐", label: "Network Capture" },
-      { id: "snapshot", icon: "📸", label: "System Snapshot" },
-      { id: "acquire-all", icon: "⭐", label: "Acquire All" },
+      { id: "disk", icon: "●", label: "Disk Imaging" },
+      { id: "ram", icon: "◇", label: "RAM Capture" },
+      { id: "mobile", icon: "☎", label: "Mobile Triage" },
+      { id: "cloud", icon: "☁", label: "Cloud Snapshot" },
+      { id: "network", icon: "⊙", label: "Network Capture" },
+      { id: "snapshot", icon: "◈", label: "System Snapshot" },
+      { id: "acquire-all", icon: "★", label: "Acquire All" },
     ]
   },
   {
     label: "ANALYSIS",
     items: [
-      { id: "encryption", icon: "🔐", label: "Encryption" },
-      { id: "verify", icon: "🔍", label: "Hash Verify" },
+      { id: "encryption", icon: "⚷", label: "Encryption" },
+      { id: "verify", icon: "◎", label: "Hash Verify" },
     ]
   },
   {
     label: "CASE INFO",
     items: [
-      { id: "coc", icon: "📋", label: "Custody Chain" },
-      { id: "about", icon: "ℹ️", label: "About" },
+      { id: "coc", icon: "☰", label: "Custody Chain" },
+      { id: "about", icon: "ⓘ", label: "About" },
     ]
   }
 ];
@@ -70,6 +70,10 @@ const sidebarSections = [
 $effect(() => {
   if (wbState.active !== wbActive) wbActive = wbState.active;
 });
+
+// Screenshot navigation helper
+window.__goTo = (id) => { activeSection = id; };
+window.__sections = ["disk","ram","mobile","cloud","network","snapshot","acquire-all","encryption","verify","coc","about"];
 </script>
 
 <div class="app-shell">
