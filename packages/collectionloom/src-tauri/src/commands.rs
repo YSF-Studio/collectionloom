@@ -213,7 +213,7 @@ pub fn about_info() -> serde_json::Value {
 #[tauri::command]
 pub fn take_snapshot() -> Result<serde_json::Value, String> {
     let snap = ysf_core::snapshot::take_snapshot("collectionloom", Some("/home"))
-        .map_err(|e| format!("Snapshot error: {}", e))?;
+        .map_err(|e| format!("Snapshot error: {e}"))?;
     Ok(serde_json::json!({
         "id": snap.id.0,
         "timestamp": snap.timestamp,
@@ -221,6 +221,48 @@ pub fn take_snapshot() -> Result<serde_json::Value, String> {
         "process_count": snap.processes.len(),
         "network_count": snap.network.len(),
     }))
+}
+
+// ─── Cloud Snapshot ───
+
+#[tauri::command]
+pub async fn create_cloud_snapshot(
+    provider: String,
+    region: String,
+    resource_id: String,
+    access_key: String,
+    secret_key: String,
+) -> Result<serde_json::Value, String> {
+    match provider.as_str() {
+        "aws" => {
+            cloud::aws_create_snapshot(&region, &resource_id, &access_key, &secret_key)
+                .await
+                .map(|raw| serde_json::json!({ "provider": "AWS", "response": raw }))
+        }
+        "azure" => {
+            // Parse resource_id as subscription|rg|disk
+            let parts: Vec<&str> = resource_id.split('|').collect();
+            if parts.len() < 3 {
+                return Err("Azure requires: subscription|resourceGroup|diskName".into());
+            }
+            let snap_name = format!("collectionloom-{}", chrono::Utc::now().format("%Y%m%d-%H%M%S"));
+            cloud::azure_create_snapshot(parts[0], parts[1], parts[2], &snap_name, &secret_key)
+                .await
+                .map(|raw| serde_json::json!({ "provider": "Azure", "response": raw }))
+        }
+        "gcp" => {
+            // Parse resource_id as project|zone|disk
+            let parts: Vec<&str> = resource_id.split('|').collect();
+            if parts.len() < 3 {
+                return Err("GCP requires: project|zone|diskName".into());
+            }
+            let snap_name = format!("collectionloom-{}", chrono::Utc::now().format("%Y%m%d-%H%M%S"));
+            cloud::gcp_create_snapshot(parts[0], parts[1], parts[2], &snap_name, &secret_key)
+                .await
+                .map(|raw| serde_json::json!({ "provider": "GCP", "response": raw }))
+        }
+        _ => Err(format!("Unknown provider: {provider}. Use aws, azure, or gcp.")),
+    }
 }
 
 #[tauri::command]

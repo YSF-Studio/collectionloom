@@ -37,6 +37,7 @@ pub fn run() {
             commands::about_info,
             commands::take_snapshot,
             commands::compare_snapshot,
+            commands::create_cloud_snapshot,
         ])
         .run(tauri::generate_context!())
         .expect("error while running CollectionLoom");
