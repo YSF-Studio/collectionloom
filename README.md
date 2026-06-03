@@ -7,6 +7,12 @@
 
 > Archive compression, extraction & inspection tool — 100% offline, built with **Tauri v2 + Rust + SvelteKit**.
 
+## Screenshots
+
+| Compress — Main Interface |
+|:---:|
+| ![Compress Tab](https://raw.githubusercontent.com/YSF-Studio/ziploom/main/screenshot_compress.png) |
+
 ## ✨ Features
 
 | Feature | Details |
@@ -19,11 +25,16 @@
 | **Buffer Optimization** | 256KB buffer for 4x faster processing |
 | **100% Offline** | All processing runs locally — zero telemetry |
 
-## 🖥️ Screenshots
+## Sample Files
 
-| Compress | Extract | Inspect |
-|----------|---------|---------|
-| _Coming soon_ | _Coming soon_ | _Coming soon_ |
+Sample files are included in the [`samples/`](samples/) directory for testing:
+
+| File | Description |
+|------|-------------|
+| `test_sample.zip` | Sample ZIP containing 3 forensic documents |
+| `confidential_report.txt` | Confidential financial report |
+| `evidence_manifest.txt` | Evidence hash manifest |
+| `case_metadata.xml` | Forensic case metadata |
 
 ## 🚀 Quick Start
 
