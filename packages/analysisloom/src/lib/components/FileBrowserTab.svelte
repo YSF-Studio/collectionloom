@@ -10,6 +10,39 @@
   let showPreview = $state(true);
   let sortCol = $state(null);
   let sortDir = $state("asc");
+  let splitRatio = $state(55); // persentase untuk table section
+  let dragging = $state(false);
+
+  function startDrag(e) {
+    dragging = true;
+    const handle = e.target;
+    const parent = handle.closest('.workspace-split');
+    const startY = e.clientY;
+    const startRatio = splitRatio;
+    const parentHeight = parent.offsetHeight;
+
+    function onMove(ev) {
+      const dy = ev.clientY - startY;
+      let newRatio = startRatio + (dy / parentHeight) * 100;
+      if (newRatio < 25) newRatio = 25;
+      if (newRatio > 85) newRatio = 85;
+      splitRatio = Math.round(newRatio);
+    }
+
+    function onUp() {
+      dragging = false;
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    }
+
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+    document.body.style.cursor = 'ns-resize';
+    document.body.style.userSelect = 'none';
+    e.preventDefault();
+  }
 
   async function loadMft() {
     if (!imagePath) return;
@@ -90,7 +123,7 @@
   <!-- Top: Table | Bottom: Preview (split) -->
   <div class="workspace-split">
     <!-- TOP: Table -->
-    <div class="table-section" style="flex: {previewFile ? '0 0 55%' : '1'}; overflow: hidden; display: flex; flex-direction: column;">
+    <div class="table-section" style="flex: 0 0 {splitRatio}%; overflow: hidden; display: flex; flex-direction: column;">
       {#if entries.length}
         <div class="table" style="--row-height:{densityRows[density]}">
           <div class="thead">
@@ -122,8 +155,8 @@
 
     <!-- BOTTOM: Preview Pane -->
     {#if previewFile}
-      <div class="preview-resize-handle" title="Drag to resize"></div>
-      <div class="preview-bottom">
+      <div class="preview-resize-handle" onpointerdown={startDrag} class:dragging title="Drag to resize"></div>
+      <div class="preview-bottom" style="flex: 0 0 calc(100% - {splitRatio}%);">
         <div class="preview-header">
           <span class="preview-filename">📄 {previewFile}</span>
           <button class="close-btn" onclick={() => { previewFile = null; }}>✕</button>
@@ -151,7 +184,7 @@
   /* Vertical split: top=table, bottom=preview */
   .workspace-split { display:flex; flex-direction:column; flex:1; overflow:hidden; gap:0; }
 
-  .table-section { overflow:auto; display:flex; flex-direction:column; min-height:120px; transition: flex 0.2s; }
+  .table-section { overflow:auto; display:flex; flex-direction:column; min-height:120px; }
 
   /* Resize handle */
   .preview-resize-handle {
@@ -159,10 +192,11 @@
     flex-shrink: 0; margin: 2px 0;
   }
   .preview-resize-handle:hover { background: var(--primary); }
+  .preview-resize-handle.dragging { background: var(--primary); opacity: 0.7; }
 
   /* Bottom preview */
   .preview-bottom {
-    flex: 0 0 45%; min-height: 150px; display:flex; flex-direction:column;
+    min-height: 150px; display:flex; flex-direction:column;
     border-top: 1px solid var(--border); overflow: hidden;
   }
   .preview-header {
