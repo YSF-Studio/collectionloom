@@ -1,6 +1,6 @@
 <script>
 import { invoke } from "@tauri-apps/api/core";
-let { setBusy, setMsg, timeoutPromise } = $props();
+let { busy, setBusy, setMsg, timeoutPromise } = $props();
 let device = $state("");
 let status = $state("Unknown");
 let enabled = $state(false);

@@ -1,7 +1,7 @@
 <script>
 import { invoke } from "@tauri-apps/api/core";
 
-let { setBusy, setMsg, timeoutPromise } = $props();
+let { busy, setBusy, setMsg, timeoutPromise } = $props();
 let loading = $state(false);
 let snapshotResult = $state(null);
 let compareResult = $state(null);
@@ -43,7 +43,7 @@ function riskColor(level) {
 
 <div class="snapshot-tab">
     <h3>📸 System Snapshot</h3>
-    <p class="desc">Capture point-in-time system state for forensic comparison and integrity verification.</p>
+    <p class="desc">Capture point-in-time system sharedState for forensic comparison and integrity verification.</p>
 
     <div class="card">
         <h4>Take Snapshot</h4>

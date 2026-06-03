@@ -1,6 +1,6 @@
 <script>
 import { invoke } from "@tauri-apps/api/core";
-let { state, setBusy, setMsg, timeoutPromise } = $props();
+let { sharedState, busy, setBusy, setMsg, timeoutPromise } = $props();
 let tools = $state([]);
 let selectedTool = $state("");
 let outputPath = $state("/mnt/evidence/ram_capture.lime");

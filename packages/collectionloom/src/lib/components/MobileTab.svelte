@@ -1,6 +1,6 @@
 <script>
 import { invoke } from "@tauri-apps/api/core";
-let { setBusy, setMsg, timeoutPromise } = $props();
+let { busy, setBusy, setMsg, timeoutPromise } = $props();
 let androidDevices = $state([]);
 let iosDevices = $state([]);
 let outputPath = $state("/mnt/evidence/");
