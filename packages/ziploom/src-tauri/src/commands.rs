@@ -230,7 +230,7 @@ pub fn extract_archive(archive_path: String, output_dir: String) -> Result<Opera
     let mut total_size = 0u64;
 
     // For ZIP files, use zip crate for extraction
-    if format.contains("ZIP") {
+    if format.contains("zip") {
         let file = std::fs::File::open(&archive_path)
             .map_err(|e| format!("Cannot open archive: {}", e))?;
         let mut archive = zip::ZipArchive::new(file)
@@ -257,7 +257,7 @@ pub fn extract_archive(archive_path: String, output_dir: String) -> Result<Opera
                 files_processed += 1;
             }
         }
-    } else if format.contains("TAR") {
+    } else if format.contains("tar") {
         // For TAR files
         let file = std::fs::File::open(&archive_path)
             .map_err(|e| format!("Cannot open archive: {}", e))?;

@@ -446,20 +446,7 @@ fn scan_dir(dir: &Path, entries: &mut Vec<FileEntry>, depth: usize, max_depth: u
         });
         
         if metadata.is_dir() {
-            match scan_dir(&path, entries, depth + 1, max_depth) {
-                Ok(()) => {},
-                Err(e) => {
-                    // Skip directories we can't read
-                    entries.push(FileEntry {
-                        path: path.to_string_lossy().to_string(),
-                        size: 0,
-                        modified: "unknown".to_string(),
-                        permissions: perms.clone(),
-                        is_dir: true,
-                        is_symlink: false,
-                    });
-                }
-            }
+            let _ = scan_dir(&path, entries, depth + 1, max_depth);
         }
     }
     Ok(())

@@ -60,6 +60,7 @@ use std::io::{Read, Write, Seek, SeekFrom};
     let mut carryover = Vec::new(); // Overlap buffer for signatures crossing chunk boundaries
     let overlap = 128; // Max signature length to carry over
     let mut offset: u64 = 0;
+    let mut carryover_len: usize = 0;
     let mut carved_count = 0u64;
     let mut carved_files = vec![];
 
@@ -70,11 +71,13 @@ use std::io::{Read, Write, Seek, SeekFrom};
         if n == 0 { break; }
 
         let search_buf = if !carryover.is_empty() {
+            carryover_len = carryover.len();
             let mut combined = carryover.clone();
             combined.extend_from_slice(&buf[..n]);
             carryover.clear();
             combined
         } else {
+            carryover_len = 0;
             buf[..n].to_vec()
         };
 
@@ -90,7 +93,7 @@ use std::io::{Read, Write, Seek, SeekFrom};
                 if cancel_flag.load(Ordering::SeqCst) { break; }
 
                 if search_buf[search_pos..search_pos + magic.len()] == **magic {
-                    let abs_offset = offset + search_pos as u64;
+                    let abs_offset = offset - carryover_len as u64 + search_pos as u64;
                     let name = format!("{:08x}_{}.bin", abs_offset,
                         file_type.to_lowercase().replace(' ', "_").replace('/', "_"));
 
