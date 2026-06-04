@@ -36,11 +36,11 @@
   }
 
   const tabs = [
-    { label: "Compress", icon: "\uD83D\uDDDC\uFE0F" },
-    { label: "Extract", icon: "\uD83D\uDCC1" },
-    { label: "Inspect", icon: "\uD83D\uDD0D" },
+    { label: "Compress", icon: "\u{1F4E6}" },
+    { label: "Extract", icon: "\u{1F4C2}" },
+    { label: "Inspect", icon: "\u{1F50D}" },
     { label: "About", icon: "\u2139\uFE0F" },
-    { label: "Encrypt", icon: "\uD83D\uDD10" },
+    { label: "Encrypt", icon: "\u{1F512}" },
   ];
 
   const formats = [
@@ -329,14 +329,9 @@
         <div class="toast" class:error={msg.startsWith("❌")}>{msg}</div>
       {/if}
 
-      <!-- ─── COMPRESS TAB ─── -->
+      <!-- ─── COMPRESS TAB ─── (redesigned like screenshot) -->
       {#if activeTab === 0}
-        <div class="tab-content">
-          <h3>📦 Compress Files</h3>
-          <p class="subtitle">
-            Select files and folders, choose a format, then compress into an archive.
-          </p>
-
+        <div class="tab-content compress-tab">
           {#if compSources.length > 0}
             <div class="source-list">
               <h4>Selected ({compSources.length} item{compSources.length > 1 ? 's' : ''})</h4>
@@ -348,153 +343,202 @@
                 </div>
               {/each}
             </div>
-          {/if}
 
-          <div class="format-row">
-            <label for="format-select">Format:</label>
-            <select id="format-select" bind:value={compFormat} disabled={busy}>
-              {#each formats as f}
-                <option value={f.value}>{f.label}</option>
-              {/each}
-            </select>
-          </div>
+            <div class="format-row">
+              <label for="format-select">Format:</label>
+              <select id="format-select" bind:value={compFormat} disabled={busy}>
+                {#each formats as f}
+                  <option value={f.value}>{f.label}</option>
+                {/each}
+              </select>
+            </div>
 
-          <div class="btn-row">
-            <button class="btn" onclick={browseDir} disabled={busy}>📁 Add Folder</button>
-            <button class="btn" onclick={browseSources} disabled={busy}>📄 Add Files</button>
-          </div>
+            <button class="btn-primary" onclick={doCompress} disabled={busy || compSources.length === 0}>
+              {busy ? '🔄 Compressing...' : '🗜️ Compress'}
+            </button>
 
-          <button class="btn-primary" onclick={doCompress} disabled={busy || compSources.length === 0}>
-            {busy ? '🔄 Compressing...' : '🗜️ Compress'}
-          </button>
-
-          {#if compResult}
-            <div class="result-card success">
-              <span class="result-icon">✅</span>
-              <div>
-                <strong>{compResult.message}</strong><br />
-                <span class="muted">{compResult.filesProcessed} files → {compResult.outputPath}</span>
+            {#if compResult}
+              <div class="result-card success">
+                <span class="result-icon">✅</span>
+                <div>
+                  <strong>{compResult.message}</strong><br />
+                  <span class="muted">{compResult.filesProcessed} files → {compResult.outputPath}</span>
+                </div>
               </div>
+            {/if}
+          {:else if !busy}
+            <div class="dropzone-lg" role="button" tabindex="0"
+              ondragover={(e) => e.preventDefault()}
+              ondrop={onDrop}
+              onclick={() => browseSources()}>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted);margin-bottom:8px">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              <p class="dz-title">Drop files here or click to browse</p>
+              <p class="dz-hint">Tip: Click 'Browse Folder' below for entire directories.</p>
             </div>
           {/if}
 
-          {#if compSources.length === 0 && !busy}
-            <div class="dropzone" role="button" tabindex="0"
-              ondragover={(e) => e.preventDefault()}
-              ondrop={onDrop}>
-              <span style="font-size:32px">📁</span>
-              <p>Drop files or folders here</p>
-              <span class="hint">or use the buttons above to browse</span>
-            </div>
-          {/if}
+          <div class="compress-actions">
+            <button class="btn action-btn" onclick={browseSources} disabled={busy}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+              </svg>
+              Browse Files
+            </button>
+            <button class="btn action-btn" onclick={browseDir} disabled={busy}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+              </svg>
+              Browse Folder
+            </button>
+          </div>
         </div>
 
-      <!-- ─── EXTRACT TAB ─── -->
+      <!-- ─── EXTRACT TAB ─── (redesigned like screenshot) -->
       {:else if activeTab === 1}
-        <div class="tab-content">
-          <h3>📂 Extract Archives</h3>
-          <p class="subtitle">
-            Select an archive to extract its contents. Supports ZIP, TAR, GZ, BZ2, XZ.
-          </p>
-
+        <div class="tab-content extract-tab">
           {#if extrArchive}
-            <div class="source-item">
+            <div class="source-item" style="margin-bottom:12px">
               <span class="src-icon">📦</span>
               <span class="src-path">{extrArchive}</span>
             </div>
-          {/if}
 
-          <button class="btn-primary" onclick={browseArchive} disabled={busy}>
-            {busy ? '🔄 Extracting...' : '📦 Choose Archive & Extract'}
-          </button>
+            <button class="btn-primary" onclick={browseArchive} disabled={busy}>
+              {busy ? '🔄 Extracting...' : '📂 Choose Archive & Extract'}
+            </button>
 
-          {#if extrResult}
-            <div class="result-card success">
-              <span class="result-icon">✅</span>
-              <div>
-                <strong>{extrResult.message}</strong><br />
-                <span class="muted">Output: {extrResult.outputPath}</span>
+            {#if extrResult}
+              <div class="result-card success">
+                <span class="result-icon">✅</span>
+                <div>
+                  <strong>{extrResult.message}</strong><br />
+                  <span class="muted">Output: {extrResult.outputPath}</span>
+                </div>
               </div>
-            </div>
-          {/if}
-
-          {#if !extrArchive && !busy}
-            <div class="dropzone" role="button" tabindex="0"
+            {/if}
+          {:else if !busy}
+            <div class="dropzone-lg" role="button" tabindex="0"
               ondragover={(e) => e.preventDefault()}
-              ondrop={onDrop}>
-              <span style="font-size:32px">📦</span>
-              <p>Drop archive here</p>
-              <span class="hint">or click the button above to browse</span>
+              ondrop={onDrop}
+              onclick={() => browseArchive()}>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted);margin-bottom:8px">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+                <path d="M12 3v12"/>
+              </svg>
+              <p class="dz-title">Drop archive here or click to browse</p>
             </div>
           {/if}
         </div>
 
-      <!-- ─── INSPECT TAB ─── -->
+      <!-- ─── INSPECT TAB ─── (redesigned like screenshot) -->
       {:else if activeTab === 2}
-        <div class="tab-content">
-          <h3>🔍 Inspect Archive</h3>
-          <p class="subtitle">
-            Preview archive contents without extracting. View file listing, sizes, and compression ratios.
-          </p>
-
+        <div class="tab-content inspect-tab">
           {#if inspArchive}
-            <div class="source-item">
+            <div class="source-item" style="margin-bottom:12px">
               <span class="src-icon">🗄️</span>
               <span class="src-path">{inspArchive}</span>
             </div>
-          {/if}
 
-          <button class="btn-primary" onclick={browseInspect} disabled={busy}>
-            {busy ? '🔍 Scanning...' : '🗄️ Choose Archive to Inspect'}
-          </button>
+            <button class="btn-primary" onclick={browseInspect} disabled={busy}>
+              {busy ? '🔍 Scanning...' : '🗄️ Choose Archive to Inspect'}
+            </button>
 
-          {#if inspError}
-            <div class="result-card error">
-              <span class="result-icon">❌</span>
-              <span>{inspError}</span>
-            </div>
-          {/if}
-
-          {#if inspInfo}
-            <div class="result-card info">
-              <span class="result-icon">📋</span>
-              <div>
-                <strong>{inspInfo.format}</strong> — {inspInfo.totalFiles} files, {formatSize(inspInfo.totalSize)}
-                {#if inspInfo.totalCompressed}
-                  <span class="muted"> (compressed: {formatSize(inspInfo.totalCompressed)})</span>
-                {/if}
-              </div>
-            </div>
-
-            {#if inspInfo.entries.length > 0}
-              <div class="entry-table">
-                <div class="entry-header">
-                  <span>Name</span>
-                  <span>Size</span>
-                  <span>Ratio</span>
-                </div>
-                {#each inspInfo.entries as entry}
-                  <div class="entry-row">
-                    <span class="entry-name">
-                      {entry.isDir ? '📁' : '📄'} {entry.path}
-                    </span>
-                    <span class="entry-size">{formatSize(entry.size)}</span>
-                    <span class="entry-ratio" class:good={compRatio(entry) > 0} class:bad={compRatio(entry) < 0}>
-                      {compRatio(entry) != null ? `${compRatio(entry) > 0 ? '−' : '+'}${Math.abs(compRatio(entry))}%` : '—'}
-                    </span>
-                  </div>
-                {/each}
+            {#if inspError}
+              <div class="result-card error">
+                <span class="result-icon">❌</span>
+                <span>{inspError}</span>
               </div>
             {/if}
-          {/if}
 
-          {#if !inspArchive && !busy}
-            <div class="dropzone" role="button" tabindex="0"
+            {#if inspInfo}
+              <div class="result-card info">
+                <span class="result-icon">📋</span>
+                <div>
+                  <strong>{inspInfo.format}</strong> — {inspInfo.totalFiles} files, {formatSize(inspInfo.totalSize)}
+                  {#if inspInfo.totalCompressed}
+                    <span class="muted"> (compressed: {formatSize(inspInfo.totalCompressed)})</span>
+                  {/if}
+                </div>
+              </div>
+
+              {#if inspInfo.entries.length > 0}
+                <div class="entry-table">
+                  <div class="entry-header">
+                    <span>Name</span>
+                    <span>Size</span>
+                    <span>Ratio</span>
+                  </div>
+                  {#each inspInfo.entries as entry}
+                    <div class="entry-row">
+                      <span class="entry-name">
+                        {entry.isDir ? '📁' : '📄'} {entry.path}
+                      </span>
+                      <span class="entry-size">{formatSize(entry.size)}</span>
+                      <span class="entry-ratio" class:good={compRatio(entry) > 0} class:bad={compRatio(entry) < 0}>
+                        {compRatio(entry) != null ? `${compRatio(entry) > 0 ? '−' : '+'}${Math.abs(compRatio(entry))}%` : '—'}
+                      </span>
+                    </div>
+                  {/each}
+                </div>
+              {/if}
+            {/if}
+          {:else if !busy}
+            <div class="dropzone-lg" role="button" tabindex="0"
               ondragover={(e) => e.preventDefault()}
-              ondrop={onDrop}>
-              <span style="font-size:32px">🗄️</span>
-              <p>Drop archive to inspect</p>
-              <span class="hint">or click the button above to browse</span>
+              ondrop={onDrop}
+              onclick={() => browseInspect()}>
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted);margin-bottom:8px">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              </svg>
+              <p class="dz-title">Drop archive here for forensic inspection</p>
+              <p class="dz-hint">Scan archives for malware, verify integrity, inspect file contents</p>
+            </div>
+
+            <div class="inspect-links">
+              <button class="inspect-link" onclick={browseInspect} disabled={busy}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                  <line x1="8" y1="11" x2="14" y2="11"/>
+                </svg>
+                Full Scan — Detect threats &amp; anomalies
+              </button>
+              <button class="inspect-link" onclick={browseInspect} disabled={busy}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                </svg>
+                Hash All — MD5, SHA1, SHA256 checksums
+              </button>
+              <button class="inspect-link" onclick={browseInspect} disabled={busy}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                Export CSV — Forensic report
+              </button>
+              <button class="inspect-link" onclick={browseInspect} disabled={busy}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                </svg>
+                Extract Selected — Pick specific files
+              </button>
+            </div>
+
+            <div class="inspect-browse">
+              <button class="btn action-btn" onclick={browseInspect} disabled={busy}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                </svg>
+                Browse Archive
+              </button>
             </div>
           {/if}
         </div>
@@ -852,5 +896,93 @@
     margin: 0;
     font-size: 12px;
     color: var(--primary);
+  }
+
+  /* ─── Shared: Dropzone Large ─── */
+  .dropzone-lg {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 220px;
+    border: 2px dashed var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--card-hover);
+    cursor: pointer;
+    gap: 4px;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .dropzone-lg:hover {
+    border-color: var(--primary);
+    background: color-mix(in srgb, var(--card-hover) 90%, var(--primary) 10%);
+  }
+  .dz-title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+  .dz-hint {
+    margin: 0;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  /* ─── Compress Tab ─── */
+  .compress-tab .compress-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 16px;
+  }
+  .action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 22px;
+    border-radius: 8px;
+    font-size: 13px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .action-btn:hover { border-color: var(--primary); }
+  .action-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ─── Inspect Tab ─── */
+  .inspect-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 16px;
+  }
+  .inspect-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 12px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: left;
+  }
+  .inspect-link:hover {
+    border-color: var(--primary);
+    color: var(--text);
+  }
+  .inspect-link:disabled { opacity: 0.4; cursor: not-allowed; }
+  .inspect-link svg { flex-shrink: 0; }
+
+  .inspect-browse {
+    display: flex;
+    justify-content: center;
+    margin-top: 16px;
   }
 </style>
