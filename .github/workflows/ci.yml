@@ -67,7 +67,6 @@ jobs:
 
   collectionloom:
     name: 📀 CollectionLoom
-    if: hashFiles('packages/collectionloom/package.json') != '' && endsWith(github.repository, '/collectionloom')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -99,7 +98,6 @@ jobs:
 
   analysisloom:
     name: 🔬 AnalysisLoom
-    if: hashFiles('packages/analysisloom/package.json') != '' && endsWith(github.repository, '/analysisloom')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
