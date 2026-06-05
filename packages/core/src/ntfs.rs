@@ -37,7 +37,7 @@ pub struct DeletedFile {
 /// Supports large drives (5TB+) via chunked streaming reads
 pub fn parse_mft(image_path: &str, cancel_flag: &std::sync::atomic::AtomicBool) -> Result<Vec<MftEntry>, String> {
     use std::sync::atomic::Ordering;
-use std::io::{Read, Seek, SeekFrom};
+use std::io::{Read, Seek};
 
     let mut file = std::fs::File::open(image_path)
         .map_err(|e| format!("Cannot open: {}", e))?;
