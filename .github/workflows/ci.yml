@@ -36,7 +36,6 @@ jobs:
 
   ziploom:
     name: 📦 ZipLoom
-    if: hashFiles('packages/ziploom/package.json') != '' && endsWith(github.repository, '/ziploom')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
