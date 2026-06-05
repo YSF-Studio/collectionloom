@@ -22,7 +22,6 @@ jobs:
 
   core-test:
     name: 🧩 ysf-core Tests
-            if: "${{ hashFiles('packages/core/Cargo.toml') != '' }}"
     runs-on: ubuntu-latest
     defaults:
       run:
