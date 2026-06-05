@@ -40,8 +40,7 @@ jobs:
 
   sbom:
     name: 📦 SBOM Generation
-            if: "${{ hashFiles('packages/core/Cargo.toml') != '' }}"
-    runs-on: ubuntu-latest
+                 runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
