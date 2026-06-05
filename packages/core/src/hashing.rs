@@ -2,7 +2,6 @@ use sha2::{Digest, Sha256, Sha512};
 use sha1::Sha1;
 use md5::Md5;
 use blake3::Hasher as Blake3;
-use twox_hash::Xxh3Hash64;
 use std::io::{Read, BufReader};
 use std::fs::File;
 use std::path::Path;
