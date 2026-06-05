@@ -46,7 +46,7 @@ pub fn carve_files(
     cancel_flag: &std::sync::atomic::AtomicBool,
 ) -> Result<CarvingResult, String> {
     use std::sync::atomic::Ordering;
-use std::io::{Read, Write, Seek, SeekFrom};
+    use std::io::{Read, Write};
 
     let mut file = std::fs::File::open(image_path)
         .map_err(|e| format!("Cannot open image: {}", e))?;
