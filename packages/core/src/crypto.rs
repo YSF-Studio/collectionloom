@@ -2,7 +2,7 @@ use ed25519_dalek::{SigningKey, VerifyingKey, Signature, Signer, Verifier};
 use rand::rngs::OsRng;
 use serde::{Serialize, Deserialize};
 use aes_gcm::{Aes256Gcm, Key, Nonce};
-use aes_gcm::aead::{Aead, OsRng as AeadOsRng, KeyInit};
+use aes_gcm::aead::{Aead, KeyInit};
 use pbkdf2::pbkdf2_hmac;
 use sha2::Sha256;
 
