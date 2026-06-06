@@ -281,7 +281,7 @@ mod platform {
             current: [0; 8],
         };
         apt.current[6] = command;
-        apt.current[9] = 0x08; // PIO data-in, DRQ within 8 sectors
+        apt.current[1] = 1; // one sector for PIO data-in (IDENTIFY / DCO)
 
         let mut bytes: DWORD = 0;
         let ok = unsafe {
