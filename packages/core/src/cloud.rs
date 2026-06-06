@@ -1,5 +1,23 @@
 use serde::Serialize;
 
+fn validate_aws_region(region: &str) -> Result<(), String> {
+    let region = region.trim();
+    if region.is_empty() || region.len() > 32 {
+        return Err("Invalid AWS region".into());
+    }
+    if !region
+        .chars()
+        .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
+    {
+        return Err("Invalid AWS region characters".into());
+    }
+    let parts: Vec<&str> = region.split('-').collect();
+    if parts.len() < 3 || parts[0].len() != 2 {
+        return Err("Invalid AWS region format".into());
+    }
+    Ok(())
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct CloudSnapshot {
     pub provider: String,
@@ -12,6 +30,13 @@ pub struct CloudSnapshot {
 pub async fn aws_create_snapshot(
     region: &str, volume_id: &str, access_key: &str, _secret_key: &str,
 ) -> Result<String, String> {
+    validate_aws_region(region)?;
+    if !volume_id.starts_with("vol-") || volume_id.len() > 32 {
+        return Err("Invalid AWS volume ID".into());
+    }
+    if access_key.len() > 128 || access_key.chars().any(|c| !c.is_ascii()) {
+        return Err("Invalid AWS access key".into());
+    }
     let client = reqwest::Client::new();
     let endpoint = format!("https://ec2.{}.amazonaws.com/", region);
 

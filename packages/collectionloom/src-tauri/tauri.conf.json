@@ -21,7 +21,7 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' ipc: http://localhost:* https://ec2.*.amazonaws.com https://management.azure.com https://compute.googleapis.com"
     }
   },
   "plugins": {

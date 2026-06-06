@@ -2,7 +2,7 @@
   "identifier": "default",
   "description": "Default capabilities for CollectionLoom",
   "windows": ["main"],
-  "permissions": [
+    "permissions": [
     "core:default",
     "fs:allow-read-text-file",
     "fs:allow-write-text-file",
@@ -10,8 +10,6 @@
     "fs:allow-write-file",
     "dialog:default",
     "shell:allow-open",
-    "shell:allow-execute",
-    "shell:allow-spawn",
     {
       "identifier": "fs:scope",
       "allow": [{ "path": "$HOME/**" }, { "path": "/mnt/**" }, { "path": "/dev/**" }, { "path": "/sys/**" }]

@@ -216,6 +216,7 @@ pub fn export_zip(case_id: String) -> Result<ExportResult, String> {
 
 #[tauri::command]
 pub fn list_exports(case_id: String) -> Result<Vec<ExportResult>, String> {
+    crate::storage::validate_storage_id(&case_id, "case_id")?;
     let dir = crate::storage::exports_dir(&case_id);
     if !dir.exists() {
         return Ok(vec![]);

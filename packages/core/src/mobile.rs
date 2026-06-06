@@ -1,6 +1,20 @@
 use serde::Serialize;
 use std::process::Command;
 
+fn validate_mobile_device_id(id: &str) -> Result<(), String> {
+    let id = id.trim();
+    if id.is_empty() {
+        return Err("Empty device ID".into());
+    }
+    if id.len() > 128 {
+        return Err("Device ID too long".into());
+    }
+    if !id.chars().all(|c| c.is_ascii_alphanumeric() || matches!(c, ':' | '-' | '_' | '.')) {
+        return Err("Invalid device ID characters".into());
+    }
+    Ok(())
+}
+
 #[derive(Debug, Clone, Serialize)]
 pub struct MobileDevice {
     pub id: String,
@@ -39,6 +53,7 @@ pub fn list_android_devices() -> Result<Vec<MobileDevice>, String> {
 
 /// Run ADB backup
 pub fn adb_backup(device_id: &str, output_path: &str) -> Result<String, String> {
+    validate_mobile_device_id(device_id)?;
     let status = Command::new("adb")
         .args(["-s", device_id, "backup", "-apk", "-shared", "-all", "-f", output_path])
         .status()
@@ -70,6 +85,7 @@ pub fn list_ios_devices() -> Result<Vec<MobileDevice>, String> {
 
 /// Run iTunes-style iOS backup (via idevicebackup2)
 pub fn ios_backup(device_id: &str, output_path: &str) -> Result<String, String> {
+    validate_mobile_device_id(device_id)?;
     let status = Command::new("idevicebackup2")
         .args(["-u", device_id, "backup", output_path])
         .status()

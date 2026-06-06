@@ -11,11 +11,23 @@ pub fn cases_root() -> PathBuf {
         .join("cases")
 }
 
+/// Reject path traversal and separator characters in storage identifiers.
+pub fn validate_storage_id(id: &str, label: &str) -> Result<(), String> {
+    if id.is_empty() {
+        return Err(format!("Invalid {label}: empty"));
+    }
+    if id.contains("..") || id.contains('/') || id.contains('\\') {
+        return Err(format!("Invalid {label}: path separators and '..' are not allowed"));
+    }
+    Ok(())
+}
+
 pub fn case_dir(case_id: &str) -> PathBuf {
     cases_root().join(case_id)
 }
 
 pub fn ensure_case_dirs(case_id: &str) -> Result<PathBuf, String> {
+    validate_storage_id(case_id, "case_id")?;
     let root = case_dir(case_id);
     for sub in ["snapshots", "diffs", "exports"] {
         fs::create_dir_all(root.join(sub)).map_err(|e| e.to_string())?;
@@ -32,6 +44,7 @@ pub fn write_case(case: &Case) -> Result<PathBuf, String> {
 }
 
 pub fn read_case(case_id: &str) -> Result<Case, String> {
+    validate_storage_id(case_id, "case_id")?;
     let path = case_dir(case_id).join("case.json");
     let data = fs::read_to_string(&path).map_err(|e| format!("Case not found: {e}"))?;
     serde_json::from_str(&data).map_err(|e| e.to_string())
@@ -62,6 +75,8 @@ pub fn snapshot_dir(case_id: &str, snapshot_id: &str) -> PathBuf {
 }
 
 pub fn write_snapshot_meta(meta: &SnapshotMeta) -> Result<PathBuf, String> {
+    validate_storage_id(&meta.case_id, "case_id")?;
+    validate_storage_id(&meta.snapshot_id, "snapshot_id")?;
     let dir = snapshot_dir(&meta.case_id, &meta.snapshot_id);
     fs::create_dir_all(dir.join("artifacts")).map_err(|e| e.to_string())?;
     let path = dir.join("snapshot_meta.json");
@@ -71,12 +86,15 @@ pub fn write_snapshot_meta(meta: &SnapshotMeta) -> Result<PathBuf, String> {
 }
 
 pub fn read_snapshot_meta(case_id: &str, snapshot_id: &str) -> Result<SnapshotMeta, String> {
+    validate_storage_id(case_id, "case_id")?;
+    validate_storage_id(snapshot_id, "snapshot_id")?;
     let path = snapshot_dir(case_id, snapshot_id).join("snapshot_meta.json");
     let data = fs::read_to_string(&path).map_err(|e| e.to_string())?;
     serde_json::from_str(&data).map_err(|e| e.to_string())
 }
 
 pub fn list_snapshots(case_id: &str) -> Result<Vec<SnapshotMeta>, String> {
+    validate_storage_id(case_id, "case_id")?;
     let dir = case_dir(case_id).join("snapshots");
     if !dir.exists() {
         return Ok(vec![]);
@@ -100,6 +118,8 @@ pub fn list_snapshots(case_id: &str) -> Result<Vec<SnapshotMeta>, String> {
 }
 
 pub fn write_hash_manifest(case_id: &str, snapshot_id: &str, manifest: &HashManifest) -> Result<PathBuf, String> {
+    validate_storage_id(case_id, "case_id")?;
+    validate_storage_id(snapshot_id, "snapshot_id")?;
     let path = snapshot_dir(case_id, snapshot_id).join("hash_manifest.json");
     let json = serde_json::to_string_pretty(manifest).map_err(|e| e.to_string())?;
     fs::write(&path, json).map_err(|e| e.to_string())?;
@@ -107,12 +127,17 @@ pub fn write_hash_manifest(case_id: &str, snapshot_id: &str, manifest: &HashMani
 }
 
 pub fn read_hash_manifest(case_id: &str, snapshot_id: &str) -> Result<HashManifest, String> {
+    validate_storage_id(case_id, "case_id")?;
+    validate_storage_id(snapshot_id, "snapshot_id")?;
     let path = snapshot_dir(case_id, snapshot_id).join("hash_manifest.json");
     let data = fs::read_to_string(&path).map_err(|e| e.to_string())?;
     serde_json::from_str(&data).map_err(|e| e.to_string())
 }
 
 pub fn write_diff(case_id: &str, diff: &DiffResult) -> Result<PathBuf, String> {
+    validate_storage_id(case_id, "case_id")?;
+    validate_storage_id(&diff.snapshot_a_id, "snapshot_a_id")?;
+    validate_storage_id(&diff.snapshot_b_id, "snapshot_b_id")?;
     let filename = format!("{}_vs_{}.json", diff.snapshot_a_id, diff.snapshot_b_id);
     let path = case_dir(case_id).join("diffs").join(&filename);
     fs::create_dir_all(path.parent().unwrap()).map_err(|e| e.to_string())?;
@@ -122,6 +147,7 @@ pub fn write_diff(case_id: &str, diff: &DiffResult) -> Result<PathBuf, String> {
 }
 
 pub fn list_diffs(case_id: &str) -> Result<Vec<DiffResult>, String> {
+    validate_storage_id(case_id, "case_id")?;
     let dir = case_dir(case_id).join("diffs");
     if !dir.exists() {
         return Ok(vec![]);
@@ -142,6 +168,11 @@ pub fn list_diffs(case_id: &str) -> Result<Vec<DiffResult>, String> {
 
 pub fn exports_dir(case_id: &str) -> PathBuf {
     case_dir(case_id).join("exports")
+}
+
+fn validated_exports_dir(case_id: &str) -> Result<PathBuf, String> {
+    validate_storage_id(case_id, "case_id")?;
+    Ok(exports_dir(case_id))
 }
 
 pub fn sha256_file(path: &Path) -> Result<String, String> {
@@ -215,6 +246,7 @@ pub fn handoff_dir() -> PathBuf {
 }
 
 pub fn write_handoff(case_id: &str, payload: &serde_json::Value) -> Result<PathBuf, String> {
+    validate_storage_id(case_id, "case_id")?;
     fs::create_dir_all(handoff_dir()).map_err(|e| e.to_string())?;
     let path = handoff_dir().join(format!("{case_id}.json"));
     fs::write(&path, serde_json::to_string_pretty(payload).map_err(|e| e.to_string())?)

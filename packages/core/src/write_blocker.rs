@@ -69,10 +69,37 @@ impl WriteBlockerStatus {
     }
 }
 
+fn validate_device(device: &str) -> Result<(), String> {
+    let d = device.trim();
+    if d.is_empty() {
+        return Err("No device selected".into());
+    }
+    if d.chars().any(|c| matches!(c, ';' | '&' | '|' | '$' | '`' | '\n' | '\r' | '\0')) {
+        return Err("Invalid device path: illegal characters".into());
+    }
+    #[cfg(unix)]
+    {
+        if !d.starts_with("/dev/") && !d.chars().all(|c| c.is_ascii_alphanumeric() || c == '-' || c == '_') {
+            return Err(format!("Invalid device path: {d}"));
+        }
+    }
+    #[cfg(target_os = "windows")]
+    {
+        let lower = d.to_lowercase();
+        if !(lower.starts_with("\\\\.\\physicaldrive")
+            || lower.starts_with("physicaldrive")
+            || d.chars().all(|c| c.is_ascii_digit()))
+        {
+            return Err(format!("Invalid device path: {d}"));
+        }
+    }
+    Ok(())
+}
+
 /// Check write-blocker status (structured).
 pub fn check_write_blocker_status(device: &str) -> WriteBlockerStatus {
-    if device.is_empty() {
-        return WriteBlockerStatus::inactive("none", "No device selected");
+    if validate_device(device).is_err() {
+        return WriteBlockerStatus::inactive("none", "Invalid device path");
     }
 
     if detect_hardware_blocker() {
@@ -347,9 +374,7 @@ fn windows_is_readonly(device: &str) -> bool {
 
 /// Enable software write blocker — one-click on all supported platforms.
 pub fn enable_write_blocker(device: &str) -> Result<WriteBlockerStatus, String> {
-    if device.is_empty() {
-        return Err("No device selected".into());
-    }
+    validate_device(device)?;
 
     #[cfg(target_os = "linux")]
     {
@@ -550,9 +575,7 @@ fn windows_disable_readonly(device: &str) -> Result<(), String> {
 
 /// Disable software write blocker.
 pub fn disable_write_blocker(device: &str) -> Result<WriteBlockerStatus, String> {
-    if device.is_empty() {
-        return Err("No device selected".into());
-    }
+    validate_device(device)?;
 
     #[cfg(target_os = "linux")]
     {
