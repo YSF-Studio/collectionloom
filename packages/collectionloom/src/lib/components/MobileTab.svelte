@@ -1,5 +1,5 @@
 <script>
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "../api/tauri.js";
 import GuideCard from "./GuideCard.svelte";
 import { mobileTriageGuide } from "../guides.js";
 let { busy, setBusy, setMsg, timeoutPromise } = $props();
@@ -92,9 +92,9 @@ async function backupIos(id) {
 h3 { margin:0 0 16px; font-size:16px; }
 .row { display:flex; gap:10px; align-items:center; margin-bottom:12px; }
 label { font-size:13px; display:flex; align-items:center; gap:6px; }
-input { background:#1a1a1a; color:#e0e0e0; border:1px solid var(--border); border-radius:6px; padding:6px 10px; font-size:13px; width:100%; }
+input { background: var(--input-bg); color: var(--text); border:1px solid var(--border); border-radius:6px; padding:6px 10px; font-size:13px; width:100%; }
 .cols { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
-.col { background:#1a1a1a; border:1px solid var(--border); border-radius:8px; padding:12px; }
+.col { background: var(--input-bg); border:1px solid var(--border); border-radius:8px; padding:12px; }
 h4 { margin:0 0 8px; font-size:13px; }
 .device { font-size:12px; padding:6px 0; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; gap:8px; }
 .device span { display:flex; align-items:center; gap:4px; }

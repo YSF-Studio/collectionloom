@@ -1,6 +1,5 @@
 <script>
-  import { invoke } from "@tauri-apps/api/core";
-  import { open } from "@tauri-apps/plugin-dialog";
+  import { invoke, openDialog } from "../api/tauri.js";
   import GuideCard from "./GuideCard.svelte";
   import { verificationGuide } from "../guides.js";
 
@@ -20,7 +19,7 @@
 
   async function browseFile() {
     try {
-      const p = await open({ directory: false, multiple: false });
+      const p = await openDialog({ directory: false, multiple: false });
       if (p) filePath = p;
     } catch (e) { msg = `❌ ${String(e)}`; }
   }
@@ -112,7 +111,7 @@
   .note { font-size:11px; color:var(--text-secondary); margin: 0 0 20px; }
   .row { margin-bottom:12px; }
   label { font-size:13px; color:var(--text-secondary); display:flex; align-items:center; gap:6px; }
-  input, select { background:#1a1a1a; color:#e0e0e0; border:1px solid var(--border); border-radius:6px; padding:6px 10px; font-size:13px; }
+  input, select { background: var(--input-bg); color: var(--text); border:1px solid var(--border); border-radius:6px; padding:6px 10px; font-size:13px; }
   input { width:100%; }
   .hash-input { font-family: monospace; }
   select { }

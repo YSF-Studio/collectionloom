@@ -1,49 +1,112 @@
 <script>
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "../api/tauri.js";
 import GuideCard from "./GuideCard.svelte";
+import MacCard from "./ui/MacCard.svelte";
+import SectionHeader from "./ui/SectionHeader.svelte";
 import { snapshotGuide } from "../guides.js";
+import { createCase } from "../api/case.js";
+
 let { sharedState, busy, setBusy, setMsg, timeoutPromise } = $props();
 let evidenceId = $state("");
 let caseName = $state("");
-let operator = $state("Yusuf Shalahuddin");
+let operator = $state("");
 let device = $state("");
+let timezone = $state(Intl.DateTimeFormat().resolvedOptions().timeZone);
 let actions = $state([]);
 let signature = $state("");
 let publicKey = $state("");
 let signLoading = $state(false);
+let qrDataUrl = $state("");
+let linkedCaseId = $state("");
 
-// Auto-generate Evidence ID on mount
 $effect(() => {
   generateEvidenceId();
+  if (!operator) {
+    operator = typeof navigator !== "undefined" ? navigator.userAgent.includes("Mac") ? "Investigator" : "Investigator" : "Investigator";
+  }
 });
 
 async function generateEvidenceId() {
   try {
     const id = await timeoutPromise(invoke("generate_evidence_id"), 5000);
     if (id) evidenceId = id;
-  } catch(e) {
-    // Silently fail — user can create CoC manually
+  } catch {
+    /* silent */
   }
 }
+
+function bytesToDataUrl(bytes) {
+  const arr = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+  if (arr.length >= 8 && arr[0] === 0x89 && arr[1] === 0x50) {
+    let binary = "";
+    for (let i = 0; i < arr.length; i++) binary += String.fromCharCode(arr[i]);
+    return `data:image/png;base64,${btoa(binary)}`;
+  }
+  return "";
+}
+
+async function loadQr() {
+  if (!evidenceId) return;
+  try {
+    const bytes = await invoke("generate_qr_label", {
+      evidenceId,
+      device: device || "unknown",
+      caseName: caseName || "case",
+    });
+    qrDataUrl = bytesToDataUrl(new Uint8Array(bytes));
+  } catch {
+    qrDataUrl = "";
+  }
+}
+
+$effect(() => {
+  if (evidenceId && caseName) loadQr();
+});
 
 async function createCoc() {
   setBusy(true);
   try {
-    evidenceId = await timeoutPromise(invoke("create_chain_of_custody", { caseName, operator, sourceDevice: device }), 5000);
-    actions = [{ timestamp: new Date().toISOString(), action: "CoC created", details: `Evidence ${evidenceId}`, hash: null }];
+    const linkedCase = await createCase({
+      title: caseName,
+      operator,
+      timezone,
+      purpose: "Chain of custody",
+      description: `Evidence for ${device}`,
+    });
+    linkedCaseId = linkedCase.case_id;
+    sharedState.caseId = linkedCaseId;
+
+    evidenceId = await timeoutPromise(
+      invoke("create_chain_of_custody", { caseName, operator, sourceDevice: device }),
+      5000
+    );
+    actions = [
+      {
+        timestamp: new Date().toISOString(),
+        action: "CoC created",
+        details: `Evidence ${evidenceId} · Case ${linkedCaseId.slice(0, 8)}…`,
+      },
+    ];
+    await loadQr();
     setMsg(`✅ Chain of custody created: ${evidenceId}`);
-  } catch(e) { setMsg(`❌ ${typeof e === "string" ? e : String(e)}`); }
+  } catch (e) {
+    setMsg(`❌ ${typeof e === "string" ? e : String(e)}`);
+  }
   setBusy(false);
 }
+
 async function addAction(act, det) {
-  actions = [...actions, { timestamp: new Date().toISOString(), action: act, details: det, hash: null }];
+  actions = [...actions, { timestamp: new Date().toISOString(), action: act, details: det }];
 }
+
 async function generatePdf() {
   setBusy(true);
   try {
     const path = await timeoutPromise(invoke("generate_coc_report", { evidenceId }), 15000);
     setMsg(`✅ PDF report saved to ${path}`);
-  } catch(e) { setMsg(`❌ ${typeof e === "string" ? e : String(e)}`); }
+  } catch (e) {
+    setMsg(`❌ ${typeof e === "string" ? e : String(e)}`);
+  }
   setBusy(false);
 }
 
@@ -52,251 +115,99 @@ async function signCoc() {
   signLoading = true;
   try {
     const result = await timeoutPromise(invoke("sign_coc", { evidenceId }), 10000);
-    signature = result.signature || result;
-    publicKey = result.public_key || "";
-    setMsg(`✅ CoC signed successfully`);
-  } catch(e) {
+    signature = result.signature_hex || result.signature || "";
+    publicKey = result.public_key_hex || result.public_key || "";
+    setMsg("✅ CoC signed successfully");
+  } catch (e) {
     setMsg(`❌ ${typeof e === "string" ? e : String(e)}`);
   }
   signLoading = false;
 }
 </script>
 
-<div>
-  <h3>📋 Chain of Custody</h3>
+<div class="coc-tab">
+  <SectionHeader title="Chain of Custody" subtitle="Evidence tracking with Ed25519 signatures" />
 
-  <!-- Evidence ID display -->
   {#if evidenceId}
-    <div class="evidence-banner">
-      <span class="evidence-label">Evidence ID:</span>
-      <span class="evidence-value">{evidenceId}</span>
-    </div>
+    <MacCard title="Evidence ID">
+      <code class="evidence-id">{evidenceId}</code>
+      {#if linkedCaseId}<p class="case-link">Case: <code>{linkedCaseId}</code></p>{/if}
+    </MacCard>
   {/if}
 
-  <!-- QR Code placeholder -->
   {#if evidenceId}
-    <div class="qr-section">
-      <div class="qr-box">
-        <div class="qr-ascii">
-          <span class="qr-label">QR</span>
-          <pre class="qr-art">
-███████████████████████
-██                 ██
-██  ████  ██  ████  ██
-██  ████  ██  ████  ██
-██  ████  ██  ████  ██
-██                 ██
-███████████████████████
-          </pre>
-        </div>
-        <div class="qr-id">
-          <span class="qr-id-label">Evidence ID</span>
-          <span class="qr-id-value">{evidenceId}</span>
-        </div>
+    <MacCard title="QR Label">
+      <div class="qr-wrap">
+        {#if qrDataUrl}
+          <img class="qr-img" src={qrDataUrl} alt="Evidence QR label for {evidenceId}" />
+        {:else}
+          <span class="qr-loading">Generating QR…</span>
+        {/if}
+        <span class="qr-id">{evidenceId}</span>
       </div>
-    </div>
+    </MacCard>
   {/if}
 
-  <div class="row"><label>Case: <input type="text" bind:value={caseName} /></label></div>
-  <div class="row"><label>Operator: <input type="text" bind:value={operator} /></label></div>
-  <div class="row"><label>Source Device: <input type="text" bind:value={device} placeholder="/dev/sda" /></label></div>
-  
-  {#if !evidenceId}
-    <button onclick={createCoc} class="btn-primary" disabled={!caseName||!device}>📋 Create Chain of Custody</button>
+  <MacCard title="Case Details">
+    <div class="field"><label for="coc-title">Case Title</label><input id="coc-title" type="text" bind:value={caseName} /></div>
+    <div class="field"><label for="coc-operator">Operator</label><input id="coc-operator" type="text" bind:value={operator} /></div>
+    <div class="field"><label for="coc-tz">Timezone</label><input id="coc-tz" type="text" bind:value={timezone} /></div>
+    <div class="field"><label for="coc-device">Source Device</label><input id="coc-device" type="text" bind:value={device} placeholder="/dev/disk2" /></div>
+  </MacCard>
+
+  {#if !linkedCaseId}
+    <button onclick={createCoc} class="btn-primary" disabled={!caseName || !device || busy}>
+      Create Chain of Custody
+    </button>
   {:else}
-    <div class="evidence-id">Evidence ID: <strong>{evidenceId}</strong></div>
-    
-    <div class="actions-log">
-      <h4>Action Log</h4>
-      {#each actions as a, i}
+    <MacCard title="Action Log">
+      {#each actions as a}
         <div class="log-entry">
           <span class="time">{a.timestamp}</span>
           <span class="action">{a.action}</span>
           <span class="detail">{a.details}</span>
         </div>
       {/each}
-    </div>
+    </MacCard>
 
-    <div class="add-action">
-      <input type="text" placeholder="Action (e.g. imaging_start)" id="newAction" />
-      <input type="text" placeholder="Details" id="newDetails" />
-      <button onclick={() => { let a=document.getElementById('newAction').value; let d=document.getElementById('newDetails').value; addAction(a,d); }} class="btn-sm">+ Add</button>
-    </div>
-
-    <div class="btn-row">
-      <button onclick={generatePdf} class="btn-primary">📄 Generate PDF Report</button>
-      <button onclick={signCoc} class="btn-sign" disabled={signLoading || !evidenceId}>
-        {signLoading ? "⏳ Signing..." : "✍️ Sign with Ed25519"}
-      </button>
+    <div class="actions">
+      <button onclick={() => addAction("Imaging started", device)} class="btn-sm">Log Imaging</button>
+      <button onclick={() => addAction("Transferred", "Secure storage")} class="btn-sm">Log Transfer</button>
+      <button onclick={generatePdf} class="btn-sm">Generate PDF</button>
+      <button onclick={signCoc} class="btn-sm" disabled={signLoading}>{signLoading ? "Signing…" : "Sign CoC"}</button>
     </div>
 
     {#if signature}
-      <div class="signature-section">
-        <div class="sig-row">
-          <span class="sig-label">Signature</span>
-          <code class="sig-value">{signature}</code>
-        </div>
-        {#if publicKey}
-          <div class="sig-row">
-            <span class="sig-label">Public Key</span>
-            <code class="sig-value">{publicKey}</code>
-          </div>
-        {/if}
-      </div>
+      <MacCard title="Signature">
+        <div class="sig-row"><span>Signature</span><code>{signature.slice(0, 48)}…</code></div>
+        {#if publicKey}<div class="sig-row"><span>Public Key</span><code>{publicKey.slice(0, 48)}…</code></div>{/if}
+      </MacCard>
     {/if}
   {/if}
 
-  <!-- GuideCard -->
-  <div style="margin-top:16px">
-    <GuideCard title={snapshotGuide.title} icon={snapshotGuide.icon} steps={snapshotGuide.steps} references={snapshotGuide.references} />
-  </div>
+  <GuideCard title={snapshotGuide.title} icon={snapshotGuide.icon} steps={snapshotGuide.steps} references={snapshotGuide.references} />
 </div>
 
 <style>
-h3 { margin:0 0 16px; font-size:16px; }
-
-.evidence-banner {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  background: rgba(34,197,94,0.08);
-  border: 1px solid var(--success);
-  border-radius: 8px;
-  margin-bottom: 12px;
-}
-.evidence-label {
-  font-size: 11px;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-.evidence-value {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--success);
-  font-family: var(--mono, monospace);
-}
-
-.qr-section {
-  margin-bottom: 16px;
-}
-.qr-box {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 12px;
-  background: #111;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-}
-.qr-ascii {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-.qr-label {
-  font-size: 10px;
-  color: var(--text-secondary);
-  margin-bottom: 4px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-.qr-art {
-  margin: 0;
-  font-size: 6px;
-  line-height: 1.1;
-  color: #22c55e;
-  font-family: monospace;
-}
-.qr-id {
-  margin-top: 8px;
-  text-align: center;
-}
-.qr-id-label {
-  display: block;
-  font-size: 9px;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-.qr-id-value {
-  font-size: 11px;
-  font-weight: 600;
-  color: #e0e0e0;
-  font-family: var(--mono, monospace);
-}
-
-.row { margin-bottom:10px; }
-label { font-size:13px; display:flex; align-items:center; gap:6px; }
-input { background:#1a1a1a; color:#e0e0e0; border:1px solid var(--border); border-radius:6px; padding:6px 10px; width:300px; }
-.btn-primary { padding:10px 24px; background:var(--primary); color:white; border:none; border-radius:8px; cursor:pointer; font-weight:600; }
-.btn-primary:disabled { opacity:0.5; }
-.btn-sm { padding:4px 10px; background:var(--border); color:#e0e0e0; border:none; border-radius:4px; cursor:pointer; font-size:11px; }
-.evidence-id { padding:10px; background:#1a2e1a; border:1px solid var(--success); border-radius:8px; margin:12px 0; }
-.actions-log { margin:16px 0; max-height:200px; overflow-y:auto; }
-h4 { font-size:13px; margin:0 0 8px; }
-.log-entry { display:flex; gap:10px; padding:4px 0; font-size:11px; border-bottom:1px solid var(--border); }
-.time { color:var(--text-secondary); white-space:nowrap; }
-.action { font-weight:600; min-width:120px; }
-.add-action { display:flex; gap:6px; margin-top:10px; }
-.add-action input { width:150px; }
-
-.btn-row {
-  display: flex;
-  gap: 10px;
-  margin-top: 16px;
-  flex-wrap: wrap;
-}
-.btn-sign {
-  padding: 10px 24px;
-  background: rgba(34,197,94,0.15);
-  color: #22c55e;
-  border: 1px solid #22c55e;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 13px;
-  transition: background 0.15s;
-}
-.btn-sign:hover:not(:disabled) {
-  background: rgba(34,197,94,0.25);
-}
-.btn-sign:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
-.signature-section {
-  margin-top: 14px;
-  padding: 12px;
-  background: #1a1a1a;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-}
-.sig-row {
-  margin-bottom: 8px;
-}
-.sig-row:last-child {
-  margin-bottom: 0;
-}
-.sig-label {
-  display: block;
-  font-size: 10px;
-  color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-bottom: 2px;
-}
-.sig-value {
-  display: block;
-  font-size: 11px;
-  color: #22c55e;
-  font-family: var(--mono, monospace);
-  word-break: break-all;
-  padding: 4px 8px;
-  background: #111;
-  border-radius: 4px;
-  line-height: 1.4;
-}
+  .coc-tab { max-width: 640px; }
+  .evidence-id { font-family: var(--mono); font-size: 14px; color: var(--primary); }
+  .case-link { margin: 8px 0 0; font-size: 12px; color: var(--text-secondary); }
+  .qr-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .qr-img { width: 160px; height: 160px; image-rendering: pixelated; border-radius: 8px; border: 1px solid var(--border); background: white; padding: 8px; }
+  .qr-loading { font-size: 12px; color: var(--text-muted); }
+  .qr-id { font-family: var(--mono); font-size: 11px; color: var(--text-secondary); }
+  .field { margin-bottom: 10px; }
+  .field label { display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+  .field input { width: 100%; background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; color: var(--text); font-size: 13px; }
+  .btn-primary { padding: 10px 24px; background: var(--primary); color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; margin-bottom: 16px; }
+  .btn-primary:disabled { opacity: 0.5; }
+  .btn-sm { padding: 6px 12px; background: var(--btn-secondary-bg); border: 1px solid var(--border); border-radius: 6px; color: var(--btn-secondary-text); cursor: pointer; font-size: 12px; margin-right: 6px; }
+  .actions { margin: 12px 0; }
+  .log-entry { display: flex; gap: 10px; font-size: 11px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .time { color: var(--text-muted); font-family: var(--mono); }
+  .action { font-weight: 600; }
+  .detail { color: var(--text-secondary); }
+  .sig-row { display: flex; gap: 10px; font-size: 11px; margin-bottom: 6px; }
+  .sig-row span { color: var(--text-muted); min-width: 80px; }
+  code { font-family: var(--mono); word-break: break-all; }
 </style>

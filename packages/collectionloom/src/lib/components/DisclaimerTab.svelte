@@ -1,5 +1,5 @@
 <script>
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "../api/tauri.js";
 let info = $state({ features: [], appName: "CollectionLoom" });
 let loaded = $state(false);
 

@@ -1,0 +1,178 @@
+//! File-based case and snapshot storage
+
+use crate::models::{Case, DiffResult, HashManifest, SnapshotMeta, SCHEMA_VERSION};
+use std::fs;
+use std::path::{Path, PathBuf};
+
+pub fn cases_root() -> PathBuf {
+    dirs::home_dir()
+        .unwrap_or_else(|| PathBuf::from("/tmp"))
+        .join("CollectionLoom")
+        .join("cases")
+}
+
+pub fn case_dir(case_id: &str) -> PathBuf {
+    cases_root().join(case_id)
+}
+
+pub fn ensure_case_dirs(case_id: &str) -> Result<PathBuf, String> {
+    let root = case_dir(case_id);
+    for sub in ["snapshots", "diffs", "exports"] {
+        fs::create_dir_all(root.join(sub)).map_err(|e| e.to_string())?;
+    }
+    Ok(root)
+}
+
+pub fn write_case(case: &Case) -> Result<PathBuf, String> {
+    let dir = ensure_case_dirs(&case.case_id)?;
+    let path = dir.join("case.json");
+    let json = serde_json::to_string_pretty(case).map_err(|e| e.to_string())?;
+    fs::write(&path, json).map_err(|e| e.to_string())?;
+    Ok(path)
+}
+
+pub fn read_case(case_id: &str) -> Result<Case, String> {
+    let path = case_dir(case_id).join("case.json");
+    let data = fs::read_to_string(&path).map_err(|e| format!("Case not found: {e}"))?;
+    serde_json::from_str(&data).map_err(|e| e.to_string())
+}
+
+pub fn list_cases() -> Result<Vec<Case>, String> {
+    fs::create_dir_all(cases_root()).map_err(|e| e.to_string())?;
+    let mut cases = Vec::new();
+    for entry in fs::read_dir(cases_root()).map_err(|e| e.to_string())? {
+        let entry = entry.map_err(|e| e.to_string())?;
+        if entry.file_type().map_err(|e| e.to_string())?.is_dir() {
+            let case_path = entry.path().join("case.json");
+            if case_path.exists() {
+                if let Ok(data) = fs::read_to_string(&case_path) {
+                    if let Ok(case) = serde_json::from_str::<Case>(&data) {
+                        cases.push(case);
+                    }
+                }
+            }
+        }
+    }
+    cases.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+    Ok(cases)
+}
+
+pub fn snapshot_dir(case_id: &str, snapshot_id: &str) -> PathBuf {
+    case_dir(case_id).join("snapshots").join(snapshot_id)
+}
+
+pub fn write_snapshot_meta(meta: &SnapshotMeta) -> Result<PathBuf, String> {
+    let dir = snapshot_dir(&meta.case_id, &meta.snapshot_id);
+    fs::create_dir_all(dir.join("artifacts")).map_err(|e| e.to_string())?;
+    let path = dir.join("snapshot_meta.json");
+    let json = serde_json::to_string_pretty(meta).map_err(|e| e.to_string())?;
+    fs::write(&path, json).map_err(|e| e.to_string())?;
+    Ok(path)
+}
+
+pub fn read_snapshot_meta(case_id: &str, snapshot_id: &str) -> Result<SnapshotMeta, String> {
+    let path = snapshot_dir(case_id, snapshot_id).join("snapshot_meta.json");
+    let data = fs::read_to_string(&path).map_err(|e| e.to_string())?;
+    serde_json::from_str(&data).map_err(|e| e.to_string())
+}
+
+pub fn list_snapshots(case_id: &str) -> Result<Vec<SnapshotMeta>, String> {
+    let dir = case_dir(case_id).join("snapshots");
+    if !dir.exists() {
+        return Ok(vec![]);
+    }
+    let mut snaps = Vec::new();
+    for entry in fs::read_dir(&dir).map_err(|e| e.to_string())? {
+        let entry = entry.map_err(|e| e.to_string())?;
+        if entry.file_type().map_err(|e| e.to_string())?.is_dir() {
+            let meta_path = entry.path().join("snapshot_meta.json");
+            if meta_path.exists() {
+                if let Ok(data) = fs::read_to_string(&meta_path) {
+                    if let Ok(meta) = serde_json::from_str::<SnapshotMeta>(&data) {
+                        snaps.push(meta);
+                    }
+                }
+            }
+        }
+    }
+    snaps.sort_by(|a, b| b.started_at.cmp(&a.started_at));
+    Ok(snaps)
+}
+
+pub fn write_hash_manifest(case_id: &str, snapshot_id: &str, manifest: &HashManifest) -> Result<PathBuf, String> {
+    let path = snapshot_dir(case_id, snapshot_id).join("hash_manifest.json");
+    let json = serde_json::to_string_pretty(manifest).map_err(|e| e.to_string())?;
+    fs::write(&path, json).map_err(|e| e.to_string())?;
+    Ok(path)
+}
+
+pub fn read_hash_manifest(case_id: &str, snapshot_id: &str) -> Result<HashManifest, String> {
+    let path = snapshot_dir(case_id, snapshot_id).join("hash_manifest.json");
+    let data = fs::read_to_string(&path).map_err(|e| e.to_string())?;
+    serde_json::from_str(&data).map_err(|e| e.to_string())
+}
+
+pub fn write_diff(case_id: &str, diff: &DiffResult) -> Result<PathBuf, String> {
+    let filename = format!("{}_vs_{}.json", diff.snapshot_a_id, diff.snapshot_b_id);
+    let path = case_dir(case_id).join("diffs").join(&filename);
+    fs::create_dir_all(path.parent().unwrap()).map_err(|e| e.to_string())?;
+    let json = serde_json::to_string_pretty(diff).map_err(|e| e.to_string())?;
+    fs::write(&path, json).map_err(|e| e.to_string())?;
+    Ok(path)
+}
+
+pub fn list_diffs(case_id: &str) -> Result<Vec<DiffResult>, String> {
+    let dir = case_dir(case_id).join("diffs");
+    if !dir.exists() {
+        return Ok(vec![]);
+    }
+    let mut diffs = Vec::new();
+    for entry in fs::read_dir(&dir).map_err(|e| e.to_string())? {
+        let entry = entry.map_err(|e| e.to_string())?;
+        if entry.path().extension().and_then(|e| e.to_str()) == Some("json") {
+            if let Ok(data) = fs::read_to_string(entry.path()) {
+                if let Ok(diff) = serde_json::from_str::<DiffResult>(&data) {
+                    diffs.push(diff);
+                }
+            }
+        }
+    }
+    Ok(diffs)
+}
+
+pub fn exports_dir(case_id: &str) -> PathBuf {
+    case_dir(case_id).join("exports")
+}
+
+pub fn sha256_file(path: &Path) -> Result<String, String> {
+    use sha2::{Digest, Sha256};
+    use std::io::Read;
+    let mut file = fs::File::open(path).map_err(|e| e.to_string())?;
+    let mut hasher = Sha256::new();
+    let mut buf = [0u8; 8192];
+    loop {
+        let n = file.read(&mut buf).map_err(|e| e.to_string())?;
+        if n == 0 {
+            break;
+        }
+        hasher.update(&buf[..n]);
+    }
+    Ok(format!("{:x}", hasher.finalize()))
+}
+
+pub fn sha256_bytes(data: &[u8]) -> String {
+    use sha2::{Digest, Sha256};
+    format!("{:x}", Sha256::digest(data))
+}
+
+pub fn new_case_id() -> String {
+    uuid::Uuid::new_v4().to_string()
+}
+
+pub fn new_snapshot_id() -> String {
+    uuid::Uuid::new_v4().to_string()
+}
+
+pub fn validate_schema_version(v: &str) -> bool {
+    v == SCHEMA_VERSION
+}

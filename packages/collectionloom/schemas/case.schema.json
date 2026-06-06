@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://collectionloom.local/schemas/case.schema.json",
+  "title": "CollectionLoom Case",
+  "description": "Metadata dan status untuk satu case CollectionLoom",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "case_id",
+    "title",
+    "operator",
+    "created_at",
+    "timezone",
+    "status"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0",
+      "description": "Versi schema untuk backward compatibility"
+    },
+    "case_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "UUID atau identifier unik case"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Nama/identitas singkat case"
+    },
+    "description": {
+      "type": "string",
+      "description": "Deskripsi lebih detail tujuan case"
+    },
+    "operator": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string", "description": "Nama investigator" },
+        "badge_id": { "type": "string", "description": "ID/staf internal" },
+        "email": { "type": "string", "format": "email" }
+      },
+      "additionalProperties": false
+    },
+    "purpose": {
+      "type": "string",
+      "description": "Tujuan collection (misal: initial triage, post-containment review)"
+    },
+    "timezone": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Timezone operator (contoh: Asia/Jakarta)"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp ISO 8601 saat case dibuat"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp ISO 8601 update terakhir"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["open", "in_review", "closed", "archived"],
+      "description": "Status lifecycle case"
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "uniqueItems": true,
+      "description": "Label bebas untuk kategorisasi"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Catatan investigator"
+    }
+  },
+  "additionalProperties": false
+}

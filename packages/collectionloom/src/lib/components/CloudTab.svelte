@@ -1,5 +1,5 @@
 <script>
-  import { invoke } from "@tauri-apps/api/core";
+  import { invoke } from "../api/tauri.js";
   import GuideCard from "./GuideCard.svelte";
   import { cloudEvidenceGuide } from "../guides.js";
 
@@ -167,7 +167,7 @@
   .row { margin-bottom:10px; }
   label { font-size:13px; display:flex; align-items:center; gap:6px; }
   input, select {
-    background:#1a1a1a; color:#e0e0e0; border:1px solid var(--border);
+    background: var(--input-bg); color: var(--text); border:1px solid var(--border);
     border-radius:6px; padding:6px 10px; width:320px; font-size:13px;
   }
   input:disabled, select:disabled { opacity: 0.5; }
@@ -192,7 +192,7 @@
   .snap-label { color:var(--text-muted); }
   .snap-value { font-family:var(--mono); color:var(--primary); font-weight:600; }
   .raw-response {
-    margin-top:12px; padding:10px; background:#0a0a0a; border:1px solid var(--border);
+    margin-top:12px; padding:10px; background: var(--code-bg); border:1px solid var(--border);
     border-radius:6px; font-size:11px; font-family: var(--mono); max-height:300px;
     overflow:auto; white-space:pre-wrap; word-break:break-all; color: var(--text-secondary);
   }

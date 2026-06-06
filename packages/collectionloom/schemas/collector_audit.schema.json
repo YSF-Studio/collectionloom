@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://collectionloom.local/schemas/collector_audit.schema.json",
+  "title": "CollectionLoom Collector Audit Log",
+  "description": "Audit trail per collector module untuk satu snapshot",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "snapshot_id",
+    "entries"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "snapshot_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["timestamp", "module", "action", "status"],
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "module": {
+            "type": "string",
+            "description": "Nama collector module (system, process, network, dll)"
+          },
+          "action": {
+            "type": "string",
+            "description": "Aksi yang dilakukan (start_collection, finish_collection, error, skip)"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["started", "success", "partial", "error", "skipped"]
+          },
+          "message": { "type": "string", "description": "Detail pesan/diagnostic" },
+          "duration_ms": { "type": "number" },
+          "items_count": { "type": "integer" },
+          "error_detail": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

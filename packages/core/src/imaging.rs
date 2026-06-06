@@ -5,6 +5,8 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::Ordering;
 use sha2::Digest;
 
+use crate::imaging_format::ImageFormat;
+
 #[derive(Debug, Clone, Serialize, PartialEq)]
 pub enum AcquisitionState {
     Idle,
@@ -63,10 +65,96 @@ impl DiskInfo {
         Ok(disks)
     }
 
-    #[cfg(not(target_os = "linux"))]
+    #[cfg(target_os = "macos")]
     pub fn list() -> Result<Vec<Self>, String> {
-        Ok(vec![]) // Placeholder for other platforms
+        use std::process::Command;
+        let output = Command::new("diskutil")
+            .args(["list", "external", "physical"])
+            .output()
+            .map_err(|e| e.to_string())?;
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        let mut disks = vec![];
+        let mut current: Option<(String, String)> = None;
+
+        for line in stdout.lines() {
+            let trimmed = line.trim();
+            if trimmed.starts_with("/dev/disk") {
+                if let Some((device, size_hint)) = current.take() {
+                    if let Ok(info) = disk_info_macos(&device) {
+                        disks.push(info);
+                    } else {
+                        disks.push(DiskInfo {
+                            device,
+                            model: size_hint,
+                            size_bytes: 0,
+                            sector_size: 512,
+                            is_ssd: true,
+                            partitions: vec![],
+                        });
+                    }
+                }
+                let parts: Vec<&str> = trimmed.split(':').collect();
+                let device = parts[0].trim().to_string();
+                let hint = parts.get(1).unwrap_or(&"").trim().to_string();
+                current = Some((device, hint));
+            }
+        }
+        if let Some((device, size_hint)) = current {
+            if let Ok(info) = disk_info_macos(&device) {
+                disks.push(info);
+            } else {
+                disks.push(DiskInfo {
+                    device,
+                    model: size_hint,
+                    size_bytes: 0,
+                    sector_size: 512,
+                    is_ssd: true,
+                    partitions: vec![],
+                });
+            }
+        }
+        Ok(disks)
     }
+
+    #[cfg(not(any(target_os = "linux", target_os = "macos")))]
+    pub fn list() -> Result<Vec<Self>, String> {
+        Ok(vec![])
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn disk_info_macos(device: &str) -> Result<DiskInfo, String> {
+    use std::process::Command;
+    let output = Command::new("diskutil")
+        .args(["info", "-plist", device])
+        .output()
+        .map_err(|e| e.to_string())?;
+    let plist = String::from_utf8_lossy(&output.stdout);
+    let size = plist
+        .lines()
+        .skip_while(|l| !l.contains("TotalSize"))
+        .nth(1)
+        .and_then(|l| l.trim().trim_start_matches("<integer>").trim_end_matches("</integer>").parse().ok())
+        .unwrap_or(0);
+    let model = plist
+        .lines()
+        .skip_while(|l| !l.contains("MediaName"))
+        .nth(1)
+        .map(|l| {
+            l.trim()
+                .trim_start_matches("<string>")
+                .trim_end_matches("</string>")
+                .to_string()
+        })
+        .unwrap_or_else(|| "Unknown".into());
+    Ok(DiskInfo {
+        device: device.to_string(),
+        model,
+        size_bytes: size,
+        sector_size: 512,
+        is_ssd: true,
+        partitions: vec![],
+    })
 }
 
 fn parse_size(s: &str) -> u64 {
@@ -83,15 +171,37 @@ pub struct DiskImager {
     pub destination: PathBuf,
     pub split_size: Option<u64>,
     pub verify: bool,
+    pub format: ImageFormat,
 }
 
 impl DiskImager {
     pub fn new(source: &str, dest: &Path) -> Self {
-        Self { source: source.to_string(), destination: dest.to_path_buf(), split_size: None, verify: true }
+        Self {
+            source: source.to_string(),
+            destination: dest.to_path_buf(),
+            split_size: None,
+            verify: true,
+            format: ImageFormat::Raw,
+        }
     }
 
-    /// Stream entire disk with 256KB buffers — handles 5TB+ drives
     pub fn run(&self, cancel_flag: &std::sync::atomic::AtomicBool) -> Result<String, String> {
+        match self.format {
+            ImageFormat::E01 => {
+                crate::imaging_format::acquire_e01(&self.source, &self.destination, cancel_flag)
+            }
+            ImageFormat::Aff4 => crate::imaging_format::acquire_aff4(
+                &self.source,
+                &self.destination,
+                self.split_size,
+                self.verify,
+                cancel_flag,
+            ),
+            ImageFormat::Raw => self.run_raw(cancel_flag),
+        }
+    }
+
+    fn run_raw(&self, cancel_flag: &std::sync::atomic::AtomicBool) -> Result<String, String> {
         let src = File::open(&self.source)
             .map_err(|e| format!("Cannot open source {}: {}", self.source, e))?;
         let src_size = src.metadata().map_err(|e| e.to_string())?.len();
@@ -157,6 +267,17 @@ impl DiskImager {
         }
 
         let hash = format!("{:x}", hasher.finalize());
+
+        if self.verify {
+            super::progress::update_progress(99.0, "Verifying image hash…", total_written, src_size);
+            let verify_hash = crate::imaging_format::hash_file_sha256(&self.destination)?;
+            if verify_hash != hash {
+                return Err(format!(
+                    "Verify failed: stream hash {hash} != file hash {verify_hash}"
+                ));
+            }
+        }
+
         super::progress::finish_progress(Ok(hash.clone()));
         Ok(hash)
     }

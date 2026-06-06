@@ -1,0 +1,110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://collectionloom.local/schemas/snapshot_meta.schema.json",
+  "title": "CollectionLoom Snapshot Metadata",
+  "description": "Metadata satu eksekusi snapshot CollectionLoom",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "snapshot_id",
+    "case_id",
+    "host",
+    "os",
+    "profile",
+    "collector_version",
+    "started_at",
+    "completed_at",
+    "status",
+    "integrity_hash"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "snapshot_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "UUID snapshot"
+    },
+    "case_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "UUID case induk"
+    },
+    "host": {
+      "type": "object",
+      "required": ["hostname"],
+      "properties": {
+        "hostname": { "type": "string" },
+        "fqdn": { "type": "string" },
+        "domain": { "type": "string" },
+        "machine_id": { "type": "string", "description": "OS-level unique ID" }
+      },
+      "additionalProperties": false
+    },
+    "os": {
+      "type": "object",
+      "required": ["family", "version"],
+      "properties": {
+        "family": { "type": "string", "enum": ["windows", "macos", "linux"] },
+        "version": { "type": "string" },
+        "kernel": { "type": "string" },
+        "arch": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "profile": {
+      "type": "string",
+      "description": "Nama capture profile yang digunakan"
+    },
+    "collector_version": {
+      "type": "string",
+      "description": "Versi CollectionLoom saat snapshot"
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "duration_seconds": {
+      "type": "number",
+      "description": "Durasi total snapshot dalam detik"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["completed", "partial", "failed"],
+      "description": "Status keseluruhan snapshot"
+    },
+    "modules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "status"],
+        "properties": {
+          "name": { "type": "string" },
+          "status": {
+            "type": "string",
+            "enum": ["success", "partial", "skipped", "error"]
+          },
+          "duration_ms": { "type": "number" },
+          "error": { "type": "string" },
+          "items_count": { "type": "integer" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "integrity_hash": {
+      "type": "string",
+      "description": "SHA-256 dari hash_manifest.json (verifikasi integritas)"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Catatan investigator"
+    }
+  },
+  "additionalProperties": false
+}

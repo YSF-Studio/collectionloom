@@ -213,7 +213,7 @@ export const writeBlockerGuide = {
     {
       title: "Connect and enable the device",
       description:
-        "Connect the source drive to the write blocker, then power on the blocker before connecting to the workstation. Confirm the LED indicator shows 'Protected' / 'Read-Only'. On Linux, run `hdparm -r /dev/sdX` and verify the read-only flag is set to `1`.",
+        "Connect the source drive to the write blocker, then power on the blocker before connecting to the workstation. Confirm the LED indicator shows 'Protected' / 'Read-Only'. CollectionLoom auto-detects Tableau/WiebeTech USB blockers and shows a green badge in the titlebar. On Linux, click Enable to set BLKROSET, or run `hdparm -r /dev/sdX` and verify read-only is `1`. On macOS, click Enable to unmount all volumes on the disk (`diskutil unmountDisk force`) before imaging via `/dev/rdiskN`.",
     },
     {
       title: "Verify read-only state before imaging",

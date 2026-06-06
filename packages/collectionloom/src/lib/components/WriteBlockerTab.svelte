@@ -1,5 +1,5 @@
 <script>
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "../api/tauri.js";
 import GuideCard from "./GuideCard.svelte";
 import { writeBlockerGuide } from "../guides.js";
 let { sharedState, busy, setBusy, setMsg, timeoutPromise } = $props();
@@ -21,19 +21,22 @@ $effect(() => {
   else blockerMethod = "Unknown";
 });
 
+let blockerNotes = $state("");
+
 async function checkBlockerStatus() {
   try {
     const r = await timeoutPromise(invoke("check_write_blocker", { device }), 5000);
     if (r && typeof r === "object") {
-      enabled = !!r.enabled;
-      status = r.enabled ? "Enabled" : "Disabled";
-      if (r.method) blockerMethod = r.method;
-    } else if (typeof r === "string") {
-      enabled = r.toLowerCase().includes("enabled") || r.toLowerCase().includes("active");
+      enabled = !!(r.active ?? r.enabled);
       status = enabled ? "Enabled" : "Disabled";
+      if (r.method) blockerMethod = r.method;
+      if (r.notes) blockerNotes = r.notes;
+    } else if (typeof r === "boolean") {
+      enabled = r;
+      status = r ? "Enabled" : "Disabled";
     }
-  } catch(e) {
-    // Non-fatal
+  } catch {
+    /* non-fatal */
   }
 }
 
@@ -76,7 +79,11 @@ async function disable() {
   <div class="actions">
     <button onclick={enable} class="btn-primary" disabled={busy||!device}>🛡️ Enable</button>
     <button onclick={disable} class="btn-danger" disabled={busy||!enabled}>🔓 Disable</button>
+    <button onclick={checkBlockerStatus} class="btn-sm" disabled={busy||!device}>Refresh</button>
   </div>
+  {#if blockerNotes}
+    <p class="note">{blockerNotes}</p>
+  {/if}
   <p class="note">Platform: {platform}</p>
 
   <GuideCard title={writeBlockerGuide.title} icon={writeBlockerGuide.icon} steps={writeBlockerGuide.steps} references={writeBlockerGuide.references} />
@@ -85,7 +92,7 @@ async function disable() {
 <style>
 h3 { margin: 0 0 16px; font-size: 16px; }
 .row { margin-bottom: 12px; }
-input { background: #1a1a1a; color: #e0e0e0; border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; width: 300px; }
+input { background: var(--input-bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; width: 300px; }
 .status { padding: 10px; border-radius: 8px; font-size: 14px; font-weight: 600; margin: 10px 0; background: rgba(239,68,68,0.1); border: 1px solid var(--danger); color: var(--danger); }
 .status.active { background: rgba(34,197,94,0.1); border: 1px solid var(--success); color: var(--success); }
 .method-info { display: flex; align-items: center; gap: 4px; margin-bottom: 12px; font-size: 12px; }
@@ -97,5 +104,6 @@ input { background: #1a1a1a; color: #e0e0e0; border: 1px solid var(--border); bo
 .btn-primary { background: var(--primary); }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn-danger { background: var(--danger); }
-.note { font-size: 11px; color: var(--text-secondary); margin-top: 20px; }
+.btn-sm { padding: 8px 14px; background: var(--btn-secondary-bg); color: var(--btn-secondary-text); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 12px; }
+.note { font-size: 11px; color: var(--text-secondary); margin-top: 12px; line-height: 1.4; }
 </style>

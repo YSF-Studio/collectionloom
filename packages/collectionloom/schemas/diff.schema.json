@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://collectionloom.local/schemas/diff.schema.json",
+  "title": "CollectionLoom Snapshot Diff",
+  "description": "Hasil perbandingan antara dua snapshot (A vs B)",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "snapshot_a_id",
+    "snapshot_b_id",
+    "compared_at",
+    "domains"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "snapshot_a_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Snapshot baseline (yang lebih lama)"
+    },
+    "snapshot_b_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Snapshot terbaru"
+    },
+    "case_id": {
+      "type": "string",
+      "description": "Case induk (opsional, untuk konteks)"
+    },
+    "compared_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "domains": {
+      "type": "object",
+      "description": "Key adalah nama domain (system, process, network, dll)",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "added": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": { "type": "string", "description": "Unique identifier item" },
+                "value": { "description": "Nilai item di snapshot B" },
+                "severity": {
+                  "type": "string",
+                  "enum": ["info", "low", "medium", "high", "critical"]
+                }
+              },
+              "required": ["key", "value"]
+            }
+          },
+          "removed": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": { "type": "string" },
+                "value": { "description": "Nilai item di snapshot A" },
+                "severity": {
+                  "type": "string",
+                  "enum": ["info", "low", "medium", "high", "critical"]
+                }
+              },
+              "required": ["key", "value"]
+            }
+          },
+          "changed": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": { "type": "string" },
+                "old_value": { "description": "Nilai di snapshot A" },
+                "new_value": { "description": "Nilai di snapshot B" },
+                "severity": {
+                  "type": "string",
+                  "enum": ["info", "low", "medium", "high", "critical"]
+                }
+              },
+              "required": ["key", "old_value", "new_value"]
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "summary": {
+      "type": "object",
+      "properties": {
+        "total_added": { "type": "integer" },
+        "total_removed": { "type": "integer" },
+        "total_changed": { "type": "integer" },
+        "high_priority_changes": { "type": "integer", "description": "Jumlah item dengan severity >= high" },
+        "domains_with_changes": { "type": "integer" }
+      },
+      "required": ["total_added", "total_removed", "total_changed"]
+    }
+  },
+  "additionalProperties": false
+}

@@ -102,11 +102,40 @@ impl ChainOfCustody {
     }
 }
 
-/// Generate QR code PNG for evidence label
+/// Generate QR code PNG for evidence label (scannable).
 pub fn generate_qr_label(evidence_id: &str, device: &str, case: &str) -> Vec<u8> {
-    let text = format!("EID:{}\nDEV:{}\nCASE:{}", evidence_id, device, case);
-    let code = qrcode::QrCode::new(text.as_bytes()).unwrap();
-    let image = code.render::<qrcode::render::unicode::Dense1x2>().build();
-    // Return as simple representation
-    format!("QR Label for {}\n{}", evidence_id, image).into_bytes()
+    use image::{ImageBuffer, Rgb, RgbImage};
+    use qrcode::QrCode;
+
+    let text = format!("EID:{evidence_id}\nDEV:{device}\nCASE:{case}");
+    let code = QrCode::new(text.as_bytes()).expect("valid QR payload");
+    let modules = code.width() as u32;
+    let scale = 8u32;
+    let quiet = 4u32;
+    let size = modules * scale + quiet * 2;
+    let mut img: RgbImage = ImageBuffer::new(size, size);
+
+    for y in 0..modules {
+        for x in 0..modules {
+            let dark = code[(x as usize, y as usize)] == qrcode::Color::Dark;
+            let px = if dark {
+                Rgb([0u8, 0u8, 0u8])
+            } else {
+                Rgb([255u8, 255u8, 255u8])
+            };
+            for dy in 0..scale {
+                for dx in 0..scale {
+                    img.put_pixel(quiet + x * scale + dx, quiet + y * scale + dy, px);
+                }
+            }
+        }
+    }
+
+    let mut buf = Vec::new();
+    img.write_to(
+        &mut std::io::Cursor::new(&mut buf),
+        image::ImageFormat::Png,
+    )
+    .expect("PNG encode");
+    buf
 }

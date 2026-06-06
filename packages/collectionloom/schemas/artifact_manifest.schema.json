@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://collectionloom.local/schemas/artifact_manifest.schema.json",
+  "title": "CollectionLoom Artifact Manifest",
+  "description": "Daftar hash dan metadata seluruh artefak dalam satu snapshot",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "snapshot_id",
+    "manifest_created_at",
+    "entries"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "snapshot_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "manifest_created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["filename", "size_bytes", "sha256", "collected_at"],
+        "properties": {
+          "filename": { "type": "string", "description": "Nama file artefak (relatif terhadap artifacts/)" },
+          "module": { "type": "string", "description": "Collector module yang menghasilkan file ini" },
+          "size_bytes": { "type": "integer", "minimum": 0 },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "collected_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "mime_type": { "type": "string" },
+          "notes": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "total_files": {
+      "type": "integer",
+      "description": "Jumlah total file dalam manifest"
+    },
+    "total_size_bytes": {
+      "type": "integer",
+      "description": "Total ukuran seluruh artefak"
+    }
+  },
+  "additionalProperties": false
+}

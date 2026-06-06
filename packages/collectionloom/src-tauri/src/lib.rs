@@ -1,6 +1,12 @@
 use tauri::Manager;
 
-mod commands;
+pub mod commands;
+pub mod collector;
+pub mod compare;
+pub mod export;
+pub mod models;
+pub mod prd_commands;
+pub mod storage;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -73,6 +79,22 @@ pub fn run() {
             commands::hpa_dco_detect,
             commands::generate_evidence_id,
             commands::compute_file_hash,
+            prd_commands::create_case,
+            prd_commands::list_cases_cmd,
+            prd_commands::get_case,
+            prd_commands::start_snapshot,
+            prd_commands::get_snapshot_progress,
+            prd_commands::list_snapshots_cmd,
+            prd_commands::get_snapshot,
+            prd_commands::compare_snapshots,
+            prd_commands::list_diffs_cmd,
+            prd_commands::export_json,
+            prd_commands::export_markdown,
+            prd_commands::export_zip,
+            prd_commands::list_exports,
+            prd_commands::generate_qr_label,
+            prd_commands::get_capture_packets,
+            prd_commands::get_capture_stats,
         ])
         .run(tauri::generate_context!())
         .expect("error while running CollectionLoom");

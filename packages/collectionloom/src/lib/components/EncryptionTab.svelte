@@ -1,5 +1,5 @@
 <script>
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "../api/tauri.js";
 import GuideCard from "./GuideCard.svelte";
 import { encryptionGuide } from "../guides.js";
 let { sharedState, busy, setBusy, setMsg, timeoutPromise } = $props();
@@ -63,9 +63,9 @@ async function scanNow() {
 <style>
 h3 { margin: 0 0 8px; font-size: 16px; }
 .desc { font-size: 12px; color: var(--text-secondary); margin-bottom: 16px; }
-.card { padding: 12px; border-radius: 8px; margin: 10px 0; border: 1px solid var(--border); background: #1a1a1a; }
-.card.danger { border-color: var(--danger); background: #2e1a1a; }
-.card.success { border-color: var(--success); background: #1a2e1a; }
+.card { padding: 12px; border-radius: 8px; margin: 10px 0; border: 1px solid var(--border); background: var(--input-bg); }
+.card.danger { border-color: var(--danger); background: var(--danger-surface); }
+.card.success { border-color: var(--success); background: var(--success-surface); }
 .card.warn { border-color: var(--warn); }
 h4 { margin: 0 0 6px; font-size: 13px; }
 pre { font-size: 11px; overflow-x: auto; }

@@ -8,6 +8,7 @@ pub mod crypto;
 pub mod evidence;
 pub mod encryption_detect;
 pub mod imaging;
+pub mod imaging_format;
 pub mod write_blocker;
 pub mod ram;
 pub mod mobile;
@@ -26,8 +27,12 @@ pub use hashing::{multi_hash, compute_entropy, check_magic_bytes, HASH_BUFFER_SI
 pub use crypto::{sign_data, verify_signature, generate_keypair, KeypairStore};
 pub use evidence::{EvidenceId, ActionLog, ChainOfCustody, generate_qr_label};
 pub use encryption_detect::{EncryptionReport, FdeType, scan_encryption};
-pub use imaging::{DiskImager, AcquisitionState};
-pub use write_blocker::{enable_write_blocker, disable_write_blocker, check_write_blocker};
+pub use imaging::{DiskImager, AcquisitionState, DiskInfo};
+pub use imaging_format::ImageFormat;
+pub use write_blocker::{
+    enable_write_blocker, disable_write_blocker, check_write_blocker, check_write_blocker_status,
+    WriteBlockerStatus,
+};
 pub use archive::{
     forensic_load, generate_forensic_report, ForensicReport, FileEntry, Anomaly, Threat,
     FORMATS_SUPPORTED,

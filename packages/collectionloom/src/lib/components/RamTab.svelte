@@ -1,5 +1,5 @@
 <script>
-import { invoke } from "@tauri-apps/api/core";
+import { invoke } from "../api/tauri.js";
 import GuideCard from "./GuideCard.svelte";
 import { ramCaptureGuide } from "../guides.js";
 let { sharedState, busy, setBusy, setMsg, timeoutPromise } = $props();
@@ -109,14 +109,14 @@ $effect(() => { listTools(); });
 h3 { margin:0 0 16px; font-size:16px; }
 .info { font-size:12px; color:var(--text-secondary); margin-bottom:10px; }
 .row { display:flex; gap:10px; align-items:center; margin-bottom:12px; }
-select, input { background:#1a1a1a; color:#e0e0e0; border:1px solid var(--border); border-radius:6px; padding:6px 10px; }
+select, input { background: var(--input-bg); color: var(--text); border:1px solid var(--border); border-radius:6px; padding:6px 10px; }
 .actions { display:flex; gap:8px; align-items:center; margin-bottom:12px; }
 .btn-primary { padding:10px 24px; background:var(--primary); color:white; border:none; border-radius:8px; cursor:pointer; font-weight:600; }
 .btn-primary:disabled { opacity:0.5; }
 .btn-sm { padding:5px 10px; background:var(--border); color:#e0e0e0; border:none; border-radius:6px; cursor:pointer; font-size:12px; }
 .btn-sm:disabled { opacity:0.5; cursor:not-allowed; }
-.hash-result { background:#1a1a1a; border:1px solid var(--border); border-radius:6px; padding:8px 12px; font-size:12px; color:var(--primary); margin-bottom:12px; font-family:monospace; }
-.process-section { background:#1a1a1a; border:1px solid var(--border); border-radius:8px; padding:12px; margin-bottom:12px; }
+.hash-result { background: var(--input-bg); border:1px solid var(--border); border-radius:6px; padding:8px 12px; font-size:12px; color:var(--primary); margin-bottom:12px; font-family:monospace; }
+.process-section { background: var(--input-bg); border:1px solid var(--border); border-radius:8px; padding:12px; margin-bottom:12px; }
 .process-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-size:12px; color:var(--text-secondary); }
 .process-list { max-height:200px; overflow-y:auto; }
 .process-item { font-size:11px; padding:4px 0; border-bottom:1px solid var(--border); color:#ccc; font-family:monospace; }

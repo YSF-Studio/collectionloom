@@ -1,17 +1,35 @@
 use std::io::Read;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
-/// Test hash verification with actual files
+fn test_dir() -> PathBuf {
+    std::env::var("COLLECTIONLOOM_TEST_DIR")
+        .map(PathBuf::from)
+        .unwrap_or_else(|_| {
+            PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../test-fixtures")
+        })
+}
+
+fn ensure_binary_fixtures(dir: &Path) {
+    let evidence = dir.join("evidence.dd");
+    if !evidence.exists() {
+        let mut data = vec![0u8; 10 * 1024 * 1024];
+        for (i, b) in data.iter_mut().enumerate() {
+            *b = ((i * 7919 + 104729) & 0xff) as u8;
+        }
+        std::fs::write(&evidence, &data).expect("write evidence.dd");
+    }
+    let raw = dir.join("raw_evidence.bin");
+    if !raw.exists() {
+        std::fs::write(&raw, vec![0u8; 4096]).expect("write raw_evidence.bin");
+    }
+}
+
 #[test]
 fn test_hash_verification_with_real_files() {
-    let test_dir = "/tmp/collectionloom-test";
+    let test_dir = test_dir();
+    ensure_binary_fixtures(&test_dir);
 
-    // SHA-256 test — known value
-    let data = b"VERIFICATION TARGET";
-    let hashes = ysf_core::hashing::multi_hash_buffer(data);
-
-    // Read the file and hash it
-    let path = format!("{}/verify_me.txt", test_dir);
+    let path = test_dir.join("verify_me.txt");
     let mut file = std::fs::File::open(&path).expect("Cannot open verify_me.txt");
     let mut contents = String::new();
     file.read_to_string(&mut contents).expect("Read error");
@@ -20,8 +38,7 @@ fn test_hash_verification_with_real_files() {
 
     let sha256_actual = hashes2.sha256.expect("SHA-256 should produce a hash");
 
-    // Verify against expected
-    let expected_path = format!("{}/expected.sha256", test_dir);
+    let expected_path = test_dir.join("expected.sha256");
     let mut expected_file =
         std::fs::File::open(&expected_path).expect("Cannot open expected.sha256");
     let mut expected_content = String::new();
@@ -41,20 +58,16 @@ fn test_hash_verification_with_real_files() {
         sha256_actual,
         expected_hash
     );
-
-    println!(
-        "✅ SHA-256 Verification PASSED: {} matches {}",
-        sha256_actual, expected_hash
-    );
 }
 
-/// Test multi-hash with a large (10MB) disk image
 #[test]
 fn test_disk_image_hashing() {
-    let path = "/tmp/collectionloom-test/evidence.dd";
-    assert!(Path::new(path).exists(), "evidence.dd should exist");
+    let test_dir = test_dir();
+    ensure_binary_fixtures(&test_dir);
+    let path = test_dir.join("evidence.dd");
+    assert!(path.exists(), "evidence.dd should exist");
 
-    let mut file = std::fs::File::open(path).expect("Cannot open evidence.dd");
+    let mut file = std::fs::File::open(&path).expect("Cannot open evidence.dd");
     let mut data = Vec::new();
     file.read_to_end(&mut data).expect("Read error");
 
@@ -62,128 +75,78 @@ fn test_disk_image_hashing() {
 
     let hashes = ysf_core::hashing::multi_hash_buffer(&data);
 
-    assert!(
-        hashes.sha256.is_some(),
-        "SHA-256 should be computed for 10MB file"
-    );
-    assert!(
-        hashes.sha1.is_some(),
-        "SHA-1 should be computed for 10MB file"
-    );
-    assert!(hashes.md5.is_some(), "MD5 should be computed for 10MB file");
-
-    println!("✅ Disk Image Hashing PASSED:");
-    println!("   SHA-256: {}", hashes.sha256.unwrap());
-    println!("   SHA-1:   {}", hashes.sha1.unwrap());
-    println!("   MD5:     {}", hashes.md5.unwrap());
+    assert!(hashes.sha256.is_some());
+    assert!(hashes.sha1.is_some());
+    assert!(hashes.md5.is_some());
 }
 
-/// Test hash consistency — same file should produce same hash
 #[test]
 fn test_hash_consistency() {
     let data1 = b"FORENSIC EVIDENCE - CASE #001";
     let data2 = b"FORENSIC EVIDENCE - CASE #002";
-    let data3 = b"FORENSIC EVIDENCE - CASE #001"; // same as data1
+    let data3 = b"FORENSIC EVIDENCE - CASE #001";
 
     let h1 = ysf_core::hashing::multi_hash_buffer(data1);
     let h2 = ysf_core::hashing::multi_hash_buffer(data2);
     let h3 = ysf_core::hashing::multi_hash_buffer(data3);
 
-    // Same content → same hash
-    assert_eq!(
-        h1.sha256, h3.sha256,
-        "Same content should produce same SHA-256"
-    );
-    assert_eq!(h1.sha1, h3.sha1, "Same content should produce same SHA-1");
-    assert_eq!(h1.md5, h3.md5, "Same content should produce same MD5");
-
-    // Different content → different hash
-    assert_ne!(
-        h1.sha256, h2.sha256,
-        "Different content should produce different SHA-256"
-    );
-
-    println!("✅ Hash Consistency PASSED — same content → same hash, different → different");
+    assert_eq!(h1.sha256, h3.sha256);
+    assert_eq!(h1.sha1, h3.sha1);
+    assert_eq!(h1.md5, h3.md5);
+    assert_ne!(h1.sha256, h2.sha256);
 }
 
-/// Test system snapshot
 #[test]
+#[cfg_attr(not(target_os = "linux"), ignore = "take_snapshot requires /proc (Linux only)")]
 fn test_system_snapshot() {
-    let snap =
-        ysf_core::snapshot::take_snapshot("test-snapshot", Some("/tmp/collectionloom-test"))
-            .expect("Snapshot should work");
+    let test_dir = test_dir();
+    ensure_binary_fixtures(&test_dir);
+    let dir_str = test_dir.to_string_lossy().to_string();
 
-    assert!(!snap.id.0.is_empty(), "Snapshot ID should not be empty");
-    assert!(!snap.timestamp.is_empty(), "Timestamp should not be empty");
-    assert!(
-        !snap.files.is_empty(),
-        "Should find files in /tmp/collectionloom-test"
-    );
+    let snap = ysf_core::snapshot::take_snapshot("test-snapshot", Some(&dir_str))
+        .expect("Snapshot should work");
 
-    println!("✅ System Snapshot PASSED:");
-    println!("   ID: {}", snap.id.0);
-    println!("   Time: {}", snap.timestamp);
-    println!("   Files found: {}", snap.files.len());
+    assert!(!snap.id.0.is_empty());
+    assert!(!snap.timestamp.is_empty());
+    assert!(!snap.files.is_empty());
 }
 
-/// Test entropy calculation
 #[test]
 fn test_entropy_calculation() {
-    let path = "/tmp/collectionloom-test/evidence.dd";
-    let mut file = std::fs::File::open(path).expect("Cannot open evidence.dd");
+    let test_dir = test_dir();
+    ensure_binary_fixtures(&test_dir);
+    let path = test_dir.join("evidence.dd");
+    let mut file = std::fs::File::open(&path).expect("Cannot open evidence.dd");
     let mut data = Vec::new();
     file.read_to_end(&mut data).expect("Read error");
     let entropy = ysf_core::hashing::compute_entropy(&data);
 
-    assert!(
-        entropy >= 0.0 && entropy <= 8.0,
-        "Entropy must be between 0 and 8"
-    );
-    // Random data should have high entropy (> 7.0 typically)
-    println!("✅ Entropy: {:.4} (random data, expected ~7.9)", entropy);
+    assert!(entropy >= 0.0 && entropy <= 8.0);
 }
 
-/// Test file preview
 #[test]
 fn test_file_preview() {
-    let path = "/tmp/collectionloom-test/case_notes.txt";
-    let preview =
-        ysf_core::preview::preview_file(path).expect("Preview should work");
+    let test_dir = test_dir();
+    let path = test_dir.join("case_notes.txt");
+    let preview = ysf_core::preview::preview_file(path.to_str().unwrap()).expect("Preview should work");
 
-    // Check preview content
     match &preview.preview {
         ysf_core::preview::PreviewContent::Text(text) => {
-            assert!(!text.is_empty(), "Preview should have content");
-            assert!(
-                text.starts_with("=== EVIDENCE LOG ==="),
-                "Preview should start with EVIDENCE LOG"
-            );
-            println!("✅ File Preview PASSED:");
-            println!("   Lines: {}", text.lines().count());
-            println!("   First line: {:?}", text.lines().next().unwrap_or(""));
+            assert!(!text.is_empty());
+            assert!(text.starts_with("=== EVIDENCE LOG ==="));
         }
-        _ => panic!("Expected text preview, got: {:?}", preview.kind),
+        _ => panic!("Expected text preview"),
     }
-    println!("   Size: {} bytes", preview.size);
-    println!("   MIME: {:?}", preview.mime_type);
 }
 
-/// Test raw evidence binary parsing
 #[test]
 fn test_raw_binary_parsing() {
-    let path = "/tmp/collectionloom-test/raw_evidence.bin";
-    let mut file = std::fs::File::open(path).expect("Cannot open raw_evidence.bin");
+    let test_dir = test_dir();
+    ensure_binary_fixtures(&test_dir);
+    let path = test_dir.join("raw_evidence.bin");
+    let mut file = std::fs::File::open(&path).expect("Cannot open raw_evidence.bin");
     let mut buf = [0u8; 512];
     file.read_exact(&mut buf).expect("Read error");
 
-    // First 512 bytes should be zero (MBR simulation)
     assert_eq!(buf[0..8], [0x00; 8], "First 8 bytes should be zero (MBR)");
-
-    // Check NTFS magic after MBR
-    let mut full = Vec::new();
-    file.read_to_end(&mut full).expect("Read error");
-    println!(
-        "✅ Raw Binary Parsing PASSED — read {} bytes total",
-        512 + full.len()
-    );
 }

@@ -16,6 +16,7 @@ pub async fn start_disk_imaging(
     destination: String,
     split_size_mb: u64,
     verify: bool,
+    image_format: String,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     // Reset global state
@@ -29,6 +30,7 @@ pub async fn start_disk_imaging(
         let mut imager = imaging::DiskImager::new(&source, std::path::Path::new(&destination));
         imager.split_size = if split_size_mb > 0 { Some(split_size_mb * 1_048_576) } else { None };
         imager.verify = verify;
+        imager.format = ImageFormat::parse(&image_format);
 
         match imager.run(&cancel) {
             Ok(hash) => {
@@ -93,8 +95,8 @@ pub fn disable_write_blocker(device: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn check_write_blocker(device: String) -> Result<bool, String> {
-    Ok(write_blocker::check_write_blocker(&device))
+pub fn check_write_blocker(device: String) -> Result<write_blocker::WriteBlockerStatus, String> {
+    Ok(write_blocker::check_write_blocker_status(&device))
 }
 
 // ─── Mobile ───
