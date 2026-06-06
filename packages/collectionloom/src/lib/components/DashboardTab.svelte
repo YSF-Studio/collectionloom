@@ -1,11 +1,10 @@
 <script>
-import { invoke, openPath, isPreviewError } from "../api/tauri.js";
+import { openPath } from "../api/tauri.js";
 import { listCaseSummaries } from "../api/case.js";
-import { openInAnalysisloom } from "../api/bridge.js";
 import MacCard from "./ui/MacCard.svelte";
 import SectionHeader from "./ui/SectionHeader.svelte";
 import PillBadge from "./ui/PillBadge.svelte";
-import { ok, err, warn } from "../messages.js";
+import { err, warn } from "../messages.js";
 
 let { busy, setBusy, setMsg, timeoutPromise } = $props();
 
@@ -29,17 +28,6 @@ async function openCaseFolder(dir) {
   } catch {
     setMsg(warn(`Case folder: ${dir}`));
   }
-}
-
-async function sendToAnalysis(caseId) {
-  setBusy(true);
-  try {
-    const msg = await timeoutPromise(openInAnalysisloom(caseId), 15000);
-    setMsg(ok(msg));
-  } catch (e) {
-    setMsg(err(String(e)));
-  }
-  setBusy(false);
 }
 
 function statusVariant(status) {
@@ -79,9 +67,6 @@ function statusVariant(status) {
         <p class="operator">Operator: {row.case.operator?.name || "—"}</p>
         <div class="actions">
           <button class="btn-sm" onclick={() => openCaseFolder(row.case_dir)}>Open Folder</button>
-          <button class="btn-sm primary" onclick={() => sendToAnalysis(row.case.case_id)} disabled={busy}>
-            Send to AnalysisLoom
-          </button>
         </div>
       </MacCard>
     {/each}

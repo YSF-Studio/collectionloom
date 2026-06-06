@@ -69,6 +69,11 @@ pub fn get_ram_size() -> Result<u64, String> {
 }
 
 #[tauri::command]
+pub fn list_processes() -> Result<Vec<snapshot::ProcessEntry>, String> {
+    snapshot::list_running_processes()
+}
+
+#[tauri::command]
 pub fn capture_ram(tool: String, output: String, compress: bool) -> Result<String, String> {
     match tool.as_str() {
         "Avml" => ram::capture_avml(&output, compress),
@@ -342,13 +347,13 @@ pub fn about_info() -> serde_json::Value {
             "Hardware and one-click software write-blocker (Linux BLKROSET, macOS unmount, Windows IOCTL)",
             "Volatile RAM capture via avml / LiME with live process listing",
             "Mobile triage — Android ADB and iOS logical backup workflows",
-            "Cloud snapshot — AWS EBS, Azure managed disks, GCP persistent disks",
+            "Cloud snapshot — AWS EBS (SigV4), Azure managed disks, GCP persistent disks",
             "Network packet capture with BPF filters and live statistics",
             "System snapshot profiles (triage, IR, deep) with A/B compare engine",
             "Acquire All — orchestrated multi-module batch acquisition",
             "Encryption detection (BitLocker, LUKS, VeraCrypt, FileVault)",
             "Hash verification, chain of custody with Ed25519 signatures and QR labels",
-            "Case dashboard, export bundles (JSON, Markdown, ZIP), AnalysisLoom handoff",
+            "Case dashboard and export bundles (JSON, Markdown, ZIP)",
             "100% offline — no telemetry, no cloud dependency for core workflows"
         ],
         "disclaimer": "This software is provided \"AS IS\" for forensic triage and evidence collection. Operators must follow organizational policy and jurisdictional requirements. Independently verify hashes and chain-of-custody before use in legal proceedings.",

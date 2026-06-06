@@ -16,6 +16,7 @@ pub mod write_blocker;
 pub mod ram;
 pub mod mobile;
 pub mod cloud;
+mod aws_sigv4;
 pub mod network;
 pub mod archive;
 pub mod ntfs;

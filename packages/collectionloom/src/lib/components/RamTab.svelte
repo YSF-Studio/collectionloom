@@ -96,7 +96,7 @@ $effect(() => { listTools(); });
     </div>
     <div class="process-list">
       {#each processList as proc}
-        <div class="process-item">{proc.pid} | {proc.name} | {proc.memory}MB</div>
+        <div class="process-item">{proc.pid} | {proc.name} | {(proc.memory_bytes / 1048576).toFixed(1)} MB | {proc.cpu_percent.toFixed(1)}% CPU</div>
       {/each}
     </div>
   </div>

@@ -56,6 +56,7 @@ pub fn run() {
             commands::cancel_imaging,
             commands::list_ram_tools,
             commands::get_ram_size,
+            commands::list_processes,
             commands::capture_ram,
             commands::enable_write_blocker,
             commands::disable_write_blocker,
@@ -96,7 +97,6 @@ pub fn run() {
             prd_commands::get_capture_packets,
             prd_commands::get_capture_stats,
             prd_commands::list_case_summaries_cmd,
-            prd_commands::open_in_analysisloom,
         ])
         .run(tauri::generate_context!())
         .expect("error while running CollectionLoom");

@@ -72,6 +72,8 @@ Use **Refresh** to re-check status before imaging.
 
 1. Create **read-only, time-limited** API credentials in your cloud console.
 2. Enter provider (AWS / Azure / GCP), region, and resource identifier.
+   - **AWS:** uses EC2 Query API with **Signature Version 4** (access key + secret key).
+   - **Azure / GCP:** use bearer tokens from your cloud CLI or service account.
 3. Initiate snapshot and wait for completion.
 4. **Revoke credentials** immediately after download.
 

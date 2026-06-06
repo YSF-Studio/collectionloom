@@ -23,7 +23,7 @@ CollectionLoom helps first responders and forensic analysts capture disk images,
 | **Write Blocker** | Auto-detects Tableau/WiebeTech hardware blockers; one-click software protection on all platforms |
 | **RAM Capture** | Volatile memory via avml / LiME / DumpIt with optional compression |
 | **Mobile Triage** | Android ADB backup and iOS logical acquisition workflows |
-| **Cloud Snapshot** | AWS EBS, Azure managed disk, and GCP persistent disk snapshots |
+| **Cloud Snapshot** | AWS EBS (Signature V4), Azure managed disk, and GCP persistent disk snapshots |
 | **Network Capture** | Live packet capture with BPF filters and statistics |
 | **System Snapshot** | Modular collectors (process, network, autoruns, users, logs) with triage / IR / deep profiles |
 | **Compare Engine** | Snapshot A vs B diff — added, removed, and changed artifacts |

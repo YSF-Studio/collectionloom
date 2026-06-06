@@ -18,7 +18,6 @@ qrcode = { version = "0.14", default-features = false }
 printpdf = "0.7"
 chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "1", features = ["v4"] }
-rusqlite = { version = "0.31", features = ["bundled"] }
 regex = "1"
 zip = { version = "1", default-features = false, features = ["deflate", "bzip2", "zstd"] }
 tar = "0.4"

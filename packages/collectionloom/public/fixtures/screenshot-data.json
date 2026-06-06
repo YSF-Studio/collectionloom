@@ -17,13 +17,13 @@
         "Hardware and one-click software write-blocker (Linux BLKROSET, macOS unmount, Windows IOCTL)",
         "Volatile RAM capture via avml / LiME with live process listing",
         "Mobile triage — Android ADB and iOS logical backup workflows",
-        "Cloud snapshot — AWS EBS, Azure managed disks, GCP persistent disks",
+        "Cloud snapshot — AWS EBS (SigV4), Azure managed disks, GCP persistent disks",
         "Network packet capture with BPF filters and live statistics",
         "System snapshot profiles (triage, IR, deep) with A/B compare engine",
         "Acquire All — orchestrated multi-module batch acquisition",
         "Encryption detection (BitLocker, LUKS, VeraCrypt, FileVault)",
         "Hash verification, chain of custody with Ed25519 signatures and QR labels",
-        "Case dashboard, export bundles (JSON, Markdown, ZIP), AnalysisLoom handoff",
+        "Case dashboard and export bundles (JSON, Markdown, ZIP)",
         "100% offline — no telemetry, no cloud dependency for core workflows"
       ],
       "disclaimer": "This software is provided \"AS IS\" for forensic triage and evidence collection. Operators must follow organizational policy and jurisdictional requirements. Independently verify hashes and chain-of-custody before use in legal proceedings.",
@@ -98,20 +98,23 @@
       {
         "pid": 1,
         "name": "launchd",
-        "cpu": 0.1,
-        "memory": 12
+        "state": "Run",
+        "cpu_percent": 0.1,
+        "memory_bytes": 12582912
       },
       {
         "pid": 4821,
         "name": "CollectionLoom",
-        "cpu": 2.4,
-        "memory": 186
+        "state": "Run",
+        "cpu_percent": 2.4,
+        "memory_bytes": 195035136
       },
       {
         "pid": 9012,
         "name": "Google Chrome",
-        "cpu": 5.1,
-        "memory": 512
+        "state": "Run",
+        "cpu_percent": 5.1,
+        "memory_bytes": 536870912
       }
     ],
     "get_imaging_progress": {

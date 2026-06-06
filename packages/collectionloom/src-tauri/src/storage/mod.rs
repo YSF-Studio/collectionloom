@@ -237,19 +237,3 @@ pub fn list_case_summaries() -> Result<Vec<CaseSummary>, String> {
     }
     Ok(out)
 }
-
-pub fn handoff_dir() -> PathBuf {
-    dirs::home_dir()
-        .unwrap_or_else(|| PathBuf::from("/tmp"))
-        .join("CollectionLoom")
-        .join("handoff")
-}
-
-pub fn write_handoff(case_id: &str, payload: &serde_json::Value) -> Result<PathBuf, String> {
-    validate_storage_id(case_id, "case_id")?;
-    fs::create_dir_all(handoff_dir()).map_err(|e| e.to_string())?;
-    let path = handoff_dir().join(format!("{case_id}.json"));
-    fs::write(&path, serde_json::to_string_pretty(payload).map_err(|e| e.to_string())?)
-        .map_err(|e| e.to_string())?;
-    Ok(path)
-}

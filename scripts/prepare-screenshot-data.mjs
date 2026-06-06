@@ -53,7 +53,7 @@ const data = {
         "Acquire All — orchestrated multi-module batch acquisition",
         "Encryption detection (BitLocker, LUKS, VeraCrypt, FileVault)",
         "Hash verification, chain of custody with Ed25519 signatures and QR labels",
-        "Case dashboard, export bundles (JSON, Markdown, ZIP), AnalysisLoom handoff",
+        "Case dashboard and export bundles (JSON, Markdown, ZIP)",
         "100% offline — no telemetry, no cloud dependency for core workflows",
       ],
       disclaimer:
@@ -112,9 +112,9 @@ const data = {
     list_android_devices: [{ id: "R58M90ABCDE", model: "Pixel 7", state: "device" }],
     list_ios_devices: [],
     list_processes: [
-      { pid: 1, name: "launchd", cpu: 0.1, memory: 12 },
-      { pid: 4821, name: "CollectionLoom", cpu: 2.4, memory: 186 },
-      { pid: 9012, name: "Google Chrome", cpu: 5.1, memory: 512 },
+      { pid: 1, name: "launchd", state: "Run", cpu_percent: 0.1, memory_bytes: 12582912 },
+      { pid: 4821, name: "CollectionLoom", state: "Run", cpu_percent: 2.4, memory_bytes: 195035136 },
+      { pid: 9012, name: "Google Chrome", state: "Run", cpu_percent: 5.1, memory_bytes: 536870912 },
     ],
     get_imaging_progress: {
       percent: 67.4,

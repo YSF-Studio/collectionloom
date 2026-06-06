@@ -464,6 +464,11 @@ fn capture_processes() -> Result<Vec<ProcessEntry>, String> {
     Ok(processes)
 }
 
+/// List running processes (used by RAM capture UI).
+pub fn list_running_processes() -> Result<Vec<ProcessEntry>, String> {
+    capture_processes()
+}
+
 fn capture_network() -> Result<Vec<NetworkEntry>, String> {
     #[cfg(target_os = "linux")]
     {

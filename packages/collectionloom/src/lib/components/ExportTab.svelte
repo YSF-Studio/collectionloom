@@ -1,13 +1,11 @@
 <script>
-import { invoke, openPath, isPreviewError } from "../api/tauri.js";
+import { openPath, isPreviewError } from "../api/tauri.js";
 import MacCard from "./ui/MacCard.svelte";
 import SectionHeader from "./ui/SectionHeader.svelte";
 import PillBadge from "./ui/PillBadge.svelte";
 import { listCases } from "../api/case.js";
 import { listSnapshots } from "../api/snapshot.js";
 import { exportJson, exportMarkdown, exportZip, listExports } from "../api/export.js";
-import { openInAnalysisloom } from "../api/bridge.js";
-import { ok, err, warn } from "../messages.js";
 
 let { busy, setBusy, setMsg, timeoutPromise } = $props();
 
@@ -92,18 +90,6 @@ async function generateExport() {
   setBusy(false);
 }
 
-async function sendAnalysis() {
-  if (!selectedCaseId) return;
-  setBusy(true);
-  try {
-    const msg = await timeoutPromise(openInAnalysisloom(selectedCaseId), 15000);
-    setMsg(ok(msg));
-  } catch (e) {
-    setMsg(err(String(e)));
-  }
-  setBusy(false);
-}
-
 async function openFolder() {
   if (lastResult?.output_path) {
     const dir = lastResult.output_path.substring(0, lastResult.output_path.lastIndexOf("/"));
@@ -161,9 +147,6 @@ async function openFolder() {
     <button class="btn-primary" onclick={generateExport} disabled={busy || !selectedCaseId}>
       Generate Export
     </button>
-    {#if selectedCaseId}
-      <button class="btn-secondary" onclick={sendAnalysis} disabled={busy}>Send to AnalysisLoom</button>
-    {/if}
   </div>
 
   {#if lastResult}
