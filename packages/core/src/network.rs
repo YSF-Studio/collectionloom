@@ -1,5 +1,4 @@
 use serde::Serialize;
-use std::sync::atomic::Ordering;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct NetworkCaptureConfig {
@@ -16,6 +15,7 @@ pub fn start_capture(
     config: NetworkCaptureConfig,
     cancel_flag: std::sync::Arc<std::sync::atomic::AtomicBool>,
 ) -> Result<String, String> {
+    use std::sync::atomic::Ordering;
     use pcap::{Capture, Device};
 
     let device = Device::list()

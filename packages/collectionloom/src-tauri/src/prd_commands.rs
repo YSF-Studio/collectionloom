@@ -216,8 +216,7 @@ pub fn export_zip(case_id: String) -> Result<ExportResult, String> {
 
 #[tauri::command]
 pub fn list_exports(case_id: String) -> Result<Vec<ExportResult>, String> {
-    crate::storage::validate_storage_id(&case_id, "case_id")?;
-    let dir = crate::storage::exports_dir(&case_id);
+    let dir = crate::storage::validated_exports_dir(&case_id)?;
     if !dir.exists() {
         return Ok(vec![]);
     }
@@ -329,10 +328,10 @@ pub fn list_case_summaries_cmd() -> Result<Vec<crate::storage::CaseSummary>, Str
 /// Write handoff manifest and open export folder / AnalysisLoom if available.
 #[tauri::command]
 pub fn open_in_analysisloom(case_id: String) -> Result<String, String> {
-    use crate::storage::{case_dir, exports_dir, write_handoff};
+    use crate::storage::{case_dir, validated_exports_dir, write_handoff};
 
     let case = crate::storage::read_case(&case_id)?;
-    let export_dir = exports_dir(&case_id);
+    let export_dir = validated_exports_dir(&case_id)?;
     fs::create_dir_all(&export_dir).map_err(|e| e.to_string())?;
 
     let pack = export_dir.join("evidence_pack.json");

@@ -170,7 +170,7 @@ pub fn exports_dir(case_id: &str) -> PathBuf {
     case_dir(case_id).join("exports")
 }
 
-fn validated_exports_dir(case_id: &str) -> Result<PathBuf, String> {
+pub fn validated_exports_dir(case_id: &str) -> Result<PathBuf, String> {
     validate_storage_id(case_id, "case_id")?;
     Ok(exports_dir(case_id))
 }

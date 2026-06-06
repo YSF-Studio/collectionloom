@@ -2,8 +2,8 @@
 
 use crate::models::{Case, DiffResult, ExportResult, SnapshotMeta, SCHEMA_VERSION};
 use crate::storage::{
-    exports_dir, read_case, read_hash_manifest, read_snapshot_meta, sha256_bytes, sha256_file,
-    snapshot_dir,
+    read_case, read_hash_manifest, read_snapshot_meta, sha256_bytes, sha256_file, snapshot_dir,
+    validated_exports_dir,
 };
 use chrono::Utc;
 use std::fs::{self, File};
@@ -74,7 +74,7 @@ impl ExportEngine {
             },
         });
 
-        let out_dir = exports_dir(case_id);
+        let out_dir = validated_exports_dir(case_id)?;
         fs::create_dir_all(&out_dir).map_err(|e| e.to_string())?;
         let path = out_dir.join("evidence_pack.json");
         let json_str = serde_json::to_string_pretty(&pack).map_err(|e| e.to_string())?;
@@ -100,7 +100,7 @@ impl ExportEngine {
         let snapshot = read_snapshot_meta(case_id, snapshot_id)?;
         let md = build_markdown(&case, &snapshot, diff);
 
-        let out_dir = exports_dir(case_id);
+        let out_dir = validated_exports_dir(case_id)?;
         fs::create_dir_all(&out_dir).map_err(|e| e.to_string())?;
         let path = out_dir.join("case_report.md");
         fs::write(&path, &md).map_err(|e| e.to_string())?;
@@ -122,7 +122,7 @@ impl ExportEngine {
             return Err("Case folder not found".into());
         }
 
-        let out_dir = exports_dir(case_id);
+        let out_dir = validated_exports_dir(case_id)?;
         fs::create_dir_all(&out_dir).map_err(|e| e.to_string())?;
         let zip_path = out_dir.join("collection_bundle.zip");
 
