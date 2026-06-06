@@ -1,10 +1,11 @@
 //! Pure-Rust AFF4-L container writer (ZIP + RDF turtle metadata).
 
 use std::fs::File;
-use std::io::{Read, Write};
+use std::io::{Seek, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 
+use crate::bad_sector::{read_resilient, BadSectorLog, DEFAULT_SECTOR_SIZE};
 use sha2::{Digest, Sha256};
 use zip::write::SimpleFileOptions;
 use zip::ZipWriter;
@@ -27,11 +28,12 @@ impl Aff4Writer {
         source: &str,
         split_size: Option<u64>,
         cancel: &AtomicBool,
+        bad_log: &mut BadSectorLog,
     ) -> Result<String, String> {
         if let Some(sz) = split_size {
-            return self.acquire_split(source, sz, cancel);
+            return self.acquire_split(source, sz, cancel, bad_log);
         }
-        let (hash, _) = self.acquire_single(&self.dest, source, cancel, None, None)?;
+        let (hash, _) = self.acquire_single(&self.dest, source, cancel, None, None, bad_log)?;
         Ok(hash)
     }
 
@@ -40,6 +42,7 @@ impl Aff4Writer {
         source: &str,
         split_size: u64,
         cancel: &AtomicBool,
+        bad_log: &mut BadSectorLog,
     ) -> Result<String, String> {
         let src_size = crate::block_device::device_size(source)?;
         let mut src = File::open(source).map_err(|e| format!("Cannot open {source}: {e}"))?;
@@ -71,6 +74,7 @@ impl Aff4Writer {
                 split_size,
                 cancel,
                 Some(&mut overall),
+                bad_log,
             )?;
 
             total += part_bytes;
@@ -116,9 +120,10 @@ impl Aff4Writer {
         max_bytes: u64,
         cancel: &AtomicBool,
         overall: Option<&mut Sha256>,
+        bad_log: &mut BadSectorLog,
     ) -> Result<u64, String> {
         let (_, written) =
-            self.acquire_single(dest, source, cancel, Some((reader, max_bytes)), overall)?;
+            self.acquire_single(dest, source, cancel, Some((reader, max_bytes)), overall, bad_log)?;
         Ok(written)
     }
 
@@ -131,6 +136,7 @@ impl Aff4Writer {
         cancel: &AtomicBool,
         limited: Option<(&mut File, u64)>,
         mut overall: Option<&mut Sha256>,
+        bad_log: &mut BadSectorLog,
     ) -> Result<(String, u64), String> {
         let using_shared = limited.is_some();
         let mut owned_file: Option<File>;
@@ -184,9 +190,16 @@ impl Aff4Writer {
                 break;
             }
             let to_read = buf.len().min((max_read - part_written) as usize);
-            let n = reader
-                .read(&mut buf[..to_read])
-                .map_err(|e| e.to_string())?;
+            let byte_offset = reader
+                .stream_position()
+                .map_err(|e| format!("Stream position: {e}"))?;
+            let n = read_resilient(
+                reader,
+                &mut buf[..to_read],
+                byte_offset,
+                DEFAULT_SECTOR_SIZE,
+                bad_log,
+            )?;
             if n == 0 {
                 break;
             }

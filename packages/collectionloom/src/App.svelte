@@ -27,7 +27,7 @@ let wbBusy = $state(false);
 let diskState = {};
 let ramState = {};
 let encryptionState = {};
-let cocState = {};
+let cocState = { caseId: "", operator: "" };
 let wbState = $state({ active: false, device: "" });
 let wbDisks = $state([]);
 let wbDisksLoading = $state(false);
@@ -286,6 +286,7 @@ window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
         <DiskTab
           busy={busy}
           sharedState={diskState}
+          caseState={cocState}
           {setBusy}
           {setMsg}
           {timeoutPromise}
@@ -293,7 +294,7 @@ window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
           onDeviceSelect={handleDeviceSelect}
         />
       {:else if activeSection === "ram"}
-        <RamTab busy={busy} sharedState={ramState} {setBusy} {setMsg} {timeoutPromise} />
+        <RamTab busy={busy} sharedState={ramState} caseState={cocState} {setBusy} {setMsg} {timeoutPromise} />
       {:else if activeSection === "mobile"}
         <MobileTab busy={busy} {setBusy} {setMsg} {timeoutPromise} />
       {:else if activeSection === "cloud"}
@@ -305,6 +306,7 @@ window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
       {:else if activeSection === "acquire-all"}
         <AcquireAllTab
           sharedState={acquireAllState}
+          caseState={cocState}
           busy={busy}
           {setBusy}
           {setMsg}
@@ -317,7 +319,7 @@ window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
       {:else if activeSection === "verify"}
         <VerificationTab busy={busy} {setBusy} {setMsg} {timeoutPromise} />
       {:else if activeSection === "coc"}
-        <CocTab busy={busy} sharedState={cocState} {setBusy} {setMsg} {timeoutPromise} />
+        <CocTab busy={busy} sharedState={cocState} caseState={cocState} {setBusy} {setMsg} {timeoutPromise} />
       {:else if activeSection === "dashboard"}
         <DashboardTab busy={busy} {setBusy} {setMsg} {timeoutPromise} />
       {:else if activeSection === "export"}

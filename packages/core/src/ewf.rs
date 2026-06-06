@@ -1,9 +1,11 @@
 //! Pure-Rust Expert Witness Format (E01) writer — no libewf/ewfacquire dependency.
 
 use std::fs::File;
-use std::io::{Read, Write};
+use std::io::{Seek, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
+
+use crate::bad_sector::{read_resilient, BadSectorLog, DEFAULT_SECTOR_SIZE};
 
 use flate2::write::ZlibEncoder;
 use flate2::Compression;
@@ -27,11 +29,11 @@ impl EwfWriter {
         &self,
         source: &str,
         cancel: &AtomicBool,
+        bad_log: &mut BadSectorLog,
     ) -> Result<String, String> {
         let src_size = crate::block_device::device_size(source)?;
-        let src = File::open(source).map_err(|e| format!("Cannot open {source}: {e}"))?;
+        let mut src = File::open(source).map_err(|e| format!("Cannot open {source}: {e}"))?;
         let has_known_size = src_size > 0;
-        let mut reader = std::io::BufReader::with_capacity(super::hashing::HASH_BUFFER_SIZE, src);
 
         let mut out = File::create(&self.dest)
             .map_err(|e| format!("Cannot create {}: {e}", self.dest.display()))?;
@@ -47,7 +49,16 @@ impl EwfWriter {
                 let _ = std::fs::remove_file(&self.dest);
                 return Err("CANCELLED".into());
             }
-            let n = reader.read(&mut buf).map_err(|e| e.to_string())?;
+            let byte_offset = src
+                .stream_position()
+                .map_err(|e| format!("Stream position: {e}"))?;
+            let n = read_resilient(
+                &mut src,
+                &mut buf,
+                byte_offset,
+                DEFAULT_SECTOR_SIZE,
+                bad_log,
+            )?;
             if n == 0 {
                 break;
             }

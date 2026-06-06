@@ -29,10 +29,75 @@ pub fn case_dir(case_id: &str) -> PathBuf {
 pub fn ensure_case_dirs(case_id: &str) -> Result<PathBuf, String> {
     validate_storage_id(case_id, "case_id")?;
     let root = case_dir(case_id);
-    for sub in ["snapshots", "diffs", "exports"] {
+    for sub in ["snapshots", "diffs", "exports", "logs"] {
         fs::create_dir_all(root.join(sub)).map_err(|e| e.to_string())?;
     }
     Ok(root)
+}
+
+/// One acquisition event (disk imaging, RAM capture, etc.).
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct AcquisitionAuditEntry {
+    pub timestamp: String,
+    pub acquisition_type: String,
+    pub source: String,
+    pub destination: String,
+    pub status: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub sha256: Option<String>,
+    #[serde(default)]
+    pub error_sectors: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub operator: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub details: Option<String>,
+}
+
+fn global_acquisition_audit_path() -> PathBuf {
+    cases_root().join("acquisition_audit.jsonl")
+}
+
+fn case_acquisition_audit_path(case_id: &str) -> PathBuf {
+    case_dir(case_id).join("logs").join("acquisition_audit.jsonl")
+}
+
+/// Append acquisition record to case log (if case_id set) and global fallback log.
+pub fn append_acquisition_audit(
+    case_id: Option<&str>,
+    entry: &AcquisitionAuditEntry,
+) -> Result<Vec<PathBuf>, String> {
+    fs::create_dir_all(cases_root()).map_err(|e| e.to_string())?;
+    let line = serde_json::to_string(entry).map_err(|e| e.to_string())?;
+    let mut written = Vec::new();
+
+    if let Some(id) = case_id.filter(|s| !s.is_empty()) {
+        validate_storage_id(id, "case_id")?;
+        let _ = ensure_case_dirs(id);
+        let path = case_acquisition_audit_path(id);
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+        }
+        use std::io::Write;
+        let mut file = fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&path)
+            .map_err(|e| e.to_string())?;
+        writeln!(file, "{line}").map_err(|e| e.to_string())?;
+        written.push(path);
+    }
+
+    let global = global_acquisition_audit_path();
+    use std::io::Write;
+    let mut file = fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&global)
+        .map_err(|e| e.to_string())?;
+    writeln!(file, "{line}").map_err(|e| e.to_string())?;
+    written.push(global);
+
+    Ok(written)
 }
 
 pub fn write_case(case: &Case) -> Result<PathBuf, String> {

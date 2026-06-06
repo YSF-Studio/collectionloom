@@ -4,6 +4,33 @@ use ysf_core::*;
 use ysf_core::progress::finish_progress;
 use std::sync::atomic::Ordering;
 
+use crate::storage::{self, AcquisitionAuditEntry};
+
+fn log_acquisition(
+    case_id: Option<String>,
+    acquisition_type: &str,
+    source: &str,
+    destination: &str,
+    status: &str,
+    sha256: Option<String>,
+    error_sectors: u64,
+    operator: Option<String>,
+    details: Option<String>,
+) {
+    let entry = AcquisitionAuditEntry {
+        timestamp: chrono::Utc::now().to_rfc3339(),
+        acquisition_type: acquisition_type.to_string(),
+        source: source.to_string(),
+        destination: destination.to_string(),
+        status: status.to_string(),
+        sha256,
+        error_sectors,
+        operator,
+        details,
+    };
+    let _ = storage::append_acquisition_audit(case_id.as_deref(), &entry);
+}
+
 // ─── Disk Imaging ───
 
 #[tauri::command]
@@ -18,6 +45,8 @@ pub async fn start_disk_imaging(
     split_size_mb: u64,
     verify: bool,
     image_format: String,
+    case_id: Option<String>,
+    operator: Option<String>,
     app: tauri::AppHandle,
 ) -> Result<(), String> {
     // Reset global state
@@ -26,6 +55,10 @@ pub async fn start_disk_imaging(
     *OPERATION_RESULT.lock().unwrap() = None;
 
     let cancel = CANCEL_FLAG.clone();
+    let src_log = source.clone();
+    let dest_log = destination.clone();
+    let case_log = case_id.clone();
+    let operator_log = operator.clone();
 
     tokio::task::spawn_blocking(move || {
         let mut imager = imaging::DiskImager::new(&source, std::path::Path::new(&destination));
@@ -39,6 +72,21 @@ pub async fn start_disk_imaging(
                     .lock()
                     .ok()
                     .and_then(|p| p.summary.clone());
+                let error_sectors = summary.as_ref().map(|s| s.error_sectors).unwrap_or(0);
+                let details = summary.as_ref().and_then(|s| s.bad_sectors_log.clone()).map(|p| {
+                    format!("bad_sectors={error_sectors} log={p}")
+                });
+                log_acquisition(
+                    case_log,
+                    "disk_imaging",
+                    &src_log,
+                    &dest_log,
+                    "completed",
+                    Some(hash.clone()),
+                    error_sectors,
+                    operator_log,
+                    details,
+                );
                 let payload = if let Some(s) = summary {
                     serde_json::json!({ "hash": hash, "summary": s })
                 } else {
@@ -47,6 +95,17 @@ pub async fn start_disk_imaging(
                 let _ = app.emit("imaging_complete", payload);
             }
             Err(e) => {
+                log_acquisition(
+                    case_log,
+                    "disk_imaging",
+                    &src_log,
+                    &dest_log,
+                    "failed",
+                    None,
+                    0,
+                    operator_log,
+                    Some(e.clone()),
+                );
                 finish_progress(Err(e.clone()));
                 let _ = app.emit("imaging_error", &e);
             }
@@ -84,16 +143,57 @@ pub fn list_processes() -> Result<Vec<snapshot::ProcessEntry>, String> {
 }
 
 #[tauri::command]
-pub fn capture_ram(tool: String, output: String, compress: bool) -> Result<String, String> {
-    match tool.as_str() {
+pub fn capture_ram(
+    tool: String,
+    output: String,
+    compress: bool,
+    case_id: Option<String>,
+    operator: Option<String>,
+) -> Result<serde_json::Value, String> {
+    let result = match tool.as_str() {
         "Avml" => ram::capture_avml(&output, compress),
         "WinPmem" => ram::capture_winpmem(&output),
         "MRS" => ram::capture_mrs(&output),
-        "LiME" => {
-            // LiME requires sudo + insmod — use avml as fallback
-            ram::capture_avml(&output, compress)
-        }
+        "LiME" => ram::capture_avml(&output, compress),
         _ => Err(format!("Unknown tool: {}", tool)),
+    };
+    match &result {
+        Ok(msg) => {
+            let hash_report = evidence_hash::hash_and_verify_evidence(&output).ok();
+            let sha256 = hash_report.as_ref().map(|r| r.sha256.clone());
+            log_acquisition(
+                case_id,
+                "ram_capture",
+                &tool,
+                &output,
+                "completed",
+                sha256.clone(),
+                0,
+                operator,
+                Some(msg.clone()),
+            );
+            Ok(serde_json::json!({
+                "message": msg,
+                "output": output,
+                "sha256": sha256,
+                "verified": hash_report.as_ref().map(|r| r.verified).unwrap_or(false),
+                "size_bytes": hash_report.as_ref().map(|r| r.size_bytes),
+            }))
+        }
+        Err(e) => {
+            log_acquisition(
+                case_id,
+                "ram_capture",
+                &tool,
+                &output,
+                "failed",
+                None,
+                0,
+                operator,
+                Some(e.clone()),
+            );
+            Err(e.clone())
+        }
     }
 }
 
@@ -233,10 +333,34 @@ fn hex_decode(hex: &str) -> Result<Vec<u8>, String> {
         .collect()
 }
 
+// ─── Acquisition integrity (ISO 27037) ───
+
+#[tauri::command]
+pub fn verify_acquisition_storage(
+    output: String,
+    source_device: Option<String>,
+) -> Result<storage_check::StorageCheckReport, String> {
+    Ok(storage_check::verify_acquisition_storage(
+        &output,
+        source_device.as_deref(),
+    ))
+}
+
+#[tauri::command]
+pub fn hash_and_verify_evidence(path: String) -> Result<evidence_hash::EvidenceHashReport, String> {
+    evidence_hash::hash_and_verify_evidence(&path)
+}
+
 // ─── Chain of Custody Signing ───
 
 #[tauri::command]
-pub fn sign_coc(evidence_id: String, private_key_hex: Option<String>) -> Result<serde_json::Value, String> {
+pub async fn sign_coc(
+    evidence_id: String,
+    private_key_hex: Option<String>,
+    hash_sha256: Option<String>,
+    operator: Option<String>,
+    tsa_url: Option<String>,
+) -> Result<serde_json::Value, String> {
     let keypair = match private_key_hex {
         Some(ref hex_key) => {
             let priv_bytes = hex_decode(hex_key)?;
@@ -245,12 +369,37 @@ pub fn sign_coc(evidence_id: String, private_key_hex: Option<String>) -> Result<
         None => ysf_core::crypto::generate_keypair(),
     };
 
-    let signature = ysf_core::crypto::sign_data(&keypair.private_key, evidence_id.as_bytes())?;
+    let mut sign_parts = vec![evidence_id.clone()];
+    if let Some(ref h) = hash_sha256 {
+        if !h.is_empty() {
+            sign_parts.push(h.clone());
+        }
+    }
+    if let Some(ref op) = operator {
+        if !op.is_empty() {
+            sign_parts.push(op.clone());
+        }
+    }
+    let sign_payload = sign_parts.join("|");
+
+    let signature =
+        ysf_core::crypto::sign_data(&keypair.private_key, sign_payload.as_bytes())?;
+
+    let timestamp = timestamp::create_timestamp_with_optional_tsa(
+        sign_payload.as_bytes(),
+        &keypair,
+        tsa_url.as_deref(),
+    )
+    .await?;
 
     Ok(serde_json::json!({
         "evidence_id": evidence_id,
         "signature_hex": hex_encode(&signature),
         "public_key_hex": hex_encode(&keypair.public_key),
+        "hash_sha256": hash_sha256,
+        "operator": operator,
+        "signed_at": timestamp.signed_at,
+        "timestamp": timestamp,
     }))
 }
 

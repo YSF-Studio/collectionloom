@@ -6,7 +6,7 @@ import SectionHeader from "./ui/SectionHeader.svelte";
 import PillBadge from "./ui/PillBadge.svelte";
 import { acquireAllGuide } from "../guides.js";
 
-let { sharedState, busy, setBusy, setMsg, timeoutPromise, onProgressChange = () => {}, onDeviceSelect = () => {} } = $props();
+let { sharedState, caseState = {}, busy, setBusy, setMsg, timeoutPromise, onProgressChange = () => {}, onDeviceSelect = () => {} } = $props();
 
 let diskEnabled = $state(false);
 let ramEnabled = $state(false);
@@ -39,10 +39,10 @@ let moduleProgress = $state({
 let moduleDetails = $state({ disk: "", ram: "", network: "", mobile: "", cloud: "" });
 
 const moduleOrder = [
-  { key: "disk", label: "Disk", enabled: () => diskEnabled },
-  { key: "ram", label: "RAM", enabled: () => ramEnabled },
   { key: "network", label: "Network", enabled: () => networkEnabled },
+  { key: "ram", label: "RAM", enabled: () => ramEnabled },
   { key: "mobile", label: "Mobile", enabled: () => mobileEnabled },
+  { key: "disk", label: "Disk", enabled: () => diskEnabled },
   { key: "cloud", label: "Cloud", enabled: () => cloudEnabled },
 ];
 
@@ -160,6 +160,33 @@ async function ensureWriteBlocker() {
   }
 }
 
+async function checkStorage(outputPath, sourceDevice = null) {
+  const report = await timeoutPromise(
+    invoke("verify_acquisition_storage", {
+      output: outputPath,
+      sourceDevice,
+    }),
+    10000
+  );
+  if (!report.ok) {
+    throw new Error(`Storage check: ${report.notes}`);
+  }
+  return report;
+}
+
+async function recordEvidenceHash(path, moduleKey) {
+  try {
+    const report = await timeoutPromise(invoke("hash_and_verify_evidence", { path }), 120000);
+    const verified = report.verified ? "verified" : "NOT verified";
+    moduleDetails[moduleKey] = `SHA-256: ${report.sha256.slice(0, 16)}… (${verified})`;
+    return report;
+  } catch (e) {
+    const msg = typeof e === "string" ? e : String(e);
+    moduleDetails[moduleKey] = `${moduleDetails[moduleKey] || path} · hash failed: ${msg}`;
+    return null;
+  }
+}
+
 async function startAcquireAll() {
   running = true;
   setBusy(true);
@@ -210,6 +237,8 @@ async function runDiskAcquisition() {
     splitSizeMb: split,
     verify: true,
     imageFormat: "raw",
+    caseId: caseState.caseId || null,
+    operator: caseState.operator || null,
   });
   const err = await pollDiskProgress();
   if (err) throw new Error(String(err));
@@ -217,17 +246,30 @@ async function runDiskAcquisition() {
 
 async function runRamAcquisition() {
   const dest = outputFolder.replace(/\/$/, "") + "/ram_dump.lime";
+  await checkStorage(dest);
   moduleProgress.ram = { percent: 50, status: "Running", eta: "" };
-  const hash = await timeoutPromise(
-    invoke("capture_ram", { tool: selectedRamTool || "Avml", output: dest, compress: true }),
+  const result = await timeoutPromise(
+    invoke("capture_ram", {
+      tool: selectedRamTool || "Avml",
+      output: dest,
+      compress: true,
+      caseId: caseState.caseId || null,
+      operator: caseState.operator || null,
+    }),
     120000
   );
   moduleProgress.ram = { percent: 100, status: "Done", eta: "" };
-  moduleDetails.ram = hash ? `Saved · ${hash.slice(0, 16)}…` : "Complete";
+  if (result?.sha256) {
+    const verified = result.verified ? "verified" : "NOT verified";
+    moduleDetails.ram = `SHA-256: ${result.sha256.slice(0, 16)}… (${verified})`;
+  } else {
+    await recordEvidenceHash(dest, "ram");
+  }
 }
 
 async function runNetworkAcquisition() {
   const dest = outputFolder.replace(/\/$/, "") + "/network.pcapng";
+  await checkStorage(dest);
   moduleProgress.network = { percent: 30, status: "Running", eta: "" };
   await timeoutPromise(
     invoke("start_network_capture", {
@@ -240,7 +282,7 @@ async function runNetworkAcquisition() {
   await sleep(5000);
   await invoke("cancel_network_capture");
   moduleProgress.network = { percent: 100, status: "Done", eta: "" };
-  moduleDetails.network = dest;
+  await recordEvidenceHash(dest, "network");
 }
 
 async function runMobileAcquisition() {
@@ -250,6 +292,7 @@ async function runMobileAcquisition() {
     return;
   }
   const dest = outputFolder.replace(/\/$/, "") + "/mobile_backup.ab";
+  await checkStorage(dest);
   moduleProgress.mobile = { percent: 50, status: "Running", eta: "" };
   try {
     await timeoutPromise(
@@ -257,7 +300,7 @@ async function runMobileAcquisition() {
       120000
     );
     moduleProgress.mobile = { percent: 100, status: "Done", eta: "" };
-    moduleDetails.mobile = dest;
+    await recordEvidenceHash(dest, "mobile");
   } catch (e) {
     moduleProgress.mobile = { percent: 0, status: "Failed", eta: "" };
     throw e;

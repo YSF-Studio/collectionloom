@@ -12,9 +12,12 @@ pub struct ImagingSummary {
     pub duration_secs: f64,
     pub source_integrity_ok: bool,
     pub bytes_written: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub bad_sectors_log: Option<String>,
 }
 
 #[derive(Clone, Debug, Serialize, Default)]
+#[serde(rename_all = "camelCase")]
 pub struct ProgressState {
     pub percent: f64,
     pub status: String,

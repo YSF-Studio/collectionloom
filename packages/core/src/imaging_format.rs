@@ -1,6 +1,8 @@
 use std::path::Path;
 use std::sync::atomic::AtomicBool;
 
+use crate::bad_sector::BadSectorLog;
+
 use serde::Serialize;
 
 use crate::aff4_native::{aff4_path, count_split_aff4_parts, hash_split_aff4_stream, Aff4Writer};
@@ -29,9 +31,10 @@ pub fn acquire_e01(
     source: &str,
     destination: &Path,
     cancel_flag: &AtomicBool,
+    bad_log: &mut BadSectorLog,
 ) -> Result<String, String> {
     let path = e01_path(destination);
-    EwfWriter::new(&path).acquire(source, cancel_flag)
+    EwfWriter::new(&path).acquire(source, cancel_flag, bad_log)
 }
 
 /// Native Rust AFF4-L ZIP container (no aff4acquire).
@@ -41,9 +44,10 @@ pub fn acquire_aff4(
     split_size: Option<u64>,
     verify: bool,
     cancel_flag: &AtomicBool,
+    bad_log: &mut BadSectorLog,
 ) -> Result<String, String> {
     let path = aff4_path(destination);
-    let hash = Aff4Writer::new(&path).acquire(source, split_size, cancel_flag)?;
+    let hash = Aff4Writer::new(&path).acquire(source, split_size, cancel_flag, bad_log)?;
     if verify {
         if split_size.is_some() {
             let parts = count_split_aff4_parts(&path);

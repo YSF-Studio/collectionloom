@@ -250,8 +250,22 @@ pub fn list_exports(case_id: String) -> Result<Vec<ExportResult>, String> {
 }
 
 #[tauri::command]
-pub fn generate_qr_label(evidence_id: String, device: String, case_name: String) -> Result<Vec<u8>, String> {
-    Ok(ysf_core::generate_qr_label(&evidence_id, &device, &case_name))
+pub fn generate_qr_label(
+    evidence_id: String,
+    device: String,
+    case_name: String,
+    operator: Option<String>,
+    acquired_at: Option<String>,
+    hash_sha256: Option<String>,
+) -> Result<Vec<u8>, String> {
+    Ok(ysf_core::generate_qr_label(
+        &evidence_id,
+        &device,
+        &case_name,
+        operator.as_deref(),
+        acquired_at.as_deref(),
+        hash_sha256.as_deref(),
+    ))
 }
 
 #[tauri::command]

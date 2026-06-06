@@ -6,7 +6,7 @@ import SectionHeader from "./ui/SectionHeader.svelte";
 import { snapshotGuide } from "../guides.js";
 import { createCase } from "../api/case.js";
 
-let { sharedState, busy, setBusy, setMsg, timeoutPromise } = $props();
+let { sharedState, caseState = {}, busy, setBusy, setMsg, timeoutPromise } = $props();
 let evidenceId = $state("");
 let caseName = $state("");
 let operator = $state("");
@@ -15,6 +15,11 @@ let timezone = $state(Intl.DateTimeFormat().resolvedOptions().timeZone);
 let actions = $state([]);
 let signature = $state("");
 let publicKey = $state("");
+let signedAt = $state("");
+let timestampToken = $state(null);
+let hashSha256 = $state("");
+let tsaUrl = $state("");
+let acquiredAt = $state("");
 let signLoading = $state(false);
 let qrDataUrl = $state("");
 let linkedCaseId = $state("");
@@ -52,6 +57,9 @@ async function loadQr() {
       evidenceId,
       device: device || "unknown",
       caseName: caseName || "case",
+      operator: operator || null,
+      acquiredAt: acquiredAt || new Date().toISOString(),
+      hashSha256: hashSha256 || null,
     });
     qrDataUrl = bytesToDataUrl(new Uint8Array(bytes));
   } catch {
@@ -75,11 +83,14 @@ async function createCoc() {
     });
     linkedCaseId = linkedCase.case_id;
     sharedState.caseId = linkedCaseId;
+    caseState.caseId = linkedCaseId;
+    caseState.operator = operator;
 
     evidenceId = await timeoutPromise(
       invoke("create_chain_of_custody", { caseName, operator, sourceDevice: device }),
       5000
     );
+    acquiredAt = new Date().toISOString();
     actions = [
       {
         timestamp: new Date().toISOString(),
@@ -114,10 +125,22 @@ async function signCoc() {
   if (!evidenceId) return;
   signLoading = true;
   try {
-    const result = await timeoutPromise(invoke("sign_coc", { evidenceId }), 10000);
+    const result = await timeoutPromise(
+      invoke("sign_coc", {
+        evidenceId,
+        hashSha256: hashSha256 || null,
+        operator: operator || null,
+        tsaUrl: tsaUrl || null,
+      }),
+      30000
+    );
     signature = result.signature_hex || result.signature || "";
     publicKey = result.public_key_hex || result.public_key || "";
-    setMsg("OK: CoC signed successfully");
+    signedAt = result.signed_at || result.timestamp?.signedAt || "";
+    timestampToken = result.timestamp || null;
+    if (signedAt) acquiredAt = signedAt;
+    await loadQr();
+    setMsg("OK: CoC signed with timestamp");
   } catch (e) {
     setMsg(`ERR: ${typeof e === "string" ? e : String(e)}`);
   }
@@ -153,6 +176,8 @@ async function signCoc() {
     <div class="field"><label for="coc-operator">Operator</label><input id="coc-operator" type="text" bind:value={operator} /></div>
     <div class="field"><label for="coc-tz">Timezone</label><input id="coc-tz" type="text" bind:value={timezone} /></div>
     <div class="field"><label for="coc-device">Source Device</label><input id="coc-device" type="text" bind:value={device} placeholder="/dev/disk2" /></div>
+    <div class="field"><label for="coc-hash">Evidence SHA-256</label><input id="coc-hash" type="text" bind:value={hashSha256} placeholder="Optional — from acquisition" /></div>
+    <div class="field"><label for="coc-tsa">RFC 3161 TSA URL</label><input id="coc-tsa" type="text" bind:value={tsaUrl} placeholder="Optional — falls back to local Ed25519" /></div>
   </MacCard>
 
   {#if !linkedCaseId}
@@ -179,8 +204,13 @@ async function signCoc() {
 
     {#if signature}
       <MacCard title="Signature">
+        {#if signedAt}<div class="sig-row"><span>Signed At</span><code>{signedAt}</code></div>{/if}
         <div class="sig-row"><span>Signature</span><code>{signature.slice(0, 48)}…</code></div>
         {#if publicKey}<div class="sig-row"><span>Public Key</span><code>{publicKey.slice(0, 48)}…</code></div>{/if}
+        {#if timestampToken}
+          <div class="sig-row"><span>Timestamp</span><code>{timestampToken.method}{timestampToken.tsaUrl ? ` · ${timestampToken.tsaUrl}` : ""}</code></div>
+          <div class="sig-row"><span>Digest</span><code>{(timestampToken.contentDigest || timestampToken.content_digest || "").slice(0, 32)}…</code></div>
+        {/if}
       </MacCard>
     {/if}
   {/if}

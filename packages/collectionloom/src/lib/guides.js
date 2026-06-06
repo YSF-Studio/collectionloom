@@ -258,7 +258,7 @@ export const acquireAllGuide = {
     {
       title: "Run batch acquisition and verify",
       description:
-        "Click **Start Acquire All**. Disk imaging runs first when enabled, then RAM, network, and mobile in sequence. Monitor per-module progress. After completion, record SHA-256 hashes from disk/RAM outputs in the Chain of Custody tab and export the case bundle when ready.",
+        "Click **Start Acquire All**. Modules run in order of volatility (RFC 3227 / NIST SP 800-86): **Network → RAM → Mobile → Disk → Cloud**. Volatile sources are captured first; disk imaging runs last when enabled. Each volatile output is SHA-256 hashed with dual-read verification. After completion, record hashes in the Chain of Custody tab and export the case bundle when ready.",
     },
   ],
   references: [

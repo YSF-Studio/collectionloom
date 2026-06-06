@@ -1,6 +1,6 @@
 use serde::Serialize;
 use std::fs::{File, OpenOptions};
-use std::io::{Read, Write, BufReader, BufWriter};
+use std::io::{Read, Seek, Write, BufWriter};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::Ordering;
 use std::time::Instant;
@@ -8,6 +8,7 @@ use sha2::Digest;
 
 use crate::imaging_format::ImageFormat;
 use crate::progress::ImagingSummary;
+use crate::bad_sector::{read_resilient, BadSectorLog, DEFAULT_SECTOR_SIZE};
 
 /// Bytes hashed for pre/post source integrity (sectors 0–99, 51200 bytes).
 pub const SOURCE_INTEGRITY_BYTES: u64 = 51200;
@@ -259,6 +260,7 @@ impl DiskImager {
     pub fn run(&self, cancel_flag: &std::sync::atomic::AtomicBool) -> Result<String, String> {
         let source = crate::imaging_format::normalize_block_source(&self.source);
         let started = Instant::now();
+        let mut bad_log = BadSectorLog::new();
 
         // Pre-imaging source integrity hash (first ~51200 bytes)
         let pre_source_hash = {
@@ -267,32 +269,13 @@ impl DiskImager {
             hash_prefix_from_reader(&mut src, SOURCE_INTEGRITY_BYTES)?
         };
 
-        let (hash, summary) = match self.format {
+        let (hash, mut summary) = match self.format {
             ImageFormat::E01 => {
-                let hash = crate::imaging_format::acquire_e01(&source, &self.destination, cancel_flag)?;
-                let duration = started.elapsed().as_secs_f64();
-                let bytes = crate::block_device::device_size(&source).unwrap_or(0);
-                let sectors = if bytes > 0 { bytes / 512 } else { 0 };
-                (
-                    hash.clone(),
-                    ImagingSummary {
-                        sha256: hash,
-                        sectors_read: sectors,
-                        avg_speed_bytes_per_sec: if duration > 0.0 { bytes as f64 / duration } else { 0.0 },
-                        error_sectors: 0,
-                        duration_secs: duration,
-                        source_integrity_ok: true,
-                        bytes_written: bytes,
-                    },
-                )
-            }
-            ImageFormat::Aff4 => {
-                let hash = crate::imaging_format::acquire_aff4(
+                let hash = crate::imaging_format::acquire_e01(
                     &source,
                     &self.destination,
-                    self.split_size,
-                    self.verify,
                     cancel_flag,
+                    &mut bad_log,
                 )?;
                 let duration = started.elapsed().as_secs_f64();
                 let bytes = crate::block_device::device_size(&source).unwrap_or(0);
@@ -303,15 +286,49 @@ impl DiskImager {
                         sha256: hash,
                         sectors_read: sectors,
                         avg_speed_bytes_per_sec: if duration > 0.0 { bytes as f64 / duration } else { 0.0 },
-                        error_sectors: 0,
+                        error_sectors: bad_log.error_sectors,
                         duration_secs: duration,
                         source_integrity_ok: true,
                         bytes_written: bytes,
+                        bad_sectors_log: None,
                     },
                 )
             }
-            ImageFormat::Raw => self.run_raw(&source, cancel_flag, started, pre_source_hash.clone())?,
+            ImageFormat::Aff4 => {
+                let hash = crate::imaging_format::acquire_aff4(
+                    &source,
+                    &self.destination,
+                    self.split_size,
+                    self.verify,
+                    cancel_flag,
+                    &mut bad_log,
+                )?;
+                let duration = started.elapsed().as_secs_f64();
+                let bytes = crate::block_device::device_size(&source).unwrap_or(0);
+                let sectors = if bytes > 0 { bytes / 512 } else { 0 };
+                (
+                    hash.clone(),
+                    ImagingSummary {
+                        sha256: hash,
+                        sectors_read: sectors,
+                        avg_speed_bytes_per_sec: if duration > 0.0 { bytes as f64 / duration } else { 0.0 },
+                        error_sectors: bad_log.error_sectors,
+                        duration_secs: duration,
+                        source_integrity_ok: true,
+                        bytes_written: bytes,
+                        bad_sectors_log: None,
+                    },
+                )
+            }
+            ImageFormat::Raw => self.run_raw(&source, cancel_flag, started, pre_source_hash.clone(), &mut bad_log)?,
         };
+
+        if bad_log.error_sectors > 0 {
+            if let Ok(Some(log_path)) = bad_log.write_log_file(&self.destination) {
+                summary.bad_sectors_log = Some(log_path.to_string_lossy().into_owned());
+                summary.error_sectors = bad_log.error_sectors;
+            }
+        }
 
         // Post-imaging source integrity: re-read prefix from source
         let post_source_hash = {
@@ -340,11 +357,11 @@ impl DiskImager {
         cancel_flag: &std::sync::atomic::AtomicBool,
         started: Instant,
         pre_source_hash: String,
+        bad_log: &mut BadSectorLog,
     ) -> Result<(String, ImagingSummary), String> {
-        let src = File::open(source)
+        let mut src_file = File::open(source)
             .map_err(|e| format!("Cannot open source {source}: {e}"))?;
         let src_size = crate::block_device::device_size(source)?;
-        let mut reader = BufReader::with_capacity(super::hashing::HASH_BUFFER_SIZE, src);
         let has_known_size = src_size > 0;
 
         let mut total_written: u64 = 0;
@@ -381,13 +398,23 @@ impl DiskImager {
                 if cancel_flag.load(Ordering::SeqCst) {
                     return Err("CANCELLED".into());
                 }
-                let n = match reader.read(&mut buf) {
-                    Ok(n) => n,
-                    Err(e) => {
-                        return Err(format!("Read error at sector ~{}: {e}", total_written / 512));
-                    }
-                };
-                if n == 0 { break; }
+                let byte_offset = src_file
+                    .stream_position()
+                    .map_err(|e| format!("Stream position: {e}"))?;
+                let to_read = buf.len().min((split_limit - part_written) as usize);
+                if to_read == 0 {
+                    break;
+                }
+                let n = read_resilient(
+                    &mut src_file,
+                    &mut buf[..to_read],
+                    byte_offset,
+                    DEFAULT_SECTOR_SIZE,
+                    bad_log,
+                )?;
+                if n == 0 {
+                    break;
+                }
 
                 let chunk = &buf[..n];
                 writer.write_all(chunk).map_err(|e| format!("Write error: {}", e))?;
@@ -395,6 +422,11 @@ impl DiskImager {
                 part_written += n as u64;
                 total_written += n as u64;
 
+                let status_suffix = if bad_log.error_sectors > 0 {
+                    format!(" · {} bad sectors (zeroed)", bad_log.error_sectors)
+                } else {
+                    String::new()
+                };
                 let pct = if has_known_size && src_size > 0 {
                     (total_written as f64 / src_size as f64) * 100.0
                 } else {
@@ -403,19 +435,22 @@ impl DiskImager {
                 super::progress::update_progress(
                     pct,
                     &format!(
-                        "Imaging: {} / {}",
+                        "Imaging: {} / {}{}",
                         crate::block_device::format_capacity(total_written),
                         if has_known_size {
                             crate::block_device::format_capacity(src_size)
                         } else {
                             "unknown".into()
-                        }
+                        },
+                        status_suffix
                     ),
                     total_written,
                     if has_known_size { src_size } else { 0 },
                 );
 
-                if part_written >= split_limit { break; }
+                if part_written >= split_limit {
+                    break;
+                }
             }
 
             writer.flush().map_err(|e| e.to_string())?;
@@ -453,7 +488,6 @@ impl DiskImager {
                 }
             }
 
-            // Verify image prefix matches pre-source hash
             let first_part = if self.split_size.is_some() {
                 dir.join(format!("{}.00001", stem))
             } else {
@@ -475,10 +509,11 @@ impl DiskImager {
             } else {
                 0.0
             },
-            error_sectors: 0,
+            error_sectors: bad_log.error_sectors,
             duration_secs: duration,
             source_integrity_ok: true,
             bytes_written: total_written,
+            bad_sectors_log: None,
         };
 
         Ok((hash, summary))

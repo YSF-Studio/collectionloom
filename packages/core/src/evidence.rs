@@ -146,12 +146,28 @@ impl ChainOfCustody {
     }
 }
 
-/// Generate QR code PNG for evidence label (scannable).
-pub fn generate_qr_label(evidence_id: &str, device: &str, case: &str) -> Vec<u8> {
+/// Generate QR code PNG for evidence label (scannable, ISO 27037 §7.1).
+pub fn generate_qr_label(
+    evidence_id: &str,
+    device: &str,
+    case: &str,
+    operator: Option<&str>,
+    acquired_at: Option<&str>,
+    hash_sha256: Option<&str>,
+) -> Vec<u8> {
     use image::{ImageBuffer, Rgb, RgbImage};
     use qrcode::QrCode;
 
-    let text = format!("EID:{evidence_id}\nDEV:{device}\nCASE:{case}");
+    let mut text = format!("EID:{evidence_id}\nDEV:{device}\nCASE:{case}");
+    if let Some(op) = operator.filter(|s| !s.is_empty()) {
+        text.push_str(&format!("\nOP:{op}"));
+    }
+    if let Some(at) = acquired_at.filter(|s| !s.is_empty()) {
+        text.push_str(&format!("\nAT:{at}"));
+    }
+    if let Some(h) = hash_sha256.filter(|s| !s.is_empty()) {
+        text.push_str(&format!("\nSHA256:{h}"));
+    }
     let code = QrCode::new(text.as_bytes()).expect("valid QR payload");
     let modules = code.width() as u32;
     let scale = 8u32;

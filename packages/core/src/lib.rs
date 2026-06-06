@@ -25,13 +25,21 @@ pub mod report;
 pub mod snapshot;
 pub mod preview;
 pub mod hpa_dco;
+pub mod bad_sector;
+pub mod timestamp;
+pub mod storage_check;
+pub mod evidence_hash;
 
 // Re-export commonly used types
 pub use progress::{ProgressState, CancelFlag, set_cancel_flag, is_cancelled, ImagingSummary};
 pub use hashing::{multi_hash, compute_entropy, check_magic_bytes, HASH_BUFFER_SIZE};
 pub use crypto::{sign_data, verify_signature, generate_keypair, KeypairStore};
 pub use evidence::{EvidenceId, ActionLog, ChainOfCustody, generate_qr_label};
+pub use timestamp::{TimestampToken, create_local_timestamp, create_timestamp_with_optional_tsa, verify_local_timestamp};
+pub use storage_check::{StorageCheckReport, verify_acquisition_storage};
+pub use evidence_hash::{EvidenceHashReport, hash_and_verify_evidence};
 pub use hpa_dco::{HpaDcoReport, detect as detect_hpa_dco};
+pub use bad_sector::{BadSectorLog, read_resilient, DEFAULT_SECTOR_SIZE};
 pub use encryption_detect::{EncryptionReport, FdeType, scan_encryption};
 pub use imaging::{DiskImager, AcquisitionState, DiskInfo};
 pub use imaging_format::ImageFormat;

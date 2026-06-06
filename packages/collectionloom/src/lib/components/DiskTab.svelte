@@ -1,5 +1,5 @@
 <script>
-import { invoke, openDialog, isPreviewError } from "../api/tauri.js";
+import { invoke, openDialog, isPreviewError, listenEvent, isTauri } from "../api/tauri.js";
 import GuideCard from "./GuideCard.svelte";
 import MacCard from "./ui/MacCard.svelte";
 import SectionHeader from "./ui/SectionHeader.svelte";
@@ -9,6 +9,7 @@ import { diskImagingGuide } from "../guides.js";
 
 let {
   sharedState,
+  caseState = {},
   busy,
   setBusy,
   setMsg,
@@ -36,6 +37,47 @@ let wbStatus = $state(null);
 let hpaReport = $state(null);
 let hpaBusy = $state(false);
 let imagingSummary = $state(null);
+let unlistenComplete = null;
+let unlistenError = null;
+
+function finishImagingPoll(p) {
+  if (pollId) clearInterval(pollId);
+  pollId = null;
+  collBusy = false;
+  eta = "";
+  startTime = null;
+  progress = p ?? progress;
+  if (p?.summary) imagingSummary = p.summary;
+  setMsg(p?.error ? `ERR: ${p.error}` : imagingSummary?.errorSectors > 0
+    ? `WARN: Imaging complete with ${imagingSummary.errorSectors} bad sector(s) zero-filled — see log`
+    : "OK: Imaging complete");
+  onProgressChange({ progress: p ?? progress, collBusy: false, eta: "", selectedDisk, imageFormat });
+}
+
+function onImagingComplete(payload) {
+  if (payload?.summary) imagingSummary = payload.summary;
+  else if (payload?.hash && !imagingSummary) {
+    imagingSummary = { sha256: payload.hash };
+  }
+  finishImagingPoll({ ...progress, isDone: true, error: null, summary: imagingSummary });
+}
+
+$effect(() => {
+  if (!isTauri()) return;
+  listenEvent("imaging_complete", (event) => onImagingComplete(event.payload)).then((fn) => {
+    unlistenComplete = fn;
+  });
+  listenEvent("imaging_error", (event) => {
+    finishImagingPoll({ ...progress, isDone: true, error: String(event.payload ?? "Imaging failed") });
+    setMsg(`ERR: ${event.payload}`);
+  }).then((fn) => {
+    unlistenError = fn;
+  });
+  return () => {
+    unlistenComplete?.();
+    unlistenError?.();
+  };
+});
 
 let selectedDiskInfo = $derived(disks.find((d) => d.device === selectedDisk) || null);
 
@@ -179,6 +221,8 @@ async function startImaging() {
         splitSizeMb: parseInt(splitSize) || 0,
         verify: shouldVerify || hashSha256,
         imageFormat,
+        caseId: caseState.caseId || null,
+        operator: caseState.operator || null,
       }),
       5000
     );
@@ -198,13 +242,7 @@ async function startImaging() {
         }
         onProgressChange({ progress: p, collBusy: true, eta, selectedDisk, imageFormat });
         if (p.isDone) {
-          clearInterval(pollId);
-          collBusy = false;
-          eta = "";
-          startTime = null;
-          imagingSummary = p.summary ?? null;
-          setMsg(p.error ? `ERR: ${p.error}` : "OK: Imaging complete");
-          onProgressChange({ progress: p, collBusy: false, eta: "", selectedDisk, imageFormat });
+          finishImagingPoll(p);
         }
       } catch {
         clearInterval(pollId);
@@ -314,12 +352,18 @@ $effect(() => {
   {#if imagingSummary}
     <MacCard title="Acquisition Summary">
       <div class="summary-grid">
-        <span>Sectors read: {imagingSummary.sectorsRead?.toLocaleString?.() ?? imagingSummary.sectorsRead}</span>
-        <span>Duration: {imagingSummary.durationSecs?.toFixed?.(1) ?? imagingSummary.durationSecs}s</span>
+        <span>Sectors read: {imagingSummary.sectorsRead?.toLocaleString?.() ?? imagingSummary.sectorsRead ?? "—"}</span>
+        <span>Duration: {imagingSummary.durationSecs?.toFixed?.(1) ?? imagingSummary.durationSecs ?? "—"}s</span>
         <span>Avg speed: {((imagingSummary.avgSpeedBytesPerSec ?? 0) / 1e6).toFixed(1)} MB/s</span>
-        <span>Error sectors: {imagingSummary.errorSectors ?? 0}</span>
+        <span class:warn-sector={(imagingSummary.errorSectors ?? 0) > 0}>
+          Error sectors: {imagingSummary.errorSectors ?? 0}
+          {#if (imagingSummary.errorSectors ?? 0) > 0} (zeroed in image){/if}
+        </span>
         <span>Source integrity: {imagingSummary.sourceIntegrityOk ? "OK" : "FAILED"}</span>
-        <span class="mono">SHA-256: {imagingSummary.sha256}</span>
+        <span class="mono">SHA-256: {imagingSummary.sha256 ?? "—"}</span>
+        {#if imagingSummary.badSectorsLog}
+          <span class="mono">Bad-sector log: {imagingSummary.badSectorsLog}</span>
+        {/if}
       </div>
     </MacCard>
   {/if}
@@ -342,6 +386,7 @@ $effect(() => {
   .wb-btns { display: flex; gap: 8px; flex-wrap: wrap; }
   .hpa-report { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
   .summary-grid { display: grid; gap: 6px; font-size: 12px; color: var(--text-secondary); }
+  .warn-sector { color: var(--warn); font-weight: 600; }
   .wb-notes { margin: 0; font-size: 11px; color: var(--text-muted); }
   .split-row { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; align-items: center; }
   .check { display: flex; align-items: center; gap: 6px; }

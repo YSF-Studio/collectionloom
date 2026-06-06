@@ -64,7 +64,24 @@ export async function fixtureInvoke(cmd, args = {}) {
     return Array.from(new Uint8Array(png));
   }
   if (cmd === "sign_coc") {
-    return { signature: "demo-ed25519-signature", publicKey: "demo-public-key-base64" };
+    return {
+      signature_hex: "demo-ed25519-signature",
+      public_key_hex: "demo-public-key-hex",
+      signed_at: new Date().toISOString(),
+      timestamp: { method: "local-ed25519", signedAt: new Date().toISOString(), contentDigest: "demo-digest" },
+    };
+  }
+  if (cmd === "verify_acquisition_storage") {
+    return { ok: true, outputPath: args.output, notes: "Output storage OK for acquisition" };
+  }
+  if (cmd === "hash_and_verify_evidence") {
+    return {
+      path: args.path,
+      sha256: "a".repeat(64),
+      sizeBytes: 1024,
+      verified: true,
+      verifyPasses: 2,
+    };
   }
   if (cmd === "create_chain_of_custody") {
     return { evidenceId: table.generate_evidence_id, status: "created" };
@@ -133,7 +150,13 @@ export async function fixtureInvoke(cmd, args = {}) {
     return null;
   }
   if (cmd === "capture_ram" || cmd === "adb_backup") {
-    return "started";
+    return {
+      message: "started",
+      output: args.output,
+      sha256: "b".repeat(64),
+      verified: true,
+      sizeBytes: 2048,
+    };
   }
   if (cmd === "start_snapshot") {
     return table.list_snapshots_cmd?.[0] ?? {};

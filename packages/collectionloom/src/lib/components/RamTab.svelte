@@ -2,7 +2,7 @@
 import { invoke } from "../api/tauri.js";
 import GuideCard from "./GuideCard.svelte";
 import { ramCaptureGuide } from "../guides.js";
-let { sharedState, busy, setBusy, setMsg, timeoutPromise } = $props();
+let { sharedState, caseState = {}, busy, setBusy, setMsg, timeoutPromise } = $props();
 let tools = $state([]);
 let selectedTool = $state("");
 let outputPath = $state("/mnt/evidence/ram_capture.lime");
@@ -28,15 +28,33 @@ async function capture() {
   setBusy(true);
   hashResult = "";
   try {
-    const result = await timeoutPromise(invoke("capture_ram", { tool: selectedTool, output: outputPath, compress }), 120000);
-    setMsg(`OK: ${result}`);
-    // Auto hash after successful capture
-    if (autoHash && outputPath) {
+    const storage = await timeoutPromise(
+      invoke("verify_acquisition_storage", { output: outputPath }),
+      10000
+    );
+    if (!storage.ok) {
+      setMsg(`WARN: ${storage.notes}`);
+      setBusy(false);
+      return;
+    }
+    const result = await timeoutPromise(invoke("capture_ram", {
+      tool: selectedTool,
+      output: outputPath,
+      compress,
+      caseId: caseState.caseId || null,
+      operator: caseState.operator || null,
+    }), 120000);
+    const sha256 = result?.sha256;
+    const verified = result?.verified;
+    setMsg(`OK: ${result?.message || "Capture complete"}`);
+    if (autoHash && sha256) {
+      hashResult = `SHA-256: ${sha256}${verified === false ? " (NOT verified — re-read mismatch)" : verified ? " (verified ×2)" : ""}`;
+    } else if (autoHash && outputPath) {
       try {
-        const hash = await timeoutPromise(invoke("compute_file_hash", { path: outputPath }), 30000);
-        hashResult = `SHA-256: ${hash}`;
+        const hash = await timeoutPromise(invoke("hash_and_verify_evidence", { path: outputPath }), 30000);
+        hashResult = `SHA-256: ${hash.sha256}${hash.verified ? " (verified ×2)" : " (NOT verified)"}`;
       } catch(e) {
-        hashResult = `❌ Hash computation failed: ${typeof e === "string" ? e : String(e)}`;
+        hashResult = `Hash failed: ${typeof e === "string" ? e : String(e)}`;
       }
     }
   } catch(e) { setMsg(`ERR: ${typeof e === "string" ? e : String(e)}`); }

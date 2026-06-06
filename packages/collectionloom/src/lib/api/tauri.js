@@ -15,7 +15,6 @@ export function isPreviewError(err) {
   return err instanceof Error && err.message === PREVIEW_MODE;
 }
 
-/** @type {typeof import('@tauri-apps/api/core').invoke} */
 export async function invoke(cmd, args = {}) {
   if (isFixtureMode()) {
     return fixtureInvoke(cmd, args);
@@ -39,4 +38,11 @@ export async function openPath(path) {
   if (!isTauri()) return;
   const { open } = await import("@tauri-apps/plugin-shell");
   return open(path);
+}
+
+/** @param {string} event @param {(payload: import('@tauri-apps/api/event').Event<any>) => void} handler */
+export async function listenEvent(event, handler) {
+  if (!isTauri()) return () => {};
+  const { listen } = await import("@tauri-apps/api/event");
+  return listen(event, handler);
 }

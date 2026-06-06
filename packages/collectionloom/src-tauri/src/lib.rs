@@ -58,6 +58,8 @@ pub fn run() {
             commands::get_ram_size,
             commands::list_processes,
             commands::capture_ram,
+            commands::verify_acquisition_storage,
+            commands::hash_and_verify_evidence,
             commands::enable_write_blocker,
             commands::disable_write_blocker,
             commands::check_write_blocker,

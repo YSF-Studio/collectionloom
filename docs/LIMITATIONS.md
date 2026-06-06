@@ -79,9 +79,10 @@ This document describes what CollectionLoom **does not** guarantee, platform-spe
 
 | Topic | Limitation |
 |-------|------------|
-| **Fields** | Reports sectors read, duration, average speed, SHA-256, and source-integrity result after completion. |
-| **Error sectors** | `error_sectors` remains **0** unless imaging aborts on read failure — the engine fails fast rather than skipping bad sectors and continuing. |
+| **Fields** | Reports sectors read, duration, average speed, SHA-256, source integrity, and bad-sector count. |
+| **Bad sectors** | Unreadable sectors are **zero-filled** and logged to `{image}.bad_sectors.log`; acquisition continues (does not fail). |
 | **CoC integration** | Hashes are also recorded in chain-of-custody actions; the summary card is an in-app convenience, not a signed report. |
+| **Acquisition audit** | Disk/RAM acquisitions append to `~/CollectionLoom/cases/acquisition_audit.jsonl` and `{case}/logs/acquisition_audit.jsonl` when linked to a case. |
 
 ---
 
