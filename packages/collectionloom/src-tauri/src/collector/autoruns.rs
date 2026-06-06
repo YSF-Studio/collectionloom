@@ -95,6 +95,7 @@ impl CollectorModule for AutorunCollector {
     }
 }
 
+#[cfg(any(target_os = "macos", target_os = "linux"))]
 fn scan_dir(dir: &str, kind: &str) -> Vec<serde_json::Value> {
     let mut items = Vec::new();
     if let Ok(entries) = std::fs::read_dir(dir) {
