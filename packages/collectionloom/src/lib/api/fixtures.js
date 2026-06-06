@@ -63,7 +63,10 @@ export async function fixtureInvoke(cmd, args = {}) {
     return table.verify_hash?.actual ?? "";
   }
   if (cmd === "hpa_dco_detect") {
-    return "HPA: not detected\nDCO: not detected\nVisible sectors: match device size";
+    return {
+      hpa_dco_detection: "not_implemented",
+      note: "HPA/DCO detection is not implemented. No ATA IDENTIFY DEVICE query is performed.",
+    };
   }
   if (cmd === "start_disk_imaging" || cmd === "start_network_capture" || cmd === "capture_ram" || cmd === "adb_backup") {
     return "started";

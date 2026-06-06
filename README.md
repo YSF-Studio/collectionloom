@@ -19,7 +19,7 @@ CollectionLoom helps first responders and forensic analysts capture disk images,
 
 | Module | Description |
 |--------|-------------|
-| **Disk Imaging** | Sector-by-sector acquisition in RAW, native E01, or AFF4 format. SHA-256 verification, split images for multi-TB drives, HPA/DCO detection |
+| **Disk Imaging** | Sector-by-sector acquisition in RAW, native E01, or AFF4 format. SHA-256 verification, split images for multi-TB drives |
 | **Write Blocker** | Auto-detects Tableau/WiebeTech hardware blockers; one-click software protection on all platforms |
 | **RAM Capture** | Volatile memory via avml / LiME / DumpIt with optional compression |
 | **Mobile Triage** | Android ADB backup and iOS logical acquisition workflows |

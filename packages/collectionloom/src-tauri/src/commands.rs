@@ -230,7 +230,7 @@ pub fn sign_coc(evidence_id: String, private_key_hex: Option<String>) -> Result<
     }))
 }
 
-// ─── HPA / DCO Detection ───
+// ─── HPA / DCO (not implemented — device info only) ───
 
 #[tauri::command]
 pub fn hpa_dco_detect(device: String) -> Result<serde_json::Value, String> {
@@ -247,8 +247,8 @@ pub fn hpa_dco_detect(device: String) -> Result<serde_json::Value, String> {
         "sector_size": disk_info.sector_size,
         "is_ssd": disk_info.is_ssd,
         "partitions": disk_info.partitions,
-        "hpa_dco_detected": false,
-        "note": "Full HPA/DCO detection requires ATA commands — returning device info as a baseline."
+        "hpa_dco_detection": "not_implemented",
+        "note": "HPA/DCO detection is not implemented. No ATA IDENTIFY DEVICE query is performed. Use dedicated forensic tools for host-protected and device configuration overlays."
     }))
 }
 

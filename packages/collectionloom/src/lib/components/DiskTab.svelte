@@ -28,7 +28,6 @@ let hashSha256 = $state(true);
 let progress = $state({ percent: 0, status: "Idle", bytesProcessed: 0, totalBytes: 0, isDone: false, error: null });
 let collBusy = $state(false);
 let pollId = $state(null);
-let hpaDcoResult = $state("");
 let eta = $state("");
 let startTime = $state(null);
 let bitlockerDetected = $state(false);
@@ -205,20 +204,6 @@ async function cancelImaging() {
   startTime = null;
 }
 
-async function detectHpaDco() {
-  if (!selectedDisk) {
-    setMsg("WARN: Select a disk first");
-    return;
-  }
-  hpaDcoResult = "Detecting...";
-  try {
-    const result = await timeoutPromise(invoke("hpa_dco_detect", { device: selectedDisk }), 30000);
-    hpaDcoResult = typeof result === "string" ? result : JSON.stringify(result, null, 2);
-  } catch (e) {
-    hpaDcoResult = `ERR: ${typeof e === "string" ? e : String(e)}`;
-  }
-}
-
 $effect(() => {
   listDisks();
 });
@@ -288,12 +273,7 @@ $effect(() => {
     {:else}
       <button onclick={cancelImaging} class="btn-danger">Stop</button>
     {/if}
-    <button onclick={detectHpaDco} class="btn-sm" disabled={!selectedDisk || collBusy}>Detect HPA/DCO</button>
   </div>
-
-  {#if hpaDcoResult}
-    <MacCard title="HPA/DCO Result"><pre class="mono">{hpaDcoResult}</pre></MacCard>
-  {/if}
 
   <GuideCard title={diskImagingGuide.title} icon={diskImagingGuide.icon} steps={diskImagingGuide.steps} references={diskImagingGuide.references} />
 </div>
