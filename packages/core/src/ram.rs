@@ -106,6 +106,7 @@ pub fn get_ram_size() -> Result<u64, String> {
                 return Ok(kb * 1024);
             }
         }
+        return Err("MemTotal not found in /proc/meminfo".into());
     }
     #[cfg(target_os = "macos")]
     {
@@ -123,7 +124,5 @@ pub fn get_ram_size() -> Result<u64, String> {
         return Ok(bytes);
     }
     #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
-    {
-        Err("Cannot determine RAM size".into())
-    }
+    Err("Cannot determine RAM size".into())
 }
