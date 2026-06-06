@@ -2,7 +2,7 @@
 
 import { invoke, isTauri } from "./tauri.js";
 
-/** @typedef {{ platform: string, kitRoot?: string, toolsDir?: string, casesDir: string, defaultAcquisitionDir: string, portableMode: boolean, pathSeparator: string }} PortableLayout */
+/** @typedef {{ platform: string, kitRoot?: string, toolsDir?: string, casesDir: string, defaultAcquisitionDir: string, portableMode: boolean, distributionMode: string, pathSeparator: string }} PortableLayout */
 
 /** @returns {Promise<PortableLayout>} */
 export async function getPortableLayout() {
@@ -12,6 +12,7 @@ export async function getPortableLayout() {
       casesDir: "~/CollectionLoom/cases",
       defaultAcquisitionDir: "/tmp/collectionloom_acquisition",
       portableMode: false,
+      distributionMode: "installed",
       pathSeparator: "/",
     };
   }

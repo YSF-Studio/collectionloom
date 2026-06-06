@@ -40,6 +40,8 @@ pub struct PortableLayout {
     pub cases_dir: String,
     pub default_acquisition_dir: String,
     pub portable_mode: bool,
+    /// `portable` (USB kit with tools/) or `installed` (DMG/MSI/DEB — data in home dir).
+    pub distribution_mode: String,
     pub path_separator: String,
 }
 
@@ -210,6 +212,14 @@ pub fn join_acquisition_path(filename: &str) -> PathBuf {
     default_acquisition_dir().join(filename)
 }
 
+pub fn distribution_mode() -> &'static str {
+    if is_portable_mode() {
+        "portable"
+    } else {
+        "installed"
+    }
+}
+
 pub fn portable_layout() -> PortableLayout {
     let _ = ensure_kit_directories();
     let kit = resolve_kit_root();
@@ -229,6 +239,7 @@ pub fn portable_layout() -> PortableLayout {
         cases_dir: cases.to_string_lossy().into_owned(),
         default_acquisition_dir: default_acquisition_dir().to_string_lossy().into_owned(),
         portable_mode: is_portable_mode(),
+        distribution_mode: distribution_mode().into(),
         path_separator: path_separator().into(),
     }
 }
@@ -399,6 +410,7 @@ pub struct PortableStatus {
     pub tools_dir_exists: bool,
     pub manifest_loaded: bool,
     pub portable_mode: bool,
+    pub distribution_mode: String,
 }
 
 pub fn portable_status() -> PortableStatus {
@@ -413,7 +425,8 @@ pub fn portable_status() -> PortableStatus {
         tools_dir: tools.as_ref().map(|p| p.to_string_lossy().into_owned()),
         tools_dir_exists: tools_exists,
         manifest_loaded,
-        portable_mode: tools_exists,
+        portable_mode: is_portable_mode(),
+        distribution_mode: distribution_mode().into(),
     }
 }
 

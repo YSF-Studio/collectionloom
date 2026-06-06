@@ -109,13 +109,16 @@ npm install
 npm run tauri dev
 ```
 
-### Release build
+### Build (local only)
+
+Pre-built binaries are **not published**. Build from source:
 
 ```bash
-npm run tauri build
+npm run build:install   # installers (DMG / NSIS / deb / AppImage)
+npm run build:portable  # installers + portable zip in dist/portable/
 ```
 
-Binaries and installers are available on the [Releases](https://github.com/YSF-Studio/collectionloom/releases) page.
+See [docs/INSTALL.md](docs/INSTALL.md) for using each artifact after a local build.
 
 ---
 

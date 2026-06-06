@@ -33,6 +33,12 @@
     }
   },
   "bundle": {
+    "active": true,
+    "targets": "all",
+    "category": "Utility",
+    "shortDescription": "Portable forensic acquisition toolkit",
+    "longDescription": "ISO 27037-aligned evidence collection: disk imaging, RAM capture, write blocker, mobile triage, network capture, and chain of custody.",
+    "copyright": "YSF Studio",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -43,7 +49,26 @@
     "macOS": {
       "entitlements": "entitlements.plist",
       "signingIdentity": null,
-      "minimumSystemVersion": "11.0"
+      "minimumSystemVersion": "11.0",
+      "dmg": {
+        "appPosition": { "x": 180, "y": 170 },
+        "applicationFolderPosition": { "x": 480, "y": 170 },
+        "windowSize": { "width": 660, "height": 400 }
+      }
+    },
+    "windows": {
+      "nsis": {
+        "installMode": "both",
+        "displayLanguageSelector": false
+      }
+    },
+    "linux": {
+      "appimage": {
+        "bundleMediaFramework": false
+      },
+      "deb": {
+        "depends": ["libwebkit2gtk-4.1-0", "libpcap0.8"]
+      }
     }
   }
 }

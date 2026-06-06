@@ -72,9 +72,12 @@ $effect(() => {
     <MacCard title="Portable Kit">
       <div class="summary-row">
         <PillBadge
-          variant={report.portable?.portableMode ? "active" : "info"}
-          label={report.portable?.portableMode ? "Portable mode" : "Standard install"}
+          variant={report.portable?.distributionMode === "portable" ? "active" : "info"}
+          label={report.portable?.distributionMode === "portable" ? "Portable kit" : "Installed app"}
         />
+        {#if report.portable?.portableMode && report.portable?.distributionMode !== "portable"}
+          <PillBadge variant="warning" label="Portable storage" />
+        {/if}
         {#if report.portable?.kitRoot}
           <span class="platform kit-path" title={report.portable.kitRoot}>Kit: {report.portable.kitRoot}</span>
         {/if}

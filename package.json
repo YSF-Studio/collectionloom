@@ -8,6 +8,8 @@
     "dev": "cd packages/collectionloom && npm run tauri dev",
     "dev:collectionloom": "cd packages/collectionloom && npm run tauri dev",
     "build": "cd packages/collectionloom && npm run tauri build",
+    "build:install": "cd packages/collectionloom && npm run build:install",
+    "build:portable": "cd packages/collectionloom && npm run build:portable",
     "build:collectionloom": "cd packages/collectionloom && npm run tauri build",
     "test:core": "cd packages/core && cargo test",
     "test:all": "cd packages/core && cargo test && cd ../collectionloom/src-tauri && cargo test",

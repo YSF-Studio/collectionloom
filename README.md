@@ -119,13 +119,26 @@ npm install
 npm run tauri dev
 ```
 
-### Release build
+### Build (local only)
+
+Pre-built binaries are **not published**. Build installers or a portable kit from source:
 
 ```bash
-npm run tauri build
+npm ci
+
+# Installers (DMG, NSIS, deb, AppImage) → packages/collectionloom/src-tauri/target/release/bundle/
+npm run build:install
+
+# Installers + portable forensic kit zip → dist/portable/
+npm run build:portable
 ```
 
-Binaries and installers are available on the [Releases](https://github.com/YSF-Studio/collectionloom/releases) page.
+| Output | Use case |
+|--------|----------|
+| **Installer** (DMG / NSIS / deb) | Daily workstation — cases in `~/CollectionLoom/cases/` |
+| **Portable zip** | USB / field kit — unzip and run; cases beside the app |
+
+See **[docs/INSTALL.md](docs/INSTALL.md)** for using each artifact after a local build.
 
 ---
 
@@ -133,6 +146,7 @@ Binaries and installers are available on the [Releases](https://github.com/YSF-S
 
 | Document | Description |
 |----------|-------------|
+| [Install & Portable](docs/INSTALL.md) | Installers vs USB portable kit on macOS, Windows, Linux |
 | [User Guide](docs/GUIDE.md) | Step-by-step acquisition procedures for every module |
 | [Known Limitations](docs/LIMITATIONS.md) | Platform scope, verification boundaries, and operational caveats |
 | [PRD V1](docs/PRD-EN.md) | Product requirements — snapshot, compare, export |
