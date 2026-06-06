@@ -85,7 +85,7 @@ $effect(() => {
 });
 </script>
 
-<div class="network-tab">
+<div class="tab-content network-tab">
   <SectionHeader title="Network Capture" subtitle="Packet capture via BPF filter" />
 
   <MacCard title="Interface">
@@ -143,7 +143,6 @@ $effect(() => {
 </div>
 
 <style>
-  .network-tab { max-width: 720px; }
   .full { width: 100%; background: var(--input-bg); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font-size: 13px; margin-bottom: 8px; }
   .duration-row { display: flex; flex-direction: column; gap: 4px; font-size: 13px; margin-top: 4px; }
   .duration-row input { width: 120px; }

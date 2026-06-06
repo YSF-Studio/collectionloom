@@ -5,7 +5,9 @@ import MacCard from "./ui/MacCard.svelte";
 import SectionHeader from "./ui/SectionHeader.svelte";
 import FormatPicker from "./ui/FormatPicker.svelte";
 import PillBadge from "./ui/PillBadge.svelte";
+import ConfirmDialog from "./ui/ConfirmDialog.svelte";
 import { diskImagingGuide } from "../guides.js";
+import { wbPillLabel } from "../wb.js";
 
 let {
   sharedState,
@@ -19,6 +21,9 @@ let {
 } = $props();
 
 let disks = $state([]);
+let disksLoading = $state(false);
+let showConfirmStart = $state(false);
+let showConfirmDisableWb = $state(false);
 let selectedDisk = $state("");
 let destPath = $state("/tmp/evidence/image.dd");
 let splitSize = $state("0");
@@ -90,6 +95,7 @@ $effect(() => {
 });
 
 async function listDisks() {
+  disksLoading = true;
   setBusy(true);
   try {
     disks = await timeoutPromise(invoke("list_disks"), 15000);
@@ -97,6 +103,7 @@ async function listDisks() {
     const err = typeof e === "string" ? e : String(e);
     if (err !== "TIMEOUT" && !isPreviewError(e)) setMsg(`ERR: ${err}`);
   }
+  disksLoading = false;
   setBusy(false);
 }
 
@@ -168,7 +175,12 @@ async function detectHpaDco() {
   hpaBusy = false;
 }
 
+function requestDisableWriteBlocker() {
+  showConfirmDisableWb = true;
+}
+
 async function disableWriteBlocker() {
+  showConfirmDisableWb = false;
   if (!selectedDisk) return;
   setBusy(true);
   try {
@@ -204,11 +216,17 @@ function resolveDestPath() {
   return destPath;
 }
 
-async function startImaging() {
+function requestStartImaging() {
   if (!selectedDisk || !destPath) {
     setMsg("WARN: Select a disk and destination");
     return;
   }
+  showConfirmStart = true;
+}
+
+async function startImaging() {
+  showConfirmStart = false;
+  if (!selectedDisk || !destPath) return;
   collBusy = true;
   startTime = Date.now();
   imagingSummary = null;
@@ -272,21 +290,31 @@ $effect(() => {
 });
 </script>
 
-<div class="disk-tab">
+<div class="tab-content disk-tab">
   <SectionHeader title="Acquire Drive" subtitle="Disk Imaging — sector-by-sector acquisition with hash verification" />
 
   <MacCard title="Source Drive">
     <div class="row">
-      <select bind:value={selectedDisk} disabled={collBusy || busy} class="full">
-        <option value="">— Select disk —</option>
+      <select bind:value={selectedDisk} disabled={collBusy || busy || disksLoading} class="full">
+        <option value="">{disksLoading ? "Loading disks…" : "— Select disk —"}</option>
         {#each disks as disk}
           <option value={disk.device}>
             {disk.device} — {disk.model || "Unknown"} ({(disk.sizeBytes / 1e9).toFixed(1)} GB {disk.isSsd ? "SSD" : "HDD"})
           </option>
         {/each}
       </select>
-      <button onclick={listDisks} class="btn-sm" disabled={collBusy}>Refresh</button>
+      <button onclick={listDisks} class="btn-sm" disabled={collBusy || disksLoading}>
+        {#if disksLoading}<span class="spinner">↻</span>{/if}
+        {disksLoading ? "Loading…" : "Refresh"}
+      </button>
     </div>
+    {#if !disksLoading && disks.length === 0}
+      <div class="empty-state">
+        <span class="icon">💾</span>
+        <p>No disks detected</p>
+        <p class="empty-hint">Connect a source drive and click Refresh, or check preview-mode fixtures.</p>
+      </div>
+    {/if}
     {#if selectedDiskInfo}
       <div class="drive-detail">
         <span>{selectedDiskInfo.device}</span>
@@ -302,12 +330,17 @@ $effect(() => {
     {#if selectedDisk}
       <div class="wb-section">
         {#if wbStatus}
-          <PillBadge variant={wbStatus.active ? "active" : "inactive"} label={wbStatus.active ? "Write-Blocker Active" : "Write-Blocker Inactive"} />
-          <span class="wb-detail">{wbStatus.method}{wbStatus.hardware ? " · hardware" : ""}{wbStatus.software ? " · software" : ""}</span>
+          <div class="wb-row">
+            <span class="wb-label">Write-Blocker:</span>
+            <PillBadge
+              variant={(wbStatus.active ?? wbStatus.enabled) ? "active" : "inactive"}
+              label={wbPillLabel(wbStatus)}
+            />
+          </div>
         {/if}
         <div class="wb-btns">
           <button onclick={enableWriteBlocker} class="btn-sm" disabled={collBusy || busy || !selectedDisk}>Enable Software Write-Blocker</button>
-          <button onclick={disableWriteBlocker} class="btn-sm" disabled={collBusy || busy || !selectedDisk || !wbStatus?.software}>Disable</button>
+          <button onclick={requestDisableWriteBlocker} class="btn-sm" disabled={collBusy || busy || !selectedDisk || !wbStatus?.software}>Disable</button>
           <button onclick={checkWriteBlocker} class="btn-sm" disabled={collBusy || !selectedDisk}>Refresh</button>
           <button onclick={detectHpaDco} class="btn-sm" disabled={collBusy || busy || hpaBusy || !selectedDisk}>
             {hpaBusy ? "Checking HPA/DCO…" : "Check HPA/DCO"}
@@ -343,7 +376,7 @@ $effect(() => {
 
   <div class="actions">
     {#if !collBusy}
-      <button onclick={startImaging} class="btn-primary" disabled={!selectedDisk}>Start Acquisition</button>
+      <button onclick={requestStartImaging} class="btn-primary" disabled={!selectedDisk}>Start Acquisition</button>
     {:else}
       <button onclick={cancelImaging} class="btn-danger">Stop</button>
     {/if}
@@ -352,9 +385,9 @@ $effect(() => {
   {#if imagingSummary}
     <MacCard title="Acquisition Summary">
       <div class="summary-grid">
-        <span>Sectors read: {imagingSummary.sectorsRead?.toLocaleString?.() ?? imagingSummary.sectorsRead ?? "—"}</span>
-        <span>Duration: {imagingSummary.durationSecs?.toFixed?.(1) ?? imagingSummary.durationSecs ?? "—"}s</span>
-        <span>Avg speed: {((imagingSummary.avgSpeedBytesPerSec ?? 0) / 1e6).toFixed(1)} MB/s</span>
+        <span class="summary-item">Sectors read: {imagingSummary.sectorsRead?.toLocaleString?.() ?? imagingSummary.sectorsRead ?? "—"}</span>
+        <span class="summary-item">Duration: {imagingSummary.durationSecs?.toFixed?.(1) ?? imagingSummary.durationSecs ?? "—"}s</span>
+        <span class="summary-item">Avg speed: {((imagingSummary.avgSpeedBytesPerSec ?? 0) / 1e6).toFixed(1)} MB/s</span>
         <span class:warn-sector={(imagingSummary.errorSectors ?? 0) > 0}>
           Error sectors: {imagingSummary.errorSectors ?? 0}
           {#if (imagingSummary.errorSectors ?? 0) > 0} (zeroed in image){/if}
@@ -371,8 +404,27 @@ $effect(() => {
   <GuideCard title={diskImagingGuide.title} icon={diskImagingGuide.icon} steps={diskImagingGuide.steps} references={diskImagingGuide.references} />
 </div>
 
+<ConfirmDialog
+  open={showConfirmStart}
+  title="Start Disk Acquisition?"
+  message="This will begin sector-by-sector imaging of the selected drive. Ensure write-blocker is active and the destination has sufficient free space."
+  confirmLabel="Start Acquisition"
+  variant="primary"
+  onConfirm={startImaging}
+  onCancel={() => (showConfirmStart = false)}
+/>
+
+<ConfirmDialog
+  open={showConfirmDisableWb}
+  title="Disable Write-Blocker?"
+  message="Disabling the software write-blocker allows writes to the source drive. Only proceed if imaging is complete and you intend to modify the device."
+  confirmLabel="Disable Write-Blocker"
+  variant="danger"
+  onConfirm={disableWriteBlocker}
+  onCancel={() => (showConfirmDisableWb = false)}
+/>
+
 <style>
-  .disk-tab { max-width: 720px; }
   .row { display: flex; gap: 8px; align-items: center; }
   .full { flex: 1; }
   select, input {
@@ -382,10 +434,21 @@ $effect(() => {
   .drive-detail { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 12px; color: var(--text-secondary); }
   .warn-text { margin: 0; font-size: 12px; color: var(--warn); }
   .wb-section { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .wb-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .wb-label { font-size: 11px; color: var(--text-muted); font-weight: 600; }
   .wb-detail { font-size: 11px; color: var(--text-secondary); }
+  .empty-hint { font-size: 11px !important; color: var(--text-muted); }
   .wb-btns { display: flex; gap: 8px; flex-wrap: wrap; }
   .hpa-report { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-  .summary-grid { display: grid; gap: 6px; font-size: 12px; color: var(--text-secondary); }
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    overflow: visible;
+  }
+  .summary-item { white-space: normal; word-break: break-word; overflow: visible; }
   .warn-sector { color: var(--warn); font-weight: 600; }
   .wb-notes { margin: 0; font-size: 11px; color: var(--text-muted); }
   .split-row { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; align-items: center; }

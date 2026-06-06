@@ -4,7 +4,9 @@ import GuideCard from "./GuideCard.svelte";
 import MacCard from "./ui/MacCard.svelte";
 import SectionHeader from "./ui/SectionHeader.svelte";
 import PillBadge from "./ui/PillBadge.svelte";
+import ConfirmDialog from "./ui/ConfirmDialog.svelte";
 import { acquireAllGuide } from "../guides.js";
+import { wbPillLabel } from "../wb.js";
 
 let { sharedState, caseState = {}, busy, setBusy, setMsg, timeoutPromise, onProgressChange = () => {}, onDeviceSelect = () => {} } = $props();
 
@@ -29,6 +31,8 @@ let mobileDeviceId = $state("");
 let cloudConfigured = $state(false);
 
 let running = $state(false);
+let detecting = $state(false);
+let showConfirmAcquire = $state(false);
 let moduleProgress = $state({
   disk: { percent: 0, status: "Idle", eta: "" },
   ram: { percent: 0, status: "Idle", eta: "" },
@@ -97,6 +101,7 @@ async function enableWriteBlocker() {
 }
 
 async function detectModules() {
+  detecting = true;
   setBusy(true);
   try {
     devices = await timeoutPromise(invoke("list_disks"), 5000).catch(() => []);
@@ -115,6 +120,7 @@ async function detectModules() {
   } catch {
     /* best effort */
   }
+  detecting = false;
   setBusy(false);
 }
 
@@ -187,7 +193,12 @@ async function recordEvidenceHash(path, moduleKey) {
   }
 }
 
+function requestStartAcquireAll() {
+  showConfirmAcquire = true;
+}
+
 async function startAcquireAll() {
+  showConfirmAcquire = false;
   running = true;
   setBusy(true);
   for (const mod of moduleOrder) {
@@ -320,11 +331,19 @@ $effect(() => {
 });
 </script>
 
-<div class="acquire-all-tab">
+<div class="tab-content acquire-all-tab">
   <SectionHeader title="Acquire All" subtitle="Run selected acquisition modules in sequence" />
 
+  <div class="sources-toolbar">
+    <button class="btn-sm" onclick={detectModules} disabled={detecting || running}>
+      {#if detecting}<span class="spinner">↻</span>{/if}
+      {detecting ? "Refreshing…" : "Refresh Sources"}
+    </button>
+    <p class="hint">Refreshes disk, RAM, network, and mobile source lists — not the output folder.</p>
+  </div>
+
   <div class="modules-grid">
-    <MacCard title="Disk">
+    <MacCard title="Disk" class="module-card">
       <label class="toggle"><input type="checkbox" bind:checked={diskEnabled} /> Enable</label>
       {#if diskEnabled}
         <select bind:value={selectedDevice} class="full">
@@ -337,8 +356,11 @@ $effect(() => {
         <input type="number" bind:value={splitSizeMb} class="full" placeholder="4096" />
         {#if wbStatus}
           <div class="wb-row">
-            <PillBadge variant={wbStatus.active ? "active" : "inactive"} label={wbStatus.active ? "Protected" : "Not protected"} />
-            <span class="wb-note">{wbStatus.method}{wbStatus.hardware ? " (hardware)" : ""}{wbStatus.software ? " (software)" : ""}</span>
+            <span class="wb-label">Write-Blocker:</span>
+            <PillBadge
+              variant={(wbStatus.active ?? wbStatus.enabled) ? "active" : "inactive"}
+              label={wbPillLabel(wbStatus)}
+            />
           </div>
         {/if}
         <div class="wb-actions">
@@ -348,7 +370,7 @@ $effect(() => {
       {/if}
     </MacCard>
 
-    <MacCard title="RAM">
+    <MacCard title="RAM" class="module-card">
       <label class="toggle"><input type="checkbox" bind:checked={ramEnabled} /> Enable</label>
       {#if ramEnabled}
         <select bind:value={selectedRamTool} class="full">
@@ -357,7 +379,7 @@ $effect(() => {
       {/if}
     </MacCard>
 
-    <MacCard title="Network">
+    <MacCard title="Network" class="module-card">
       <label class="toggle"><input type="checkbox" bind:checked={networkEnabled} /> Enable</label>
       {#if networkEnabled}
         <select bind:value={selectedIface} class="full">
@@ -368,21 +390,20 @@ $effect(() => {
       {/if}
     </MacCard>
 
-    <MacCard title="Mobile">
+    <MacCard title="Mobile" class="module-card">
       <label class="toggle"><input type="checkbox" bind:checked={mobileEnabled} disabled={!mobileDetected} /> Enable</label>
-      <span class="hint">{mobileDetected ? "Device detected" : "No device detected"}</span>
+      {#if mobileEnabled}
+        <span class="hint">{mobileDetected ? "Device detected" : "No device detected"}</span>
+      {/if}
     </MacCard>
   </div>
 
   <MacCard title="Output">
-    <div class="row">
-      <input bind:value={outputFolder} class="full" />
-      <button class="btn-sm" onclick={detectModules}>Detect Devices</button>
-    </div>
+    <input bind:value={outputFolder} class="full" />
     <p class="hint">Use NTFS/APFS/ext4 for multi-TB images; enable split on FAT32 destinations.</p>
   </MacCard>
 
-  <button class="btn-acquire" onclick={startAcquireAll} disabled={running || busy || !moduleOrder.some((m) => m.enabled())}>
+  <button class="btn-acquire" onclick={requestStartAcquireAll} disabled={running || busy || !moduleOrder.some((m) => m.enabled())}>
     {running ? "Acquiring…" : "Start Acquire All"}
   </button>
 
@@ -407,17 +428,41 @@ $effect(() => {
   <GuideCard title={acquireAllGuide.title} icon={acquireAllGuide.icon} steps={acquireAllGuide.steps} references={acquireAllGuide.references} />
 </div>
 
+<ConfirmDialog
+  open={showConfirmAcquire}
+  title="Start Acquire All?"
+  message="This will run all enabled acquisition modules in sequence. Ensure write-blocker is active and output path has sufficient space."
+  confirmLabel="Start Acquisition"
+  variant="primary"
+  onConfirm={startAcquireAll}
+  onCancel={() => (showConfirmAcquire = false)}
+/>
+
 <style>
-  .acquire-all-tab { max-width: 780px; }
-  .modules-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .sources-toolbar { margin-bottom: 12px; }
+  .modules-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-auto-rows: 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .modules-grid :global(.module-card) {
+    height: 100%;
+    margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .modules-grid :global(.module-card .card-body) {
+    flex: 1;
+  }
   .toggle { display: flex; gap: 8px; font-size: 13px; margin-bottom: 8px; cursor: pointer; }
   .split-label { font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 4px; }
   .full { width: 100%; background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; color: var(--text); font-size: 12px; margin-bottom: 6px; }
   .hint { font-size: 11px; color: var(--text-muted); margin: 4px 0 0; }
   .wb-row { display: flex; align-items: center; gap: 8px; margin: 6px 0; flex-wrap: wrap; }
-  .wb-note { font-size: 11px; color: var(--text-secondary); }
+  .wb-label { font-size: 11px; color: var(--text-muted); font-weight: 600; }
   .wb-actions { display: flex; gap: 8px; margin-bottom: 4px; }
-  .row { display: flex; gap: 8px; }
   .btn-sm { padding: 6px 12px; background: var(--btn-secondary-bg); border: 1px solid var(--border); border-radius: 6px; color: var(--btn-secondary-text); cursor: pointer; white-space: nowrap; font-size: 12px; }
   .btn-acquire { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; margin-bottom: 16px; }
   .btn-acquire:disabled { opacity: 0.4; }

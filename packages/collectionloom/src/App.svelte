@@ -15,6 +15,7 @@ import AcquireAllTab from "./lib/components/AcquireAllTab.svelte";
 import PillBadge from "./lib/components/ui/PillBadge.svelte";
 import ProgressStatusBar from "./lib/components/ui/ProgressStatusBar.svelte";
 import ThemeToggle from "./lib/components/ui/ThemeToggle.svelte";
+import ConfirmDialog from "./lib/components/ui/ConfirmDialog.svelte";
 import { invoke, isTauri } from "./lib/api/tauri.js";
 import { isError, isWarn } from "./lib/messages.js";
 
@@ -31,6 +32,7 @@ let cocState = { caseId: "", operator: "" };
 let wbState = $state({ active: false, device: "" });
 let wbDisks = $state([]);
 let wbDisksLoading = $state(false);
+let showConfirmDisableWb = $state(false);
 let acquireAllState = {};
 
 let statusBar = $state({
@@ -121,11 +123,21 @@ let wbTitle = $derived(
     : "Select a disk, then enable write-blocker"
 );
 
-async function toggleWriteBlocker() {
+function requestToggleWriteBlocker() {
   if (!wbState.device || wbBusy || busy) {
     if (!wbState.device) setMsg("WARN: Select a target disk in the titlebar first");
     return;
   }
+  if (wbActive) {
+    showConfirmDisableWb = true;
+    return;
+  }
+  toggleWriteBlocker();
+}
+
+async function toggleWriteBlocker() {
+  showConfirmDisableWb = false;
+  if (!wbState.device || wbBusy || busy) return;
   wbBusy = true;
   const enabling = !wbActive;
   try {
@@ -239,7 +251,7 @@ window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
           type="button"
           class="wb-titlebar-btn"
           class:wb-on={wbActive}
-          onclick={toggleWriteBlocker}
+          onclick={requestToggleWriteBlocker}
           disabled={wbBusy || busy || !wbState.device}
           title={wbTitle}
           aria-label={wbActive ? "Disable software write-blocker" : "Enable software write-blocker"}
@@ -256,7 +268,13 @@ window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
     </div>
     <div class="titlebar-end">
       {#if !isTauri()}
-        <PillBadge variant="warning" label="Preview" />
+        <span
+          class="preview-badge"
+          title="Preview Mode — uses fixture data without real hardware. Install the Tauri app for live acquisition."
+          aria-label="Preview Mode — fixture/demo data, no real hardware"
+        >
+          <PillBadge variant="warning" label="Preview Mode" />
+        </span>
       {/if}
       <ThemeToggle />
     </div>
@@ -345,6 +363,16 @@ window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
       <button class="close-toast" onclick={() => (msg = "")} aria-label="Close">×</button>
     </div>
   {/if}
+
+  <ConfirmDialog
+    open={showConfirmDisableWb}
+    title="Disable Write-Blocker?"
+    message="Disabling the software write-blocker allows writes to the source drive. Only proceed if imaging is complete."
+    confirmLabel="Disable Write-Blocker"
+    variant="danger"
+    onConfirm={toggleWriteBlocker}
+    onCancel={() => (showConfirmDisableWb = false)}
+  />
 </div>
 
 <style>
@@ -562,18 +590,25 @@ window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
     background: var(--bg);
   }
 
+  .preview-badge {
+    cursor: help;
+    display: inline-flex;
+  }
   .toast {
     position: fixed;
-    bottom: 44px;
-    right: 20px;
+    top: 56px;
+    left: 50%;
+    transform: translateX(-50%);
     padding: 10px 16px;
     border-radius: 10px;
     background: var(--success-bg);
     border: 1px solid var(--success);
     color: var(--text);
     font-size: 12px;
-    max-width: 380px;
+    max-width: min(90vw, 480px);
     z-index: 1000;
+    animation: slideUp 0.25s ease-out;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
   }
   .toast.error {
     background: var(--danger-bg);

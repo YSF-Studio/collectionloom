@@ -1,9 +1,11 @@
 <script>
 import { invoke } from "../api/tauri.js";
 import GuideCard from "./GuideCard.svelte";
+import SectionHeader from "./ui/SectionHeader.svelte";
 import { ramCaptureGuide } from "../guides.js";
 let { sharedState, caseState = {}, busy, setBusy, setMsg, timeoutPromise } = $props();
 let tools = $state([]);
+let toolsLoading = $state(false);
 let selectedTool = $state("");
 let outputPath = $state("/mnt/evidence/ram_capture.lime");
 let compress = $state(true);
@@ -19,9 +21,11 @@ let processList = $state([]);
 let showProcesses = $state(false);
 
 async function listTools() {
+  toolsLoading = true;
   setBusy(true);
   try { tools = await timeoutPromise(invoke("list_ram_tools"), 5000); } catch(e) {}
   try { ramSize = await timeoutPromise(invoke("get_ram_size"), 5000); } catch(e) {}
+  toolsLoading = false;
   setBusy(false);
 }
 async function capture() {
@@ -81,12 +85,12 @@ async function refreshProcesses() {
 $effect(() => { listTools(); });
 </script>
 
-<div>
-  <h3>RAM Capture</h3>
+<div class="tab-content">
+  <SectionHeader title="RAM Capture" subtitle="Volatile memory acquisition with optional compression and hashing" />
   {#if ramSize}<p class="info">System RAM: {(ramSize/1e9).toFixed(1)} GB</p>{/if}
   <div class="row">
-    <label>Tool: <select bind:value={selectedTool} disabled={busy}>
-      <option value="">-- Select --</option>
+    <label>Tool: <select bind:value={selectedTool} disabled={busy || toolsLoading}>
+      <option value="">{toolsLoading ? "Detecting tools…" : "— Select tool —"}</option>
       {#each tools as tool}<option value={tool}>{tool}</option>{/each}
     </select></label>
   </div>
@@ -124,7 +128,6 @@ $effect(() => { listTools(); });
 </div>
 
 <style>
-h3 { margin:0 0 16px; font-size:16px; }
 .info { font-size:12px; color:var(--text-secondary); margin-bottom:10px; }
 .row { display:flex; gap:10px; align-items:center; margin-bottom:12px; }
 select, input { background: var(--input-bg); color: var(--text); border:1px solid var(--border); border-radius:6px; padding:6px 10px; }

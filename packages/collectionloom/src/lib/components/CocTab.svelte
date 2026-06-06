@@ -148,17 +148,25 @@ async function signCoc() {
 }
 </script>
 
-<div class="coc-tab">
+<div class="tab-content coc-tab">
   <SectionHeader title="Chain of Custody" subtitle="Evidence tracking with Ed25519 signatures" />
 
-  {#if evidenceId}
+  {#if !linkedCaseId}
+    <div class="empty-state">
+      <span class="icon">📋</span>
+      <p>No chain of custody yet</p>
+      <p class="empty-hint">Fill in case details below and create a CoC record to begin evidence tracking.</p>
+    </div>
+  {/if}
+
+  {#if evidenceId && linkedCaseId}
     <MacCard title="Evidence ID">
       <code class="evidence-id">{evidenceId}</code>
       {#if linkedCaseId}<p class="case-link">Case: <code>{linkedCaseId}</code></p>{/if}
     </MacCard>
   {/if}
 
-  {#if evidenceId}
+  {#if evidenceId && linkedCaseId}
     <MacCard title="QR Label">
       <div class="qr-wrap">
         {#if qrDataUrl}
@@ -219,7 +227,7 @@ async function signCoc() {
 </div>
 
 <style>
-  .coc-tab { max-width: 640px; }
+  .empty-hint { font-size: 11px !important; color: var(--text-muted); }
   .evidence-id { font-family: var(--mono); font-size: 14px; color: var(--primary); }
   .case-link { margin: 8px 0 0; font-size: 12px; color: var(--text-secondary); }
   .qr-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; }

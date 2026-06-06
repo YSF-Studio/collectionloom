@@ -42,6 +42,7 @@
   /* Layout */
   --titlebar-h: 40px;
   --statusbar-h: 28px;
+  --tab-content-max-width: 780px;
 
   /* App identity */
   --app-analysis: #3b82f6;
@@ -226,9 +227,14 @@ input:focus, textarea:focus, select:focus {
   border-radius: 10px; font-size: 10px; font-weight: 600;
 }
 
+/* Tab content width */
+.tab-content {
+  max-width: var(--tab-content-max-width);
+}
+
 /* Toast */
 .toast {
-  position: fixed; bottom: 48px; right: 20px;
+  position: fixed; top: 56px; left: 50%; transform: translateX(-50%);
   padding: 10px 16px; border-radius: var(--radius-lg);
   background: #1a2e1a; border: 1px solid var(--success);
   font-size: 13px; max-width: 400px; z-index: 1000;

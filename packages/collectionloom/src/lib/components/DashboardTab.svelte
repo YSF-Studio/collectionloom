@@ -1,5 +1,5 @@
 <script>
-import { openPath } from "../api/tauri.js";
+import { openPath, isPreviewError } from "../api/tauri.js";
 import { listCaseSummaries } from "../api/case.js";
 import MacCard from "./ui/MacCard.svelte";
 import SectionHeader from "./ui/SectionHeader.svelte";
@@ -9,13 +9,16 @@ import { err, warn } from "../messages.js";
 let { busy, setBusy, setMsg, timeoutPromise } = $props();
 
 let summaries = $state([]);
+let loading = $state(false);
 
 async function load() {
+  loading = true;
   try {
     summaries = await listCaseSummaries();
   } catch (e) {
     if (!isPreviewError(e)) setMsg(err(String(e)));
   }
+  loading = false;
 }
 
 $effect(() => {
@@ -37,20 +40,30 @@ function statusVariant(status) {
 }
 </script>
 
-<div class="dashboard">
+<div class="tab-content dashboard">
   <SectionHeader
     title="Case Dashboard"
     subtitle="Overview of all investigations in ~/CollectionLoom/cases/"
   />
 
   <div class="toolbar">
-    <button class="btn-sm" onclick={load} disabled={busy}>Refresh</button>
+    <button class="btn-sm" onclick={load} disabled={busy || loading}>
+      {#if loading}<span class="spinner">↻</span>{/if}
+      {loading ? "Loading…" : "Refresh"}
+    </button>
   </div>
 
-  {#if !summaries.length}
-    <MacCard title="No cases yet">
-      <p class="hint">Create a case from System Snapshot or Chain of Custody to get started.</p>
+  {#if loading && !summaries.length}
+    <MacCard title="Loading cases">
+      <p class="hint">Fetching case summaries…</p>
     </MacCard>
+  {:else if !summaries.length}
+    <div class="empty-state">
+      <span class="icon">📁</span>
+      <p>No cases yet</p>
+      <p class="empty-hint">Create a case from System Snapshot or Chain of Custody to get started.</p>
+      <button class="btn-sm primary" onclick={() => window.__goTo?.("coc")}>Go to Chain of Custody</button>
+    </div>
   {:else}
     {#each summaries as row}
       <MacCard title={row.case.title}>
@@ -74,9 +87,9 @@ function statusVariant(status) {
 </div>
 
 <style>
-  .dashboard { max-width: 720px; }
   .toolbar { margin-bottom: 12px; }
   .hint { margin: 0; font-size: 13px; color: var(--text-muted); }
+  .empty-hint { font-size: 11px !important; color: var(--text-muted); }
   .meta { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
   .id { font-family: var(--mono); font-size: 11px; color: var(--text-secondary); }
   .date { font-size: 11px; color: var(--text-muted); margin-left: auto; }

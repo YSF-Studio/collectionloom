@@ -128,7 +128,7 @@ function statusVariant(status) {
 }
 </script>
 
-<div class="snapshot-tab">
+<div class="tab-content snapshot-tab">
   <SectionHeader title="System Snapshot" subtitle="Modular collector — capture and compare system state" />
 
   <MacCard title="Case">
@@ -209,7 +209,6 @@ function statusVariant(status) {
 </div>
 
 <style>
-  .snapshot-tab { max-width: 720px; }
   .row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
   .full { flex: 1; background: var(--input-bg); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font-size: 13px; }
   .profile-grid { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }

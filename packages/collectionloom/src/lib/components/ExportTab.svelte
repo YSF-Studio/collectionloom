@@ -102,19 +102,25 @@ async function openFolder() {
 }
 </script>
 
-<div class="export-tab">
+<div class="tab-content export-tab">
   <SectionHeader title="Export Bundle" subtitle="Generate handover packages for investigation teams" />
 
+  {#if !cases.length}
+    <div class="empty-state">
+      <span class="icon">📦</span>
+      <p>No cases to export</p>
+      <p class="empty-hint">Create a case from System Snapshot or Chain of Custody first.</p>
+      <button class="btn-sm primary" onclick={() => window.__goTo?.("snapshot")}>Go to System Snapshot</button>
+    </div>
+  {/if}
+
   <MacCard title="Case">
-    <select bind:value={selectedCaseId} class="full">
+    <select bind:value={selectedCaseId} class="full" disabled={!cases.length}>
       <option value="">— Select case —</option>
       {#each cases as c}
         <option value={c.case_id}>{c.title} ({c.case_id.slice(0, 8)}…)</option>
       {/each}
     </select>
-    {#if !cases.length}
-      <p class="hint">No cases yet — create one from System Snapshot or Chain of Custody.</p>
-    {/if}
   </MacCard>
 
   {#if format !== "zip"}
@@ -173,9 +179,9 @@ async function openFolder() {
 </div>
 
 <style>
-  .export-tab { max-width: 640px; }
   .full { width: 100%; background: var(--input-bg); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; }
-  .hint { margin: 0; font-size: 12px; color: var(--text-muted); }
+  .empty-hint { font-size: 11px !important; color: var(--text-muted); }
+  .btn-sm.primary { background: var(--primary); color: white; border-color: var(--primary); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; border: 1px solid var(--primary); }
   .format-grid { display: flex; flex-direction: column; gap: 8px; }
   .format-card {
     display: grid; grid-template-columns: auto 1fr; gap: 2px 10px;
