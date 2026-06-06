@@ -10,6 +10,7 @@ let interfaces = $state([]);
 let iface = $state("");
 let bpf = $state("");
 let outFile = $state("/tmp/evidence/capture.pcapng");
+let maxDurationSecs = $state("3600");
 let capturing = $state(false);
 let packets = $state([]);
 let bytesCaptured = $state(0);
@@ -41,12 +42,21 @@ async function refreshStats() {
 }
 
 async function startCapture() {
+  const duration = parseInt(maxDurationSecs, 10);
+  if (duration === 0) {
+    setMsg("WARN: Duration 0 = infinite capture — use Stop to end manually");
+  }
   capturing = true;
   startTime = Date.now();
   packets = [];
   try {
     await timeoutPromise(
-      invoke("start_network_capture", { interface: iface, bpfFilter: bpf || null, outputFile: outFile }),
+      invoke("start_network_capture", {
+        interface: iface,
+        bpfFilter: bpf || null,
+        outputFile: outFile,
+        maxDurationSecs: Number.isFinite(duration) ? duration : 3600,
+      }),
       10000
     );
     setMsg("Capture started");
@@ -88,6 +98,11 @@ $effect(() => {
   <MacCard title="Filter & Output">
     <input type="text" bind:value={bpf} placeholder="BPF filter (e.g. not port 22)" class="full" />
     <input type="text" bind:value={outFile} class="full" />
+    <label class="duration-row">
+      Max duration (seconds):
+      <input type="number" bind:value={maxDurationSecs} min="0" placeholder="3600" />
+      <span class="hint">{parseInt(maxDurationSecs, 10) === 0 ? "⚠ 0 = infinite (manual stop required)" : "Default: 3600 (1 hour)"}</span>
+    </label>
   </MacCard>
 
   {#if !capturing}
@@ -130,6 +145,9 @@ $effect(() => {
 <style>
   .network-tab { max-width: 720px; }
   .full { width: 100%; background: var(--input-bg); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 8px 12px; font-size: 13px; margin-bottom: 8px; }
+  .duration-row { display: flex; flex-direction: column; gap: 4px; font-size: 13px; margin-top: 4px; }
+  .duration-row input { width: 120px; }
+  .hint { font-size: 11px; color: var(--warn); }
   .btn-primary, .btn-danger { padding: 10px 24px; color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; margin-bottom: 12px; }
   .btn-primary { background: var(--primary); }
   .btn-danger { background: var(--danger); }

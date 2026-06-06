@@ -2,6 +2,18 @@ use serde::Serialize;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImagingSummary {
+    pub sha256: String,
+    pub sectors_read: u64,
+    pub avg_speed_bytes_per_sec: f64,
+    pub error_sectors: u64,
+    pub duration_secs: f64,
+    pub source_integrity_ok: bool,
+    pub bytes_written: u64,
+}
+
 #[derive(Clone, Debug, Serialize, Default)]
 pub struct ProgressState {
     pub percent: f64,
@@ -11,6 +23,8 @@ pub struct ProgressState {
     pub eta_secs: Option<f64>,
     pub bytes_processed: u64,
     pub total_bytes: u64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub summary: Option<ImagingSummary>,
 }
 
 pub struct CancelFlag {
@@ -43,6 +57,13 @@ pub fn update_progress(percent: f64, status: &str, bytes: u64, total: u64) {
         p.status = status.to_string();
         p.bytes_processed = bytes;
         p.total_bytes = total;
+    }
+}
+
+/// Attach imaging summary to progress (shown after acquisition).
+pub fn set_imaging_summary(summary: ImagingSummary) {
+    if let Ok(mut p) = super::PROGRESS_STATE.lock() {
+        p.summary = Some(summary);
     }
 }
 

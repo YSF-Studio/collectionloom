@@ -64,9 +64,20 @@ export async function fixtureInvoke(cmd, args = {}) {
   }
   if (cmd === "hpa_dco_detect") {
     return {
-      hpa_dco_detection: "not_implemented",
-      note: "HPA/DCO detection is not implemented. No ATA IDENTIFY DEVICE query is performed.",
+      device: args.device ?? "/dev/sda",
+      supported: true,
+      hpaDetected: false,
+      dcoDetected: false,
+      identifyMaxLba: 1953525168,
+      nativeMaxLba: 1953525168,
+      dcoMaxLba: null,
+      hiddenSectors: null,
+      model: "Demo Drive",
+      notes: "Fixture mode — no ATA pass-through",
     };
+  }
+  if (cmd === "pick_cloud_credentials") {
+    return "/tmp/demo-credentials.json";
   }
   if (cmd === "start_disk_imaging" || cmd === "start_network_capture" || cmd === "capture_ram" || cmd === "adb_backup") {
     return "started";

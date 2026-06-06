@@ -33,6 +33,9 @@ let startTime = $state(null);
 let bitlockerDetected = $state(false);
 let encryptionScan = $state(null);
 let wbStatus = $state(null);
+let hpaReport = $state(null);
+let hpaBusy = $state(false);
+let imagingSummary = $state(null);
 
 let selectedDiskInfo = $derived(disks.find((d) => d.device === selectedDisk) || null);
 
@@ -103,6 +106,26 @@ async function enableWriteBlocker() {
   setBusy(false);
 }
 
+async function detectHpaDco() {
+  if (!selectedDisk) {
+    setMsg("WARN: Select a disk first");
+    return;
+  }
+  hpaBusy = true;
+  hpaReport = null;
+  try {
+    hpaReport = await timeoutPromise(invoke("hpa_dco_detect", { device: selectedDisk }), 30000);
+    if (hpaReport?.hpaDetected || hpaReport?.dcoDetected) {
+      setMsg("WARN: HPA/DCO anomaly detected — review report");
+    } else {
+      setMsg(hpaReport?.supported ? "OK: No HPA/DCO anomalies" : "INFO: HPA/DCO not supported on this device");
+    }
+  } catch (e) {
+    setMsg(`ERR: ${typeof e === "string" ? e : String(e)}`);
+  }
+  hpaBusy = false;
+}
+
 async function disableWriteBlocker() {
   if (!selectedDisk) return;
   setBusy(true);
@@ -146,6 +169,7 @@ async function startImaging() {
   }
   collBusy = true;
   startTime = Date.now();
+  imagingSummary = null;
   const destination = resolveDestPath();
   try {
     await timeoutPromise(
@@ -178,6 +202,7 @@ async function startImaging() {
           collBusy = false;
           eta = "";
           startTime = null;
+          imagingSummary = p.summary ?? null;
           setMsg(p.error ? `ERR: ${p.error}` : "OK: Imaging complete");
           onProgressChange({ progress: p, collBusy: false, eta: "", selectedDisk, imageFormat });
         }
@@ -246,7 +271,18 @@ $effect(() => {
           <button onclick={enableWriteBlocker} class="btn-sm" disabled={collBusy || busy || !selectedDisk}>Enable Software Write-Blocker</button>
           <button onclick={disableWriteBlocker} class="btn-sm" disabled={collBusy || busy || !selectedDisk || !wbStatus?.software}>Disable</button>
           <button onclick={checkWriteBlocker} class="btn-sm" disabled={collBusy || !selectedDisk}>Refresh</button>
+          <button onclick={detectHpaDco} class="btn-sm" disabled={collBusy || busy || hpaBusy || !selectedDisk}>
+            {hpaBusy ? "Checking HPA/DCO…" : "Check HPA/DCO"}
+          </button>
         </div>
+        {#if hpaReport}
+          <div class="hpa-report">
+            {#if hpaReport.hpaDetected}<PillBadge variant="warning" label="HPA Detected" />{/if}
+            {#if hpaReport.dcoDetected}<PillBadge variant="warning" label="DCO Detected" />{/if}
+            {#if hpaReport.hiddenSectors != null}<span class="wb-detail">Hidden sectors: {hpaReport.hiddenSectors}</span>{/if}
+            <span class="wb-detail">{hpaReport.notes}</span>
+          </div>
+        {/if}
         {#if wbStatus?.notes}<p class="wb-notes">{wbStatus.notes}</p>{/if}
       </div>
     {/if}
@@ -275,6 +311,19 @@ $effect(() => {
     {/if}
   </div>
 
+  {#if imagingSummary}
+    <MacCard title="Acquisition Summary">
+      <div class="summary-grid">
+        <span>Sectors read: {imagingSummary.sectorsRead?.toLocaleString?.() ?? imagingSummary.sectorsRead}</span>
+        <span>Duration: {imagingSummary.durationSecs?.toFixed?.(1) ?? imagingSummary.durationSecs}s</span>
+        <span>Avg speed: {((imagingSummary.avgSpeedBytesPerSec ?? 0) / 1e6).toFixed(1)} MB/s</span>
+        <span>Error sectors: {imagingSummary.errorSectors ?? 0}</span>
+        <span>Source integrity: {imagingSummary.sourceIntegrityOk ? "OK" : "FAILED"}</span>
+        <span class="mono">SHA-256: {imagingSummary.sha256}</span>
+      </div>
+    </MacCard>
+  {/if}
+
   <GuideCard title={diskImagingGuide.title} icon={diskImagingGuide.icon} steps={diskImagingGuide.steps} references={diskImagingGuide.references} />
 </div>
 
@@ -291,6 +340,8 @@ $effect(() => {
   .wb-section { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
   .wb-detail { font-size: 11px; color: var(--text-secondary); }
   .wb-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+  .hpa-report { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .summary-grid { display: grid; gap: 6px; font-size: 12px; color: var(--text-secondary); }
   .wb-notes { margin: 0; font-size: 11px; color: var(--text-muted); }
   .split-row { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; align-items: center; }
   .check { display: flex; align-items: center; gap: 6px; }

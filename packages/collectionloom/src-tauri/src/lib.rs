@@ -75,6 +75,7 @@ pub fn run() {
             commands::take_snapshot,
             commands::compare_snapshot,
             commands::create_cloud_snapshot,
+            commands::pick_cloud_credentials,
             commands::verify_hash,
             commands::sign_coc,
             commands::hpa_dco_detect,

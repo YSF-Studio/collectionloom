@@ -151,10 +151,10 @@ fn crypto_wrong_key_fails() {
 
 #[test]
 fn evidence_id_format() {
-    let eid = evidence::EvidenceId::new("COL");
+    let eid = evidence::EvidenceId::new("BR2026", "DSK");
     let s = eid.to_string();
-    assert!(s.starts_with("COL-"), "Got: {}", s);
-    assert!(s.len() >= 15, "Too short: {}", s);
+    assert!(s.starts_with("BR2026-DSK-"), "Got: {}", s);
+    assert!(s.len() >= 13, "Too short: {}", s);
 }
 
 #[test]

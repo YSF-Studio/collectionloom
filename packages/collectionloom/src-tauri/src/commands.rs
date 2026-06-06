@@ -1,4 +1,5 @@
 use tauri::Emitter;
+use tauri_plugin_dialog::DialogExt;
 use ysf_core::*;
 use ysf_core::progress::finish_progress;
 use std::sync::atomic::Ordering;
@@ -34,7 +35,16 @@ pub async fn start_disk_imaging(
 
         match imager.run(&cancel) {
             Ok(hash) => {
-                let _ = app.emit("imaging_complete", &hash);
+                let summary = PROGRESS_STATE
+                    .lock()
+                    .ok()
+                    .and_then(|p| p.summary.clone());
+                let payload = if let Some(s) = summary {
+                    serde_json::json!({ "hash": hash, "summary": s })
+                } else {
+                    serde_json::json!({ "hash": hash })
+                };
+                let _ = app.emit("imaging_complete", payload);
             }
             Err(e) => {
                 finish_progress(Err(e.clone()));
@@ -138,13 +148,15 @@ pub async fn start_network_capture(
     interface: String,
     bpf_filter: Option<String>,
     output_file: String,
+    max_duration_secs: Option<u64>,
 ) -> Result<String, String> {
+    let duration = max_duration_secs.unwrap_or(3600);
     let config = network::NetworkCaptureConfig {
         interface,
         bpf_filter,
         output_file,
         ring_buffer_size: 256 * 1024 * 1024, // 256 MB
-        max_duration_secs: 0, // until stopped
+        max_duration_secs: duration,
     };
     let cancel = CANCEL_FLAG.clone();
     CANCEL_FLAG.store(false, Ordering::SeqCst);
@@ -242,40 +254,23 @@ pub fn sign_coc(evidence_id: String, private_key_hex: Option<String>) -> Result<
     }))
 }
 
-// ─── HPA / DCO (not implemented — device info only) ───
+// ─── HPA / DCO ───
 
 #[tauri::command]
-pub fn hpa_dco_detect(device: String) -> Result<serde_json::Value, String> {
-    let disks = ysf_core::imaging::DiskInfo::list()?;
-    let disk_info = disks
-        .into_iter()
-        .find(|d| d.device == device)
-        .ok_or_else(|| format!("Device not found: {}", device))?;
-
-    Ok(serde_json::json!({
-        "device": disk_info.device,
-        "model": disk_info.model,
-        "size_bytes": disk_info.size_bytes,
-        "sector_size": disk_info.sector_size,
-        "is_ssd": disk_info.is_ssd,
-        "partitions": disk_info.partitions,
-        "hpa_dco_detection": "not_implemented",
-        "note": "HPA/DCO detection is not implemented. No ATA IDENTIFY DEVICE query is performed. Use dedicated forensic tools for host-protected and device configuration overlays."
-    }))
+pub fn hpa_dco_detect(device: String) -> Result<hpa_dco::HpaDcoReport, String> {
+    hpa_dco::detect(&device)
 }
 
 // ─── Evidence ID Generation ───
 
 #[tauri::command]
-pub fn generate_evidence_id() -> Result<String, String> {
-    let now = chrono::Utc::now();
-    let date_str = now.format("%Y%m%d").to_string();
-    let millis = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map_err(|e| format!("Time error: {e}"))?
-        .as_millis() as u64;
-    let suffix = format!("{:04X}", (millis % 0x10000) as u16);
-    Ok(format!("CL-{}-{}", date_str, suffix))
+pub fn generate_evidence_id(case_initials: Option<String>, media_type: Option<String>) -> Result<String, String> {
+    let initials = case_initials.unwrap_or_else(|| {
+        let year = chrono::Utc::now().format("%Y").to_string();
+        format!("CL{year}")
+    });
+    let media = media_type.unwrap_or_else(|| "DSK".into());
+    Ok(evidence::EvidenceId::new(&initials, &media).to_string())
 }
 
 // ─── File Hashing ───
@@ -377,14 +372,96 @@ pub fn take_snapshot() -> Result<serde_json::Value, String> {
 
 // ─── Cloud Snapshot ───
 
+#[derive(serde::Deserialize)]
+struct CloudCredentialFile {
+    access_key: Option<String>,
+    secret_key: Option<String>,
+    aws_access_key_id: Option<String>,
+    aws_secret_access_key: Option<String>,
+    client_id: Option<String>,
+    client_secret: Option<String>,
+}
+
+fn parse_cloud_credentials(content: &str, provider: &str) -> Result<(String, String), String> {
+    if let Ok(json) = serde_json::from_str::<CloudCredentialFile>(content) {
+        let access = json
+            .access_key
+            .or(json.aws_access_key_id)
+            .or(json.client_id)
+            .filter(|s| !s.is_empty());
+        let secret = json
+            .secret_key
+            .or(json.aws_secret_access_key)
+            .or(json.client_secret)
+            .filter(|s| !s.is_empty());
+        if let (Some(a), Some(s)) = (access, secret) {
+            return Ok((a, s));
+        }
+    }
+
+    let mut access = String::new();
+    let mut secret = String::new();
+    for line in content.lines() {
+        let line = line.trim();
+        if line.starts_with('#') || line.is_empty() {
+            continue;
+        }
+        if let Some((k, v)) = line.split_once('=') {
+            let key = k.trim().to_lowercase();
+            let val = v.trim().trim_matches('"').to_string();
+            match key.as_str() {
+                "aws_access_key_id" | "access_key" | "accesskey" | "client_id" => access = val,
+                "aws_secret_access_key" | "secret_key" | "secretkey" | "client_secret" | "token" => {
+                    secret = val
+                }
+                _ => {}
+            }
+        }
+    }
+    if !access.is_empty() && !secret.is_empty() {
+        return Ok((access, secret));
+    }
+
+    Err(format!(
+        "Could not parse credentials for {provider}. Use JSON {{\"access_key\",\"secret_key\"}} or INI key=value format."
+    ))
+}
+
+#[tauri::command]
+pub async fn pick_cloud_credentials(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    let picked = app
+        .dialog()
+        .file()
+        .add_filter("Credentials", &["json", "ini", "txt", "csv"])
+        .set_title("Select cloud credentials file")
+        .blocking_pick_file();
+    Ok(picked.map(|p| p.to_string()))
+}
+
 #[tauri::command]
 pub async fn create_cloud_snapshot(
     provider: String,
     region: String,
     resource_id: String,
-    access_key: String,
-    secret_key: String,
+    credential_path: Option<String>,
+    app: tauri::AppHandle,
 ) -> Result<serde_json::Value, String> {
+    let cred_path = if let Some(p) = credential_path {
+        p
+    } else {
+        app.dialog()
+            .file()
+            .add_filter("Credentials", &["json", "ini", "txt", "csv"])
+            .set_title("Select cloud credentials file")
+            .blocking_pick_file()
+            .ok_or("No credentials file selected")?
+            .to_string()
+    };
+
+    let content = std::fs::read_to_string(&cred_path)
+        .map_err(|e| format!("Cannot read credentials file: {e}"))?;
+    let (access_key, secret_key) = parse_cloud_credentials(&content, &provider)?;
+
     match provider.as_str() {
         "aws" => {
             cloud::aws_create_snapshot(&region, &resource_id, &access_key, &secret_key)
@@ -392,7 +469,6 @@ pub async fn create_cloud_snapshot(
                 .map(|raw| serde_json::json!({ "provider": "AWS", "response": raw }))
         }
         "azure" => {
-            // Parse resource_id as subscription|rg|disk
             let parts: Vec<&str> = resource_id.split('|').collect();
             if parts.len() < 3 {
                 return Err("Azure requires: subscription|resourceGroup|diskName".into());
@@ -403,7 +479,6 @@ pub async fn create_cloud_snapshot(
                 .map(|raw| serde_json::json!({ "provider": "Azure", "response": raw }))
         }
         "gcp" => {
-            // Parse resource_id as project|zone|disk
             let parts: Vec<&str> = resource_id.split('|').collect();
             if parts.len() < 3 {
                 return Err("GCP requires: project|zone|diskName".into());

@@ -8,8 +8,7 @@
   let provider = $state("aws");
   let region = $state("us-east-1");
   let resourceId = $state("");
-  let accessKey = $state("");
-  let secretKey = $state("");
+  let credentialPath = $state("");
   let collBusy = $state(false);
   let msg = $state("");
   let result = $state(null);
@@ -39,9 +38,18 @@
     return "";
   }
 
+  async function pickCredentials() {
+    try {
+      const path = await invoke("pick_cloud_credentials");
+      if (path) credentialPath = path;
+    } catch (e) {
+      msg = `ERR: ${typeof e === "string" ? e : String(e)}`;
+    }
+  }
+
   async function doCreateSnapshot() {
-    if (!resourceId || !accessKey || !secretKey) {
-      msg = "ERR: All fields are required";
+    if (!resourceId) {
+      msg = "ERR: Resource ID is required";
       return;
     }
     setBusy(true);
@@ -55,12 +63,10 @@
         provider,
         region,
         resourceId,
-        accessKey,
-        secretKey,
+        credentialPath: credentialPath || null,
       }), 60000);
       result = res;
       resultRaw = JSON.stringify(res, null, 2);
-      // Try to extract snapshot ID from response
       if (res && typeof res === "object") {
         if (res.snapshot_id) snapshotId = res.snapshot_id;
         else if (res.SnapshotId) snapshotId = res.SnapshotId;
@@ -76,7 +82,6 @@
       }
     } catch (e) {
       const err = typeof e === 'string' ? e : String(e);
-      // AWS returns raw response even on error — show it
       if (err.includes("<?xml") || err.includes("<?XML") || err.includes("<Create")) {
         resultRaw = err;
         result = { provider, response: "(see raw response below)" };
@@ -93,7 +98,7 @@
 
 <div>
   <h3>Cloud Snapshot</h3>
-  <p class="note">API keys held in RAM only — never written to disk</p>
+  <p class="note">Credentials loaded via native file picker — never stored in browser memory</p>
 
   <div class="row">
     <label>Provider:
@@ -119,17 +124,13 @@
     <span class="hint">{providerHint()}</span>
   </div>
 
-  <div class="row">
-    <label>Access Key / Client ID:
-      <input type="password" bind:value={accessKey} disabled={collBusy} />
+  <div class="row cred-row">
+    <label>Credentials file:
+      <input type="text" bind:value={credentialPath} disabled={collBusy} placeholder="Select JSON/INI credentials file…" readonly />
     </label>
+    <button class="btn-sm" onclick={pickCredentials} disabled={collBusy}>Browse…</button>
   </div>
-
-  <div class="row">
-    <label>Secret Key / Token:
-      <input type="password" bind:value={secretKey} disabled={collBusy} />
-    </label>
-  </div>
+  <p class="hint">JSON: {"{"}"access_key","secret_key"{"}"} or AWS INI format. Leave empty to pick at snapshot time.</p>
 
   {#if msg}
     <div class="result-card" class:error={msg.startsWith("ERR:")}>{msg}</div>
@@ -165,12 +166,17 @@
 <style>
   h3 { margin:0 0 8px; font-size:16px; }
   .row { margin-bottom:10px; }
+  .cred-row { display:flex; align-items:flex-end; gap:8px; flex-wrap:wrap; }
   label { font-size:13px; display:flex; align-items:center; gap:6px; }
   input, select {
     background: var(--input-bg); color: var(--text); border:1px solid var(--border);
     border-radius:6px; padding:6px 10px; width:320px; font-size:13px;
   }
   input:disabled, select:disabled { opacity: 0.5; }
+  .btn-sm {
+    padding: 6px 12px; background: var(--btn-secondary-bg); color: var(--btn-secondary-text);
+    border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-size: 12px;
+  }
   .btn-primary {
     padding:10px 24px; background:var(--primary); color:white;
     border:none; border-radius:8px; cursor:pointer; font-weight:600; margin-top:12px;

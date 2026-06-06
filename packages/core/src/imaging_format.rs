@@ -3,7 +3,7 @@ use std::sync::atomic::AtomicBool;
 
 use serde::Serialize;
 
-use crate::aff4_native::{aff4_path, Aff4Writer};
+use crate::aff4_native::{aff4_path, count_split_aff4_parts, hash_split_aff4_stream, Aff4Writer};
 use crate::ewf::{e01_path, EwfWriter};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
@@ -42,16 +42,31 @@ pub fn acquire_aff4(
     verify: bool,
     cancel_flag: &AtomicBool,
 ) -> Result<String, String> {
-    let _ = split_size;
     let path = aff4_path(destination);
-    let hash = Aff4Writer::new(&path).acquire(source, cancel_flag)?;
+    let hash = Aff4Writer::new(&path).acquire(source, split_size, cancel_flag)?;
     if verify {
-        let verify_hash = hash_file_sha256(&path)?;
-        if verify_hash != hash {
-            return Err(format!("AFF4 verify failed: {hash} != {verify_hash}"));
+        if split_size.is_some() {
+            let parts = count_split_aff4_parts(&path);
+            if parts == 0 {
+                return Err("AFF4 split verify: no parts found".into());
+            }
+            let verify_hash = hash_split_aff4_stream(&path, parts)?;
+            if verify_hash != hash {
+                return Err(format!("AFF4 split verify failed: {hash} != {verify_hash}"));
+            }
+        } else {
+            let verify_hash = hash_aff4_stream(&path)?;
+            if verify_hash != hash {
+                return Err(format!("AFF4 verify failed: {hash} != {verify_hash}"));
+            }
         }
     }
     Ok(hash)
+}
+
+/// Hash the raw stream inside a single AFF4 container.
+pub fn hash_aff4_stream(path: &Path) -> Result<String, String> {
+    hash_split_aff4_stream(path, 1)
 }
 
 pub fn hash_file_sha256(path: &Path) -> Result<String, String> {

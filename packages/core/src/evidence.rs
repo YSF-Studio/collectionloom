@@ -4,17 +4,15 @@ use std::path::PathBuf;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EvidenceId {
-    pub prefix: String,    // "COL" or "ANL"
-    pub date: String,      // "20260602"
-    pub sequence: u16,     // 0001
+    pub case_initials: String,
+    pub media_type: String,
+    pub sequence: u16,
 }
 
 impl EvidenceId {
-    pub fn new(prefix: &str) -> Self {
-        let date = Utc::now().format("%Y%m%d").to_string();
-        // Read counter from ~/.ysf/evidence_counter.json
-        let counter_path = dirs_next().unwrap_or_else(|| PathBuf::from("."))
-            .join(".ysf").join("evidence_counter.json");
+    /// Create evidence ID: `[CASE-INITIALS]-[MEDIA-TYPE]-[SEQUENCE]` e.g. `BR2026-DSK-001`.
+    pub fn new(case_initials: &str, media_type: &str) -> Self {
+        let counter_path = evidence_counter_path(case_initials, media_type);
         let sequence = match std::fs::read_to_string(&counter_path) {
             Ok(s) => {
                 let current: u16 = s.trim().parse().unwrap_or(0);
@@ -29,16 +27,51 @@ impl EvidenceId {
                 1
             }
         };
-        Self { prefix: prefix.to_string(), date, sequence }
+        Self {
+            case_initials: case_initials.to_string(),
+            media_type: media_type.to_uppercase(),
+            sequence,
+        }
     }
 
     pub fn to_string(&self) -> String {
-        format!("{}-{}-{:04}", self.prefix, self.date, self.sequence)
+        format!(
+            "{}-{}-{:03}",
+            self.case_initials, self.media_type, self.sequence
+        )
+    }
+}
+
+fn evidence_counter_path(case_initials: &str, media_type: &str) -> PathBuf {
+    dirs_next()
+        .unwrap_or_else(|| PathBuf::from("."))
+        .join(".ysf")
+        .join(format!(
+            "evidence_{}_{}.counter",
+            case_initials.to_uppercase(),
+            media_type.to_uppercase()
+        ))
+}
+
+fn derive_case_initials(case_name: &str) -> String {
+    let year = Utc::now().format("%Y").to_string();
+    let letters: String = case_name
+        .chars()
+        .filter(|c| c.is_ascii_alphabetic())
+        .take(2)
+        .collect::<String>()
+        .to_uppercase();
+    if letters.len() >= 2 {
+        format!("{letters}{year}")
+    } else {
+        format!("CL{year}")
     }
 }
 
 fn dirs_next() -> Option<PathBuf> {
-    std::env::var("HOME").ok().map(PathBuf::from)
+    std::env::var("HOME")
+        .ok()
+        .map(PathBuf::from)
         .or_else(|| std::env::var("USERPROFILE").ok().map(PathBuf::from))
 }
 
@@ -67,7 +100,18 @@ pub struct ChainOfCustody {
 
 impl ChainOfCustody {
     pub fn new(case_name: &str, operator: &str, source_device: &str, source_size: u64) -> Self {
-        let eid = EvidenceId::new("COL");
+        Self::with_media_type(case_name, operator, source_device, source_size, "DSK")
+    }
+
+    pub fn with_media_type(
+        case_name: &str,
+        operator: &str,
+        source_device: &str,
+        source_size: u64,
+        media_type: &str,
+    ) -> Self {
+        let initials = derive_case_initials(case_name);
+        let eid = EvidenceId::new(&initials, media_type);
         Self {
             evidence_id: eid.to_string(),
             case_name: case_name.to_string(),
@@ -138,4 +182,17 @@ pub fn generate_qr_label(evidence_id: &str, device: &str, case: &str) -> Vec<u8>
     )
     .expect("PNG encode");
     buf
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn evidence_id_format_example() {
+        let eid = EvidenceId::new("BR2026", "DSK");
+        let s = eid.to_string();
+        assert!(s.starts_with("BR2026-DSK-"), "Got: {s}");
+        assert!(s.ends_with("-001") || s.ends_with("-002") || s.ends_with("-003"));
+    }
 }
