@@ -7,7 +7,9 @@
   "scripts": {
     "dev": "cd packages/collectionloom && npm run tauri dev",
     "dev:collectionloom": "cd packages/collectionloom && npm run tauri dev",
+    "tauri:dev": "npm run dev",
     "build": "cd packages/collectionloom && npm run tauri build",
+    "tauri:build": "npm run build",
     "build:install": "cd packages/collectionloom && npm run build:install",
     "build:portable": "cd packages/collectionloom && npm run build:portable",
     "build:collectionloom": "cd packages/collectionloom && npm run tauri build",

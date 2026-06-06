@@ -106,10 +106,10 @@ The in-app **Prerequisites** tab shows whether tools were found in `./tools/` or
 ```bash
 git clone https://github.com/YSF-Studio/collectionloom.git
 cd collectionloom
-npm ci
+npm install
 
-# Installers only (DMG / NSIS / deb / AppImage)
-npm run build:install
+# Tauri app + platform installers
+npm run tauri:build
 
 # Installers + portable zip
 npm run build:portable

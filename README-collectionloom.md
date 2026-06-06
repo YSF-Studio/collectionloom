@@ -104,17 +104,19 @@ node scripts/capture-screenshots.mjs
 
 ```bash
 git clone https://github.com/YSF-Studio/collectionloom.git
-cd collectionloom/packages/collectionloom
+cd collectionloom
 npm install
-npm run tauri dev
+npm run tauri:dev
 ```
 
 ### Build (local only)
 
-Pre-built binaries are **not published**. Build from source:
+Pre-built binaries are **not published**. Build from source (repo root):
 
 ```bash
-npm run build:install   # installers (DMG / NSIS / deb / AppImage)
+npm install
+npm run tauri:build       # Tauri app + installers
+npm run build:install   # same as tauri:build
 npm run build:portable  # installers + portable zip in dist/portable/
 ```
 
