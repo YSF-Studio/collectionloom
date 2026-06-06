@@ -51,7 +51,7 @@ use std::io::{Read, Seek};
     let sectors_per_cluster = boot[13] as u64;
     let mft_cluster = u64::from_le_bytes([boot[48], boot[49], boot[50], boot[51], boot[52], boot[53], boot[54], boot[55]]);
 
-    let cluster_size = bytes_per_sector * sectors_per_cluster;
+    let _cluster_size = bytes_per_sector * sectors_per_cluster;
     let mft_offset_sectors = mft_cluster * sectors_per_cluster;
     let mft_offset = mft_offset_sectors * bytes_per_sector;
 
@@ -91,7 +91,7 @@ use std::io::{Read, Seek};
         let mut filename = String::new();
         let mut parent = 0u64;
         let mut is_dir = false;
-        let mut is_deleted = buf[22] & 0x04 != 0; // Bit 2 = in-use flag
+        let is_deleted = buf[22] & 0x04 != 0; // Bit 2 = in-use flag
         let mut si_created = None;
         let mut si_modified = None;
         let mut si_accessed = None;
@@ -112,9 +112,9 @@ use std::io::{Read, Seek};
             let resident = buf[pos + 8] == 0x00;
             let name_len = buf[pos + 9] as usize;
             let content_offset = u16::from_le_bytes([buf[pos + 20], buf[pos + 21]]) as usize;
-            let content_size = u32::from_le_bytes([buf[pos + 16], buf[pos + 17], buf[pos + 18], buf[pos + 19]]) as usize;
+            let _content_size = u32::from_le_bytes([buf[pos + 16], buf[pos + 17], buf[pos + 18], buf[pos + 19]]) as usize;
 
-            let attr_header_size = if !resident { 64 } else { 24 + name_len * 2 };
+            let _attr_header_size = if !resident { 64 } else { 24 + name_len * 2 };
 
             match attr_type {
                 0x10 => { // $STANDARD_INFORMATION

@@ -122,5 +122,8 @@ pub fn get_ram_size() -> Result<u64, String> {
         let bytes: u64 = stdout.lines().nth(1).unwrap_or("0").trim().parse().unwrap_or(0);
         return Ok(bytes);
     }
-    Err("Cannot determine RAM size".into())
+    #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+    {
+        Err("Cannot determine RAM size".into())
+    }
 }

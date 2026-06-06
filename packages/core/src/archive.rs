@@ -85,7 +85,7 @@ pub fn forensic_load(path: &str, password: Option<&str>) -> Result<Vec<FileEntry
 
 fn load_zip(path: &str, password: Option<&str>) -> Result<Vec<FileEntry>, String> {
     let file = std::fs::File::open(path).map_err(|e| format!("Cannot open: {}", e))?;
-    let mut archive = if let Some(pw) = password {
+    let mut archive = if let Some(_pw) = password {
         zip::ZipArchive::new(file).map_err(|_| "PASSWORD_NEEDED".to_string())? // password support varies
     } else {
         zip::ZipArchive::new(file).map_err(|e| format!("ZIP error: {}", e))?

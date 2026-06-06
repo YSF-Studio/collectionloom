@@ -174,7 +174,7 @@ pub fn create_chain_of_custody(
 #[tauri::command]
 pub fn generate_coc_report(evidence_id: String) -> Result<String, String> {
     let report_path = format!("/tmp/{}_coc_report.pdf", evidence_id);
-    let coc = evidence::ChainOfCustody::new("case", "operator", "device", 0);
+    let _coc = evidence::ChainOfCustody::new("case", "operator", "device", 0);
     let pdf = report::generate_pdf_report(&report::PdfReport {
         title: format!("Chain of Custody — {}", evidence_id),
         evidence_id: evidence_id.clone(),

@@ -21,7 +21,7 @@ fn create_sample_files(dir: &Path) {
     std::fs::write(dir.join("binary.bin"), &[0u8; 1024]).unwrap();
 }
 
-fn create_test_zip(zip_path: &Path, src_dir: &Path, password: Option<&str>) {
+fn create_test_zip(zip_path: &Path, src_dir: &Path, _password: Option<&str>) {
     use std::fs::File;
     use zip::write::{ZipWriter, FileOptions};
     use zip::CompressionMethod;
@@ -72,7 +72,6 @@ fn forensic_load_zip_normal() {
     // Verify entries have required fields
     for e in &entries {
         assert!(!e.path.is_empty(), "Empty path for entry");
-        assert!(e.size >= 0, "Negative size");
     }
 }
 

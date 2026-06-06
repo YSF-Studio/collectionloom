@@ -8,7 +8,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use flate2::write::ZlibEncoder;
 use flate2::Compression;
 use md5::{Digest as Md5Digest, Md5};
-use sha2::{Digest as Sha2Digest, Sha256};
+use sha2::Sha256;
 
 const CHUNK_SIZE: usize = 32 * 1024;
 const SECTION_DESC: usize = 76;
@@ -53,7 +53,7 @@ impl EwfWriter {
             }
             let slice = &buf[..n];
             md5.update(slice);
-            sha256.update(slice);
+            sha2::Digest::update(&mut sha256, slice);
             total_read += n as u64;
 
             let mut enc = ZlibEncoder::new(Vec::new(), Compression::default());
@@ -82,7 +82,7 @@ impl EwfWriter {
         }
 
         let md5_digest = md5.finalize();
-        let sha256_digest = sha256.finalize();
+        let sha256_digest = sha2::Digest::finalize(sha256);
         write_ewf_file(
             &mut out,
             &chunks,

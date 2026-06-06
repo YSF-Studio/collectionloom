@@ -5,7 +5,7 @@ use collectionloom_lib::compare::CompareEngine;
 use collectionloom_lib::export::ExportEngine;
 use collectionloom_lib::models::{Case, CaseOperator, CaptureProfile, SCHEMA_VERSION};
 use collectionloom_lib::storage::{
-    ensure_case_dirs, new_case_id, new_snapshot_id, read_snapshot_meta, snapshot_dir, write_case,
+    ensure_case_dirs, new_case_id, new_snapshot_id, snapshot_dir, write_case,
     write_snapshot_meta,
 };
 use std::fs;

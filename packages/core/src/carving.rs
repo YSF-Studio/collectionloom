@@ -60,7 +60,7 @@ pub fn carve_files(
     let mut carryover = Vec::new(); // Overlap buffer for signatures crossing chunk boundaries
     let overlap = 128; // Max signature length to carry over
     let mut offset: u64 = 0;
-    let mut carryover_len: usize = 0;
+    let mut carryover_len;
     let mut carved_count = 0u64;
     let mut carved_files = vec![];
 

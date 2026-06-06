@@ -8,7 +8,7 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
 use sysinfo::System;
@@ -478,6 +478,7 @@ fn capture_network() -> Result<Vec<NetworkEntry>, String> {
     }
 }
 
+#[cfg(target_os = "linux")]
 fn parse_proc_net_tcp(path: &str, protocol: &str) -> Result<Vec<NetworkEntry>, String> {
     let content = std::fs::read_to_string(path).unwrap_or_default();
     let mut entries = Vec::new();
@@ -508,6 +509,7 @@ fn parse_proc_net_tcp(path: &str, protocol: &str) -> Result<Vec<NetworkEntry>, S
     Ok(entries)
 }
 
+#[cfg(target_os = "linux")]
 fn parse_socket_addr(hex: &str) -> String {
     // Format: 0100007F:1F90
     let parts: Vec<&str> = hex.split(':').collect();
@@ -531,6 +533,7 @@ fn parse_socket_addr(hex: &str) -> String {
     format!("{}:{}", ip, port)
 }
 
+#[cfg(target_os = "linux")]
 fn tcp_state_name(code: &str) -> String {
     match code {
         "01" => "ESTABLISHED",
@@ -603,8 +606,6 @@ mod tests {
     
     #[test]
     fn test_snapshot_detects_file_creation() {
-        use std::io::Write;
-        
         let temp = std::env::temp_dir().join("snap_test_create");
         let _ = std::fs::remove_dir_all(&temp);
         std::fs::create_dir_all(&temp).unwrap();

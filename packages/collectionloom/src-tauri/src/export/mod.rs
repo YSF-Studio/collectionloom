@@ -8,7 +8,7 @@ use crate::storage::{
 use chrono::Utc;
 use std::fs::{self, File};
 use std::io::{Read, Write};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use zip::write::SimpleFileOptions;
 use zip::ZipWriter;
 

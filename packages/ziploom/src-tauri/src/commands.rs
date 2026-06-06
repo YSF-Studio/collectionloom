@@ -150,8 +150,6 @@ fn compress_zip(sources: &[String], output: &str) -> Result<OperationResult, Str
 }
 
 fn compress_tar(sources: &[String], output: &str, gzip: bool) -> Result<OperationResult, String> {
-    use std::io::Write;
-
     let file = std::fs::File::create(output)
         .map_err(|e| format!("Cannot create output: {}", e))?;
 
@@ -165,7 +163,7 @@ fn compress_tar(sources: &[String], output: &str, gzip: bool) -> Result<Operatio
         for source in sources {
             let path = std::path::Path::new(source);
             if path.is_dir() {
-                let mut tar_result = tar.append_dir_all(
+                let tar_result = tar.append_dir_all(
                     path.file_name().unwrap_or_default(),
                     path,
                 );
@@ -225,7 +223,6 @@ pub fn extract_archive(archive_path: String, output_dir: String) -> Result<Opera
         .map_err(|e| format!("Cannot create output dir: {}", e))?;
 
     let format = archive::detect_format(&archive_path).unwrap_or("unknown");
-    let format_str = format.to_string();
     let mut files_processed = 0usize;
     let mut total_size = 0u64;
 

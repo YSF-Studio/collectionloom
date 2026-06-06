@@ -163,7 +163,7 @@ impl SnapshotRunner {
 fn run_with_timeout(
     module: &dyn CollectorModule,
     output_dir: &Path,
-    timeout: Duration,
+    _timeout: Duration,
 ) -> CollectorResult {
     let name = module.name().to_string();
     let output_dir = output_dir.to_path_buf();
@@ -220,7 +220,7 @@ pub fn write_audit_log(snapshot_dir: &Path, snapshot_id: &str, results: &[Collec
 
 pub fn build_hash_manifest(
     snapshot_id: &str,
-    artifacts_dir: &Path,
+    _artifacts_dir: &Path,
     results: &[CollectorResult],
 ) -> crate::models::HashManifest {
     use crate::models::{HashManifest, ManifestEntry, SCHEMA_VERSION};

@@ -8,7 +8,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::path::Path;
-use crate::hashing::{multi_hash, compute_entropy, check_magic_bytes};
+use crate::hashing::compute_entropy;
 
 const TEXT_PREVIEW_LIMIT: usize = 50 * 1024;
 const HEX_PREVIEW_LIMIT: usize = 4 * 1024;

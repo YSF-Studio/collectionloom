@@ -158,6 +158,7 @@ fn disk_info_macos(device: &str) -> Result<DiskInfo, String> {
     })
 }
 
+#[cfg(target_os = "linux")]
 fn parse_size(s: &str) -> u64 {
     let s = s.trim().to_uppercase();
     if s.ends_with("G") { s.trim_end_matches('G').parse::<f64>().unwrap_or(0.0) as u64 * 1_073_741_824 }
