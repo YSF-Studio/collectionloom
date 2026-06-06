@@ -87,8 +87,10 @@ pub fn capture_winpmem(output: &str) -> Result<String, String> {
 
 /// Capture RAM on macOS using MRS
 pub fn capture_mrs(output: &str) -> Result<String, String> {
+    let mrs = crate::portable::tool_path("mrs")?;
     let status = Command::new("sudo")
-        .args(["mrs", "-o", output])
+        .arg(mrs)
+        .args(["-o", output])
         .status()
         .map_err(|e| format!("MRS failed: {}", e))?;
 

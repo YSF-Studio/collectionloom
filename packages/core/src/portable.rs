@@ -31,6 +31,18 @@ pub struct ResolvedTool {
     pub sha256: Option<String>,
 }
 
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PortableLayout {
+    pub platform: String,
+    pub kit_root: Option<String>,
+    pub tools_dir: Option<String>,
+    pub cases_dir: String,
+    pub default_acquisition_dir: String,
+    pub portable_mode: bool,
+    pub path_separator: String,
+}
+
 static KIT_ROOT_OVERRIDE: Mutex<Option<PathBuf>> = Mutex::new(None);
 
 /// Override kit root (tests / explicit COLLECTIONLOOM_KIT_ROOT).
@@ -51,6 +63,16 @@ fn kit_root_from_env() -> Option<PathBuf> {
         .filter(|p| p.is_dir())
 }
 
+fn portable_flag_from_env() -> bool {
+    std::env::var("COLLECTIONLOOM_PORTABLE")
+        .map(|v| matches!(v.as_str(), "1" | "true" | "TRUE" | "yes" | "YES"))
+        .unwrap_or(false)
+}
+
+fn exe_dir() -> Option<PathBuf> {
+    std::env::current_exe().ok()?.parent().map(Path::to_path_buf)
+}
+
 /// Forensic kit root: folder containing app + `tools/` + `cases/`.
 pub fn resolve_kit_root() -> Option<PathBuf> {
     if let Some(o) = kit_root_override() {
@@ -59,8 +81,16 @@ pub fn resolve_kit_root() -> Option<PathBuf> {
     if let Some(env) = kit_root_from_env() {
         return Some(env);
     }
-    let exe = std::env::current_exe().ok()?;
-    let dir = exe.parent()?.to_path_buf();
+
+    // Linux AppImage: real path is outside the read-only mount.
+    #[cfg(target_os = "linux")]
+    if let Ok(appimage) = std::env::var("APPIMAGE") {
+        if let Some(parent) = PathBuf::from(&appimage).parent() {
+            return Some(parent.to_path_buf());
+        }
+    }
+
+    let dir = exe_dir()?;
 
     #[cfg(target_os = "macos")]
     {
@@ -79,6 +109,16 @@ pub fn resolve_kit_root() -> Option<PathBuf> {
         }
     }
 
+    #[cfg(target_os = "windows")]
+    {
+        // Tauri may place the exe in a subfolder; prefer parent when ./tools lives there.
+        if let Some(parent) = dir.parent() {
+            if parent.join("tools").is_dir() && !dir.join("tools").is_dir() {
+                return Some(parent.to_path_buf());
+            }
+        }
+    }
+
     Some(dir)
 }
 
@@ -88,6 +128,125 @@ pub fn tools_dir() -> Option<PathBuf> {
 
 pub fn cases_dir() -> Option<PathBuf> {
     resolve_kit_root().map(|r| r.join("cases"))
+}
+
+/// True when running from a forensic USB kit (tools/, env flag, or marker file).
+pub fn is_portable_mode() -> bool {
+    if portable_flag_from_env() || kit_root_from_env().is_some() {
+        return true;
+    }
+    if let Some(kit) = resolve_kit_root() {
+        if kit.join("tools").is_dir() {
+            return true;
+        }
+        if kit.join(".portable").is_file() {
+            return true;
+        }
+    }
+    false
+}
+
+/// Use kit-relative `cases/` instead of ~/CollectionLoom/cases when portable.
+pub fn use_portable_storage() -> bool {
+    is_portable_mode()
+}
+
+fn home_cases_dir() -> PathBuf {
+    #[cfg(unix)]
+    if let Ok(home) = std::env::var("HOME") {
+        return PathBuf::from(home).join("CollectionLoom").join("cases");
+    }
+    #[cfg(windows)]
+    if let Ok(home) = std::env::var("USERPROFILE") {
+        return PathBuf::from(home).join("CollectionLoom").join("cases");
+    }
+    std::env::temp_dir().join("CollectionLoom").join("cases")
+}
+
+fn platform_label() -> &'static str {
+    #[cfg(target_os = "linux")]
+    return "linux";
+    #[cfg(target_os = "macos")]
+    return "macos";
+    #[cfg(target_os = "windows")]
+    return "windows";
+    #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+    return "unknown";
+}
+
+fn path_separator() -> &'static str {
+    #[cfg(windows)]
+    return "\\";
+    #[cfg(not(windows))]
+    return "/";
+}
+
+/// Create kit `tools/` and `cases/acquisitions/` when in portable mode.
+pub fn ensure_kit_directories() -> Result<(), String> {
+    if !is_portable_mode() {
+        return Ok(());
+    }
+    let kit = resolve_kit_root().ok_or("Cannot resolve kit root")?;
+    std::fs::create_dir_all(kit.join("tools"))
+        .map_err(|e| format!("Cannot create tools/: {e}"))?;
+    std::fs::create_dir_all(kit.join("cases").join("acquisitions"))
+        .map_err(|e| format!("Cannot create cases/: {e}"))?;
+    Ok(())
+}
+
+/// Default folder for live acquisition outputs (portable kit or temp).
+pub fn default_acquisition_dir() -> PathBuf {
+    if is_portable_mode() {
+        if let Some(kit) = resolve_kit_root() {
+            let dir = kit.join("cases").join("acquisitions");
+            let _ = std::fs::create_dir_all(&dir);
+            return dir;
+        }
+    }
+    std::env::temp_dir().join("collectionloom_acquisition")
+}
+
+pub fn join_acquisition_path(filename: &str) -> PathBuf {
+    default_acquisition_dir().join(filename)
+}
+
+pub fn portable_layout() -> PortableLayout {
+    let _ = ensure_kit_directories();
+    let kit = resolve_kit_root();
+    let tools = tools_dir();
+    let cases = if use_portable_storage() {
+        resolve_kit_root()
+            .map(|k| k.join("cases"))
+            .unwrap_or_else(default_acquisition_dir)
+    } else {
+        home_cases_dir()
+    };
+    let _ = std::fs::create_dir_all(&cases);
+    PortableLayout {
+        platform: platform_label().into(),
+        kit_root: kit.as_ref().map(|p| p.to_string_lossy().into_owned()),
+        tools_dir: tools.as_ref().map(|p| p.to_string_lossy().into_owned()),
+        cases_dir: cases.to_string_lossy().into_owned(),
+        default_acquisition_dir: default_acquisition_dir().to_string_lossy().into_owned(),
+        portable_mode: is_portable_mode(),
+        path_separator: path_separator().into(),
+    }
+}
+
+fn bundled_tool_paths(tools: &Path, name: &str) -> Vec<PathBuf> {
+    let mut paths = Vec::new();
+    #[cfg(windows)]
+    {
+        if !name.ends_with(".exe") {
+            paths.push(tools.join(format!("{name}.exe")));
+        }
+        paths.push(tools.join(name));
+    }
+    #[cfg(not(windows))]
+    {
+        paths.push(tools.join(name));
+    }
+    paths
 }
 
 fn tool_filename(name: &str) -> String {
@@ -171,8 +330,13 @@ pub fn resolve_tool(name: &str) -> Option<ResolvedTool> {
     let mut candidates: Vec<(PathBuf, &'static str)> = vec![];
 
     if let Some(tools) = tools_dir() {
+        for bundled in bundled_tool_paths(&tools, name) {
+            if bundled.is_file() && !candidates.iter().any(|(p, _)| p == &bundled) {
+                candidates.push((bundled, "portable"));
+            }
+        }
         let bundled = tools.join(tool_filename(name));
-        if bundled.is_file() {
+        if bundled.is_file() && !candidates.iter().any(|(p, _)| p == &bundled) {
             candidates.push((bundled, "portable"));
         }
         if let Some(ref m) = manifest {
@@ -316,5 +480,30 @@ mod tests {
         let r = resolve_tool("adb").expect("adb");
         assert_eq!(r.source, "portable");
         assert!(r.path.contains("tools"));
+        set_kit_root_override(None);
+    }
+
+    #[test]
+    fn portable_mode_when_tools_present() {
+        let tmp = std::env::temp_dir().join("cl_portable_mode_test");
+        let _ = fs::remove_dir_all(&tmp);
+        fs::create_dir_all(tmp.join("tools")).unwrap();
+        set_kit_root_override(Some(tmp));
+        assert!(is_portable_mode());
+        ensure_kit_directories().unwrap();
+        assert!(cases_dir().unwrap().join("acquisitions").is_dir());
+        set_kit_root_override(None);
+    }
+
+    #[test]
+    fn join_acquisition_path_uses_kit() {
+        let tmp = std::env::temp_dir().join("cl_portable_join_test");
+        let _ = fs::remove_dir_all(&tmp);
+        fs::create_dir_all(tmp.join("tools")).unwrap();
+        set_kit_root_override(Some(tmp.clone()));
+        let p = join_acquisition_path("disk_image.dd");
+        assert!(p.to_string_lossy().contains("acquisitions"));
+        assert!(p.to_string_lossy().ends_with("disk_image.dd"));
+        set_kit_root_override(None);
     }
 }

@@ -35,3 +35,15 @@ Kit root layout (USB / forensic drive)
   └── cases/               ← evidence output
 
 Do NOT install apt/brew/choco on suspect machines — copy this folder and run.
+
+Platform notes
+--------------
+  Windows  — tools/ beside CollectionLoom.exe; resolves adb.exe and adb
+  Linux    — tools/ beside binary; AppImage uses APPIMAGE path for kit root
+  macOS    — kit root is folder containing CollectionLoom.app (not inside bundle)
+
+Environment
+-----------
+  COLLECTIONLOOM_KIT_ROOT  — override kit root path
+  COLLECTIONLOOM_PORTABLE=1 — force portable cases/ storage
+  .portable marker file in kit root — enable portable mode without tools/ yet

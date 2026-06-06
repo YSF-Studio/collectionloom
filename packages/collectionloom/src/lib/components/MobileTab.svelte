@@ -1,11 +1,18 @@
 <script>
 import { invoke } from "../api/tauri.js";
+import { defaultOutputPath } from "../api/portable.js";
 import GuideCard from "./GuideCard.svelte";
 import { mobileTriageGuide } from "../guides.js";
 let { busy, setBusy, setMsg, timeoutPromise } = $props();
 let androidDevices = $state([]);
 let iosDevices = $state([]);
-let outputPath = $state("/tmp/mobile_backup.ab");
+let outputPath = $state("");
+
+$effect(() => {
+  defaultOutputPath("mobile_backup.ab").then((p) => {
+    if (!outputPath) outputPath = p;
+  });
+});
 let androidBackupProgress = $state({});
 let iosBackupProgress = $state({});
 

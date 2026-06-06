@@ -74,6 +74,19 @@ export async function fixtureInvoke(cmd, args = {}) {
   if (cmd === "verify_acquisition_storage") {
     return { ok: true, outputPath: args.output, notes: "Output storage OK for acquisition", sameVolumeAsSource: false };
   }
+  if (cmd === "get_portable_layout") {
+    return (
+      table.get_portable_layout ?? {
+        platform: "preview",
+        kitRoot: "/Volumes/ForensicUSB/CollectionLoom",
+        toolsDir: "/Volumes/ForensicUSB/CollectionLoom/tools",
+        casesDir: "/Volumes/ForensicUSB/CollectionLoom/cases",
+        defaultAcquisitionDir: "/Volumes/ForensicUSB/CollectionLoom/cases/acquisitions",
+        portableMode: true,
+        pathSeparator: "/",
+      }
+    );
+  }
   if (cmd === "run_preflight_check") {
     return (
       table.run_preflight_check ?? {

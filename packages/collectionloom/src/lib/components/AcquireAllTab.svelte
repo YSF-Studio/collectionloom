@@ -1,5 +1,6 @@
 <script>
 import { invoke } from "../api/tauri.js";
+import { getPortableLayout, joinPortablePath } from "../api/portable.js";
 import GuideCard from "./GuideCard.svelte";
 import MacCard from "./ui/MacCard.svelte";
 import SectionHeader from "./ui/SectionHeader.svelte";
@@ -25,7 +26,7 @@ let selectedRamTool = $state("");
 let interfaces = $state([]);
 let selectedIface = $state("");
 let bpfFilter = $state("");
-let outputFolder = $state("/tmp/forensic_case/");
+let outputFolder = $state("");
 let mobileDetected = $state(false);
 let mobileDeviceId = $state("");
 let cloudConfigured = $state(false);
@@ -246,7 +247,7 @@ async function runDiskAcquisition() {
   }
   await ensureWriteBlocker();
   const split = effectiveSplitMb();
-  const dest = outputFolder.replace(/\/$/, "") + "/disk_image.dd";
+  const dest = joinPortablePath(outputFolder, "disk_image.dd");
   moduleDetails.disk = `Split: ${split > 0 ? split + " MB" : "none"} · ${formatSize(selectedDiskInfo?.sizeBytes)}`;
   await invoke("start_disk_imaging", {
     source: selectedDevice,
@@ -262,7 +263,7 @@ async function runDiskAcquisition() {
 }
 
 async function runRamAcquisition() {
-  const dest = outputFolder.replace(/\/$/, "") + "/ram_dump.lime";
+  const dest = joinPortablePath(outputFolder, "ram_dump.lime");
   await checkStorage(dest);
   moduleProgress.ram = { percent: 50, status: "Running", eta: "" };
   const result = await timeoutPromise(
@@ -285,7 +286,7 @@ async function runRamAcquisition() {
 }
 
 async function runNetworkAcquisition() {
-  const dest = outputFolder.replace(/\/$/, "") + "/network.pcapng";
+  const dest = joinPortablePath(outputFolder, "network.pcapng");
   await checkStorage(dest);
   moduleProgress.network = { percent: 30, status: "Running", eta: "" };
   await timeoutPromise(
@@ -308,7 +309,7 @@ async function runMobileAcquisition() {
     moduleDetails.mobile = "No device detected";
     return;
   }
-  const dest = outputFolder.replace(/\/$/, "") + "/mobile_backup.ab";
+  const dest = joinPortablePath(outputFolder, "mobile_backup.ab");
   await checkStorage(dest);
   moduleProgress.mobile = { percent: 50, status: "Running", eta: "" };
   try {
@@ -329,6 +330,11 @@ function sleep(ms) {
 }
 
 $effect(() => {
+  getPortableLayout().then((layout) => {
+    if (!outputFolder) {
+      outputFolder = layout.defaultAcquisitionDir + layout.pathSeparator;
+    }
+  });
   detectModules();
 });
 

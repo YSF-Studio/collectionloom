@@ -1,5 +1,6 @@
 <script>
 import { invoke, openDialog, isPreviewError, listenEvent, isTauri } from "../api/tauri.js";
+import { defaultOutputPath } from "../api/portable.js";
 import GuideCard from "./GuideCard.svelte";
 import MacCard from "./ui/MacCard.svelte";
 import SectionHeader from "./ui/SectionHeader.svelte";
@@ -25,7 +26,13 @@ let disksLoading = $state(false);
 let showConfirmStart = $state(false);
 let showConfirmDisableWb = $state(false);
 let selectedDisk = $state("");
-let destPath = $state("/tmp/evidence/image.dd");
+let destPath = $state("");
+
+$effect(() => {
+  defaultOutputPath("image.dd").then((p) => {
+    if (!destPath) destPath = p;
+  });
+});
 let splitSize = $state("0");
 let shouldVerify = $state(true);
 let imageFormat = $state("raw");

@@ -5,6 +5,12 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 pub fn cases_root() -> PathBuf {
+    if ysf_core::use_portable_storage() {
+        if let Some(cases) = ysf_core::cases_dir() {
+            let _ = fs::create_dir_all(&cases);
+            return cases;
+        }
+    }
     dirs::home_dir()
         .unwrap_or_else(|| PathBuf::from("/tmp"))
         .join("CollectionLoom")

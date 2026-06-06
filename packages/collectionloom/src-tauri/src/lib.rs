@@ -15,6 +15,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
         .setup(|app| {
+            let _ = ysf_core::ensure_kit_directories();
             let window = app.get_webview_window("main").unwrap();
             window.set_title("CollectionLoom — Portable Forensic Acquisition")?;
 
@@ -75,6 +76,7 @@ pub fn run() {
             commands::generate_coc_report,
             commands::about_info,
             commands::run_preflight_check,
+            commands::get_portable_layout,
             commands::take_snapshot,
             commands::compare_snapshot,
             commands::create_cloud_snapshot,

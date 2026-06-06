@@ -485,6 +485,12 @@ pub fn run_preflight_check() -> Result<ysf_core::PreflightReport, String> {
 }
 
 #[tauri::command]
+pub fn get_portable_layout() -> Result<ysf_core::PortableLayout, String> {
+    ysf_core::ensure_kit_directories()?;
+    Ok(ysf_core::portable_layout())
+}
+
+#[tauri::command]
 pub fn about_info() -> serde_json::Value {
     serde_json::json!({
         "appName": "CollectionLoom",

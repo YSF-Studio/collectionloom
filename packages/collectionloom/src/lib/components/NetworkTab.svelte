@@ -1,5 +1,6 @@
 <script>
 import { invoke } from "../api/tauri.js";
+import { defaultOutputPath } from "../api/portable.js";
 import GuideCard from "./GuideCard.svelte";
 import MacCard from "./ui/MacCard.svelte";
 import SectionHeader from "./ui/SectionHeader.svelte";
@@ -9,7 +10,13 @@ let { busy, setBusy, setMsg, timeoutPromise } = $props();
 let interfaces = $state([]);
 let iface = $state("");
 let bpf = $state("");
-let outFile = $state("/tmp/evidence/capture.pcapng");
+let outFile = $state("");
+
+$effect(() => {
+  defaultOutputPath("capture.pcapng").then((p) => {
+    if (!outFile) outFile = p;
+  });
+});
 let maxDurationSecs = $state("3600");
 let capturing = $state(false);
 let packets = $state([]);

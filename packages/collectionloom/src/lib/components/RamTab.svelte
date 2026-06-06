@@ -1,5 +1,6 @@
 <script>
 import { invoke } from "../api/tauri.js";
+import { defaultOutputPath } from "../api/portable.js";
 import GuideCard from "./GuideCard.svelte";
 import SectionHeader from "./ui/SectionHeader.svelte";
 import { ramCaptureGuide } from "../guides.js";
@@ -7,7 +8,13 @@ let { sharedState, caseState = {}, busy, setBusy, setMsg, timeoutPromise } = $pr
 let tools = $state([]);
 let toolsLoading = $state(false);
 let selectedTool = $state("");
-let outputPath = $state("/mnt/evidence/ram_capture.lime");
+let outputPath = $state("");
+
+$effect(() => {
+  defaultOutputPath("ram_capture.lime").then((p) => {
+    if (!outputPath) outputPath = p;
+  });
+});
 let compress = $state(true);
 let progress = $state(null);
 let ramSize = $state(null);
