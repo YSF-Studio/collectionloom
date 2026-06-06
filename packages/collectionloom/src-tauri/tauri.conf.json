@@ -16,8 +16,7 @@
         "width": 1100,
         "height": 680,
         "resizable": true,
-        "decorations": false,
-        "titleBarStyle": "Overlay"
+        "decorations": true
       }
     ],
     "security": {
