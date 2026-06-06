@@ -19,8 +19,8 @@ CollectionLoom helps first responders and forensic analysts capture disk images,
 
 | Module | Description |
 |--------|-------------|
-| **Disk Imaging** | Sector-by-sector acquisition in RAW, native E01, or AFF4 format. SHA-256 verification, split images for multi-TB drives |
-| **Write Blocker** | Auto-detects Tableau/WiebeTech hardware blockers; one-click software protection on all platforms |
+| **Disk Imaging** | Sector-by-sector acquisition in RAW, native E01, or AFF4 format. SHA-256 verification (single- and multi-part), split images, HPA/DCO check, pre-imaging source integrity, acquisition summary |
+| **Write Blocker** | Hardware auto-detect (Tableau/WiebeTech); software protection via titlebar or tab; disk picker in titlebar — no imaging tab required |
 | **RAM Capture** | Volatile memory via avml / LiME / DumpIt with optional compression |
 | **Mobile Triage** | Android ADB backup and iOS logical acquisition workflows |
 | **Cloud Snapshot** | AWS EBS (Signature V4), Azure managed disk, and GCP persistent disk snapshots |
@@ -120,6 +120,7 @@ Binaries and installers are available on the [Releases](https://github.com/YSF-S
 | Document | Description |
 |----------|-------------|
 | [User Guide](docs/GUIDE.md) | Step-by-step acquisition procedures for every module |
+| [Known Limitations](docs/LIMITATIONS.md) | Platform scope, verification boundaries, and operational caveats |
 | [PRD V1](docs/PRD-EN.md) | Product requirements — snapshot, compare, export |
 | In-app guides | Collapsible ISO 27037-aligned guides on each tab |
 
@@ -148,7 +149,27 @@ Binaries and installers are available on the [Releases](https://github.com/YSF-S
 | Software | macOS | `diskutil unmountDisk force` then image via `/dev/rdiskN` |
 | Software | Windows | `IOCTL_DISK_SET_DISK_ATTRIBUTES` read-only (Administrator) |
 
-The titlebar badge shows **Write-Blocker Active** when hardware or software protection is confirmed.
+**Titlebar:** Select a disk from the dropdown, then click **Enable WB** — works without opening Disk Imaging or Acquire All. The titlebar badge shows **Write-Blocker Active** when hardware or software protection is confirmed.
+
+See [Known Limitations](docs/LIMITATIONS.md) for platform caveats (software vs hardware, permissions, macOS behaviour).
+
+---
+
+## Known Limitations (summary)
+
+CollectionLoom implements real HPA/DCO detection (Linux/Windows), AFF4 split sizing, multi-part hash verification, pre-imaging prefix integrity (sectors 0–99), network capture default 1 h timeout, Rust-side cloud credential files, imaging summaries, standard evidence IDs, and system theme — each with documented scope limits.
+
+| Area | Key constraint |
+|------|----------------|
+| HPA/DCO | Not on macOS/NVMe; needs root/admin + direct block device |
+| Source integrity | First 51,200 bytes only — not full-drive pre-hash |
+| AFF4 split | Each part is a separate AFF4-L container |
+| Network capture | Default 3600 s; `0` = infinite until manual stop |
+| Cloud credentials | File-based via native picker — prepare JSON/INI beforehand |
+| Imaging summary | `error_sectors` is 0 unless imaging aborts (fail-fast reads) |
+| CI | No live hardware imaging or ATA pass-through in automated tests |
+
+Full details: **[docs/LIMITATIONS.md](docs/LIMITATIONS.md)**
 
 ---
 

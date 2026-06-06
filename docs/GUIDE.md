@@ -8,8 +8,10 @@ This guide describes how to use each acquisition module in CollectionLoom. All p
 
 1. **Prepare evidence storage** — Use NTFS, APFS, or ext4 with free space ≥ source drive size + 10%. Avoid FAT32 for images larger than 4 GB unless you enable split segments.
 2. **Document the case** — Create a case in **System Snapshot** or **Case Dashboard** with operator name, timezone, and purpose.
-3. **Enable write protection** — Connect a hardware write blocker when possible. Otherwise use **Enable Software Write-Blocker** before disk imaging.
+3. **Enable write protection** — Connect a hardware write blocker when possible. From the **titlebar**, select the target disk and click **Enable WB** (no need to open Disk Imaging first). Alternatively use **Enable Software Write-Blocker** on the Disk Imaging tab.
 4. **Record hashes** — Complete the **Chain of Custody** tab after each acquisition.
+
+See [Known Limitations](LIMITATIONS.md) for platform scope and verification boundaries.
 
 ---
 
@@ -18,12 +20,15 @@ This guide describes how to use each acquisition module in CollectionLoom. All p
 **Tab:** Acquire Drive
 
 1. Refresh the device list and select the source drive.
-2. Enable software write-blocker if no hardware blocker is detected (titlebar badge turns green).
-3. Choose format: **RAW** (`.dd`), **E01** (EnCase-compatible subset), or **AFF4** (ZIP container).
-4. Set split size (e.g. 4096 MB) for large drives or FAT32 destinations. Leave at 0 for a single file on large-file filesystems.
-5. Select destination path and click **Start Acquisition**.
-6. Monitor progress (supports multi-TB sources — no application size cap).
-7. Verify SHA-256 when acquisition completes.
+2. Enable software write-blocker if no hardware blocker is detected (titlebar **Enable WB** or tab button; badge turns green).
+3. Optional: click **Check HPA/DCO** to scan for hidden ATA areas (Linux/Windows + root/admin; not supported on macOS/NVMe — see [Limitations](LIMITATIONS.md)).
+4. Choose format: **RAW** (`.dd`), **E01** (EnCase-compatible subset), or **AFF4** (ZIP container).
+5. Set split size (e.g. 4096 MB) for large drives or FAT32 destinations. Leave at 0 for a single file on large-file filesystems. AFF4 split produces separate `{name}.00001.aff4` containers per part.
+6. Select destination path and enable **Verify after write** for SHA-256 check (single- and multi-part).
+7. Click **Start Acquisition** and monitor progress (supports multi-TB sources).
+8. Review the **Acquisition Summary** card (sectors, duration, speed, source integrity, SHA-256) when complete.
+
+**Source integrity:** Before imaging, the first 51,200 bytes (sectors 0–99) are hashed and compared after acquisition. This detects tampering during the session but is **not** a full-drive pre-hash.
 
 **Large drives:** CollectionLoom uses block-device ioctls for accurate size detection on Linux, macOS, and Windows. Split segments are numbered `.00001`, `.00002`, etc.
 
@@ -33,13 +38,23 @@ This guide describes how to use each acquisition module in CollectionLoom. All p
 
 CollectionLoom detects USB hardware blockers automatically. For software protection:
 
+**Titlebar (recommended):**
+
+1. Open the disk dropdown in the titlebar (list loads at startup; click **↻** to refresh).
+2. Select the evidence drive.
+3. Click **Enable WB**. Status appears in the titlebar badge.
+
+This works from any tab — you do not need to open Disk Imaging or Acquire All first.
+
+**Disk Imaging / Acquire All tabs** also expose Enable, Disable, and Refresh for the selected disk.
+
 | Platform | Action | Requirement |
 |----------|--------|-------------|
 | Linux | BLKROSET read-only | Root or `sudo` |
-| macOS | Force-unmount all volumes on disk | User confirmation |
+| macOS | Force-unmount all volumes on disk | User confirmation; image via raw path |
 | Windows | Disk read-only attribute | Administrator |
 
-Use **Refresh** to re-check status before imaging.
+Use **Refresh** to re-check status before imaging. Software blocking is not a substitute for certified hardware on contested evidence — see [Limitations](LIMITATIONS.md).
 
 ---
 
@@ -70,12 +85,15 @@ Use **Refresh** to re-check status before imaging.
 
 **Tab:** Cloud Snapshot
 
-1. Create **read-only, time-limited** API credentials in your cloud console.
-2. Enter provider (AWS / Azure / GCP), region, and resource identifier.
-   - **AWS:** uses EC2 Query API with **Signature Version 4** (access key + secret key).
-   - **Azure / GCP:** use bearer tokens from your cloud CLI or service account.
-3. Initiate snapshot and wait for completion.
-4. **Revoke credentials** immediately after download.
+1. Create **read-only, time-limited** API credentials in your cloud console and save them to a local file (JSON or INI — provider-specific).
+2. Click **Choose credentials file** — the native file picker loads secrets in Rust; credentials are **not** entered in the web UI.
+3. Select provider (AWS / Azure / GCP), region, and resource identifier.
+   - **AWS:** EC2 Query API with **Signature Version 4** (access key + secret key in credential file).
+   - **Azure / GCP:** bearer token or service-account JSON path as documented for each provider.
+4. Initiate snapshot and wait for completion.
+5. **Revoke credentials** immediately after download.
+
+See [Limitations](LIMITATIONS.md#cloud-snapshot) for credential format and scope.
 
 ---
 
@@ -85,8 +103,9 @@ Use **Refresh** to re-check status before imaging.
 
 1. Select interface (or configure SPAN/mirror upstream).
 2. Optional: set BPF filter (e.g. `tcp port 443`).
-3. Start capture; monitor packet count and size.
-4. Stop capture and hash the `.pcapng` file.
+3. Set **Max duration (seconds)** — default **3600** (1 hour). Use **0** only if you intend to stop capture manually (infinite; UI shows a warning).
+4. Start capture; monitor packet count and size.
+5. Stop capture (or wait for timeout) and hash the `.pcapng` file.
 
 ---
 
@@ -138,10 +157,11 @@ Run a scan to identify BitLocker, LUKS, VeraCrypt, FileVault, and encrypted cont
 
 **Tab:** Custody Chain
 
-1. Generate evidence ID and QR label.
-2. Fill case name, operator, source device, and timezone.
-3. Log each transfer action with timestamp.
-4. Sign with Ed25519 and export PDF report.
+1. Generate evidence ID — format `[CASE-INITIALS]-[MEDIA-TYPE]-[SEQUENCE]` (e.g. `BR2026-DSK-001`). Sequence counters persist per case/media under `~/.ysf/`.
+2. Generate QR label PNG.
+3. Fill case name, operator, source device, and timezone.
+4. Log each transfer action with timestamp.
+5. Sign with Ed25519 and export PDF report.
 
 ---
 
@@ -173,6 +193,7 @@ Overview of all cases with snapshot, export, and diff counts. Open case folders 
 - NIST SP 800-86 — Integrating forensic techniques into incident response
 - NIST SP 800-101 Rev. 1 — Mobile device forensics
 - NIST CFReDS — https://cfreds.nist.gov
+- [Known Limitations](LIMITATIONS.md) — platform scope and verification boundaries
 
 ---
 
