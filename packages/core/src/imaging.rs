@@ -159,9 +159,10 @@ fn parse_diskutil_list_text(stdout: &str) -> Vec<DiskInfo> {
         if let Some((device, size_hint)) = current.take() {
             push_macos_disk(&mut disks, device, size_hint);
         }
-        let parts: Vec<&str> = trimmed.split(':').collect();
-        let device = parts[0].trim().to_string();
-        let hint = parts.get(1).unwrap_or(&"").trim().to_string();
+        let head = trimmed.split(':').next().unwrap_or(trimmed).trim();
+        let mut head_parts = head.split_whitespace();
+        let device = head_parts.next().unwrap_or("").to_string();
+        let hint = head_parts.collect::<Vec<_>>().join(" ");
         current = Some((device, hint));
     }
     if let Some((device, size_hint)) = current {
@@ -173,7 +174,11 @@ fn parse_diskutil_list_text(stdout: &str) -> Vec<DiskInfo> {
 #[cfg(target_os = "macos")]
 fn is_macos_whole_disk(device: &str) -> bool {
     let name = device.trim_start_matches("/dev/");
-    name.starts_with("disk") && !name.contains('s')
+    if !name.starts_with("disk") {
+        return false;
+    }
+    let suffix = &name[4..];
+    !suffix.is_empty() && suffix.chars().all(|c| c.is_ascii_digit())
 }
 
 #[cfg(target_os = "macos")]
@@ -594,5 +599,34 @@ impl DiskImager {
         };
 
         Ok((hash, summary))
+    }
+}
+
+#[cfg(test)]
+mod disk_list_tests {
+    use super::*;
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn macos_whole_disk_filter() {
+        assert!(is_macos_whole_disk("/dev/disk2"));
+        assert!(!is_macos_whole_disk("/dev/disk2s1"));
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn parse_diskutil_list_skips_partitions() {
+        let sample = r#"
+/dev/disk0 (internal, physical):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        *500.3 GB   disk0
+/dev/disk2 (external, physical):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      FDisk_partition_scheme                        *16.1 GB   disk2
+"#;
+        let disks = parse_diskutil_list_text(sample);
+        assert_eq!(disks.len(), 2);
+        assert_eq!(disks[0].device, "/dev/disk0");
+        assert_eq!(disks[1].device, "/dev/disk2");
     }
 }

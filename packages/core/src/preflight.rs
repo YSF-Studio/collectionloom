@@ -195,12 +195,35 @@ fn check_ram_tools() -> Vec<PreflightCheck> {
 
     #[cfg(target_os = "windows")]
     {
-        checks.push(check_external_tool(
-            "winpmem",
-            "winpmem_mini_x64_rc2",
-            "WinPmem (RAM capture)",
-            "RAM Capture (Windows)",
-        ));
+        let winpmem = ["winpmem_mini_x64_rc2", "winpmem", "WinPmem"]
+            .iter()
+            .find_map(|n| crate::portable::resolve_tool(n));
+        checks.push(if let Some(r) = winpmem {
+            PreflightCheck {
+                id: "winpmem".into(),
+                name: "WinPmem (RAM capture)".into(),
+                category: PreflightCategory::ExternalBinary,
+                required_for: "RAM Capture (Windows)".into(),
+                available: r.hash_verified != Some(false),
+                detail: format!("Found via {} at {}", r.source, r.path),
+                install_hint: Some("Copy winpmem_mini_x64_rc2.exe to ./tools/ on forensic USB".into()),
+            }
+        } else {
+            check_external_tool(
+                "winpmem",
+                "winpmem_mini_x64_rc2",
+                "WinPmem (RAM capture)",
+                "RAM Capture (Windows)",
+            )
+        });
+        if crate::portable::tool_available("avml") {
+            checks.push(check_external_tool(
+                "avml",
+                "avml",
+                "avml (RAM capture)",
+                "RAM Capture (Windows, optional)",
+            ));
+        }
     }
 
     #[cfg(target_os = "macos")]

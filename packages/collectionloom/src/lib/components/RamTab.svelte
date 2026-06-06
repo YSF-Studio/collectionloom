@@ -29,12 +29,18 @@ let showProcesses = $state(false);
 
 async function listTools() {
   toolsLoading = true;
-  setBusy(true);
-  try { tools = await timeoutPromise(invoke("list_ram_tools"), 5000); } catch(e) {}
+  try {
+    tools = await timeoutPromise(invoke("list_ram_tools"), 10000);
+    if (tools.length && !selectedTool) selectedTool = tools[0];
+    if (!tools.length) {
+      setMsg("WARN: No RAM capture tools found — copy avml/mrs/winpmem into ./tools/ (see Prerequisites tab)");
+    }
+  } catch (e) {
+    const err = typeof e === "string" ? e : String(e);
+    if (err !== "TIMEOUT") setMsg(`ERR: ${err}`);
+  }
   try { ramSize = await timeoutPromise(invoke("get_ram_size"), 5000); } catch(e) {}
-  if (tools.length && !selectedTool) selectedTool = tools[0];
   toolsLoading = false;
-  setBusy(false);
 }
 async function capture() {
   setBusy(true);
