@@ -114,6 +114,16 @@ async function listDisks() {
   disksLoading = false;
 }
 
+function selectDisk(disk) {
+  selectedDisk = disk.device;
+  onDeviceSelect({
+    device: disk.device,
+    wbActive: wbStatus?.active ?? wbStatus?.enabled ?? false,
+  });
+  checkEncryption();
+  checkWriteBlocker();
+}
+
 async function checkEncryption() {
   bitlockerDetected = false;
   if (!selectedDisk) return;
@@ -307,74 +317,90 @@ $effect(() => {
   <SectionHeader title="Acquire Drive" subtitle="Disk Imaging — sector-by-sector acquisition with hash verification" />
 
   <MacCard title="Source Drive">
-    <div class="row">
-      <select
-        bind:value={selectedDisk}
-        disabled={collBusy || disksLoading}
-        class="full"
-        onchange={() => onDeviceSelect({ device: selectedDisk, wbActive: wbStatus?.active ?? wbStatus?.enabled ?? false })}
-      >
-        <option value="">{disksLoading ? "Loading disks…" : "— Select disk —"}</option>
-        {#each disks as disk}
-          <option value={disk.device}>
-            {disk.device} — {disk.model || "Unknown"} ({(disk.sizeBytes / 1e9).toFixed(1)} GB {disk.isSsd ? "SSD" : "HDD"})
-          </option>
-        {/each}
-      </select>
-      <button onclick={listDisks} class="btn-sm" disabled={collBusy || disksLoading}>
-        {#if disksLoading}<span class="spinner">↻</span>{/if}
-        {disksLoading ? "Loading…" : "Refresh"}
-      </button>
-    </div>
-    {#if !disksLoading && disks.length === 0}
-      <div class="empty-state">
-        <span class="icon">💾</span>
-        <p>No disks detected</p>
-        <p class="empty-hint">Connect a source drive and click Refresh. All physical disks are listed via native diskutil / PowerShell.</p>
-      </div>
-    {/if}
-    {#if selectedDiskInfo}
-      <div class="drive-detail">
-        <span>{selectedDiskInfo.device}</span>
-        <span>{selectedDiskInfo.model || "Unknown model"}</span>
-        <span>{(selectedDiskInfo.sizeBytes / 1e9).toFixed(1)} GB</span>
-        {#if selectedDiskInfo.isSsd}<PillBadge variant="warning" label="SSD — TRIM risk" />{/if}
-        {#if bitlockerDetected}<PillBadge variant="warning" label="Encryption Detected" />{/if}
-      </div>
-    {/if}
-    {#if selectedDiskInfo?.isSsd}
-      <p class="warn-text">SSD TRIM may have erased deleted data. Use a hardware write blocker when possible.</p>
-    {/if}
-    {#if selectedDisk}
-      <div class="wb-section">
-        {#if wbStatus}
-          <div class="wb-row">
-            <span class="wb-label">Write-Blocker:</span>
-            <PillBadge
-              variant={(wbStatus.active ?? wbStatus.enabled) ? "active" : "inactive"}
-              label={wbPillLabel(wbStatus)}
-            />
-          </div>
-        {/if}
-        <div class="wb-btns">
-          <button onclick={enableWriteBlocker} class="btn-sm" disabled={collBusy || busy || !selectedDisk}>Enable Software Write-Blocker</button>
-          <button onclick={requestDisableWriteBlocker} class="btn-sm" disabled={collBusy || busy || !selectedDisk || !wbStatus?.software}>Disable</button>
-          <button onclick={checkWriteBlocker} class="btn-sm" disabled={collBusy || !selectedDisk}>Refresh</button>
-          <button onclick={detectHpaDco} class="btn-sm" disabled={collBusy || busy || hpaBusy || !selectedDisk}>
-            {hpaBusy ? "Checking HPA/DCO…" : "Check HPA/DCO"}
+    <div class="disk-layout">
+      <aside class="disk-sidebar" aria-label="Available disks">
+        <div class="disk-sidebar-head">
+          <span class="disk-sidebar-title">Physical disks</span>
+          <button onclick={listDisks} class="btn-sm" disabled={collBusy || disksLoading}>
+            {#if disksLoading}<span class="spinner">↻</span>{/if}
+            {disksLoading ? "…" : "Refresh"}
           </button>
         </div>
-        {#if hpaReport}
-          <div class="hpa-report">
-            {#if hpaReport.hpaDetected}<PillBadge variant="warning" label="HPA Detected" />{/if}
-            {#if hpaReport.dcoDetected}<PillBadge variant="warning" label="DCO Detected" />{/if}
-            {#if hpaReport.hiddenSectors != null}<span class="wb-detail">Hidden sectors: {hpaReport.hiddenSectors}</span>{/if}
-            <span class="wb-detail">{hpaReport.notes}</span>
+        {#if disksLoading}
+          <p class="disk-sidebar-msg">Loading disks…</p>
+        {:else if disks.length === 0}
+          <div class="empty-state compact">
+            <p>No disks detected</p>
+            <p class="empty-hint">Connect a drive and click Refresh.</p>
+          </div>
+        {:else}
+          <ul class="disk-list">
+            {#each disks as disk}
+              <li>
+                <button
+                  type="button"
+                  class="disk-item"
+                  class:selected={selectedDisk === disk.device}
+                  disabled={collBusy || busy}
+                  onclick={() => selectDisk(disk)}
+                >
+                  <span class="disk-item-device">{disk.device}</span>
+                  <span class="disk-item-model">{disk.model || "Unknown"}</span>
+                  <span class="disk-item-meta">
+                    {(disk.sizeBytes / 1e9).toFixed(1)} GB · {disk.isSsd ? "SSD" : "HDD"}
+                  </span>
+                </button>
+              </li>
+            {/each}
+          </ul>
+        {/if}
+      </aside>
+
+      <div class="disk-main">
+        {#if !selectedDiskInfo}
+          <p class="disk-prompt">Select a disk from the list beside this panel.</p>
+        {:else}
+          <div class="drive-detail">
+            <span>{selectedDiskInfo.device}</span>
+            <span>{selectedDiskInfo.model || "Unknown model"}</span>
+            <span>{(selectedDiskInfo.sizeBytes / 1e9).toFixed(1)} GB</span>
+            {#if selectedDiskInfo.isSsd}<PillBadge variant="warning" label="SSD — TRIM risk" />{/if}
+            {#if bitlockerDetected}<PillBadge variant="warning" label="Encryption Detected" />{/if}
+          </div>
+          {#if selectedDiskInfo.isSsd}
+            <p class="warn-text">SSD TRIM may have erased deleted data. Use a hardware write blocker when possible.</p>
+          {/if}
+          <div class="wb-section">
+            {#if wbStatus}
+              <div class="wb-row">
+                <span class="wb-label">Write-Blocker:</span>
+                <PillBadge
+                  variant={(wbStatus.active ?? wbStatus.enabled) ? "active" : "inactive"}
+                  label={wbPillLabel(wbStatus)}
+                />
+              </div>
+            {/if}
+            <div class="wb-btns">
+              <button onclick={enableWriteBlocker} class="btn-sm" disabled={collBusy || busy || !selectedDisk}>Enable Software Write-Blocker</button>
+              <button onclick={requestDisableWriteBlocker} class="btn-sm" disabled={collBusy || busy || !selectedDisk || !wbStatus?.software}>Disable</button>
+              <button onclick={checkWriteBlocker} class="btn-sm" disabled={collBusy || !selectedDisk}>Refresh</button>
+              <button onclick={detectHpaDco} class="btn-sm" disabled={collBusy || busy || hpaBusy || !selectedDisk}>
+                {hpaBusy ? "Checking HPA/DCO…" : "Check HPA/DCO"}
+              </button>
+            </div>
+            {#if hpaReport}
+              <div class="hpa-report">
+                {#if hpaReport.hpaDetected}<PillBadge variant="warning" label="HPA Detected" />{/if}
+                {#if hpaReport.dcoDetected}<PillBadge variant="warning" label="DCO Detected" />{/if}
+                {#if hpaReport.hiddenSectors != null}<span class="wb-detail">Hidden sectors: {hpaReport.hiddenSectors}</span>{/if}
+                <span class="wb-detail">{hpaReport.notes}</span>
+              </div>
+            {/if}
+            {#if wbStatus?.notes}<p class="wb-notes">{wbStatus.notes}</p>{/if}
           </div>
         {/if}
-        {#if wbStatus?.notes}<p class="wb-notes">{wbStatus.notes}</p>{/if}
       </div>
-    {/if}
+    </div>
   </MacCard>
 
   <MacCard title="Format & Hashing">
@@ -443,6 +469,103 @@ $effect(() => {
 />
 
 <style>
+  .disk-layout {
+    display: grid;
+    grid-template-columns: minmax(220px, 280px) 1fr;
+    gap: 14px;
+    align-items: start;
+  }
+  .disk-sidebar {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--input-bg);
+    overflow: hidden;
+    max-height: 320px;
+    display: flex;
+    flex-direction: column;
+  }
+  .disk-sidebar-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+    background: var(--btn-secondary-bg);
+  }
+  .disk-sidebar-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .disk-sidebar-msg {
+    margin: 0;
+    padding: 12px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .disk-list {
+    list-style: none;
+    margin: 0;
+    padding: 6px;
+    overflow-y: auto;
+    flex: 1;
+  }
+  .disk-item {
+    width: 100%;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px 10px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+  }
+  .disk-item:hover:not(:disabled) {
+    background: var(--btn-secondary-bg);
+  }
+  .disk-item.selected {
+    border-color: var(--primary);
+    background: color-mix(in srgb, var(--primary) 12%, transparent);
+  }
+  .disk-item:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .disk-item-device {
+    font-size: 12px;
+    font-weight: 600;
+    font-family: var(--mono);
+  }
+  .disk-item-model {
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+  .disk-item-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .disk-main {
+    min-width: 0;
+  }
+  .disk-prompt {
+    margin: 0;
+    padding: 16px 4px;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .empty-state.compact {
+    padding: 12px;
+  }
+  .empty-state.compact p {
+    margin: 0 0 4px;
+    font-size: 12px;
+  }
   .row { display: flex; gap: 8px; align-items: center; }
   .full { flex: 1; }
   select, input {

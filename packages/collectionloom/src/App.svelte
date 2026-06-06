@@ -16,10 +16,8 @@ import PreflightTab from "./lib/components/PreflightTab.svelte";
 import PillBadge from "./lib/components/ui/PillBadge.svelte";
 import ProgressStatusBar from "./lib/components/ui/ProgressStatusBar.svelte";
 import ThemeToggle from "./lib/components/ui/ThemeToggle.svelte";
-import WindowControls from "./lib/components/ui/WindowControls.svelte";
 import ConfirmDialog from "./lib/components/ui/ConfirmDialog.svelte";
 import { invoke, isTauri } from "./lib/api/tauri.js";
-import { guessPlatform } from "./lib/window.js";
 import { isError, isWarn } from "./lib/messages.js";
 
 let activeSection = $state("disk");
@@ -227,22 +225,16 @@ window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
 
 <div class="app-shell">
   <div class="titlebar">
-    {#if isTauri() && guessPlatform() === "macos"}
-      <WindowControls variant="macos" />
-    {:else}
-      <span class="titlebar-spacer" aria-hidden="true"></span>
-    {/if}
-    <div class="titlebar-center">
-      <div class="titlebar-brand" data-tauri-drag-region>
-        <img src="/icon.png" class="logo" alt="CollectionLoom" />
-        <span class="title">CollectionLoom</span>
-        {#if wbActive}
-          <PillBadge variant="active" label="Write-Blocker Active" />
-        {:else}
-          <PillBadge variant="inactive" label="Write-Blocker Inactive" />
-        {/if}
-      </div>
-      <div class="wb-titlebar-controls">
+    <div class="titlebar-brand">
+      <img src="/icon.png" class="logo" alt="CollectionLoom" />
+      <span class="title">CollectionLoom</span>
+      {#if wbActive}
+        <PillBadge variant="active" label="Write-Blocker Active" />
+      {:else}
+        <PillBadge variant="inactive" label="Write-Blocker Inactive" />
+      {/if}
+    </div>
+    <div class="wb-titlebar-controls">
         <select
           class="wb-device-select"
           bind:value={wbDevice}
@@ -285,7 +277,6 @@ window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
             Enable WB
           {/if}
         </button>
-      </div>
     </div>
     <div class="titlebar-end">
       {#if !isTauri()}
@@ -296,8 +287,6 @@ window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
         >
           <PillBadge variant="warning" label="Preview Mode" />
         </span>
-      {:else if guessPlatform() !== "macos"}
-        <WindowControls variant="windows" />
       {/if}
       <ThemeToggle />
     </div>
@@ -426,50 +415,30 @@ window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
   }
 
   .titlebar {
-    display: grid;
-    grid-template-columns: auto 1fr auto;
+    display: flex;
     align-items: center;
+    gap: 12px;
     height: 44px;
     padding: 0 14px;
-    gap: 12px;
     background: var(--shell-titlebar);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-bottom: 1px solid var(--shell-border);
     transition: background 0.2s, border-color 0.2s;
   }
-  .titlebar :global(.traffic-lights),
-  .titlebar :global(.win-controls) {
-    -webkit-app-region: no-drag;
-    grid-column: 1;
-  }
-  .titlebar-spacer {
-    width: 52px;
-    grid-column: 1;
-  }
-  .titlebar-center {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    justify-content: center;
-    grid-column: 2;
-    min-width: 0;
-    flex-wrap: wrap;
-  }
   .titlebar-brand {
     display: flex;
     align-items: center;
     gap: 8px;
-    -webkit-app-region: drag;
+    flex-shrink: 0;
   }
   .wb-titlebar-controls {
     display: flex;
     align-items: center;
     gap: 4px;
-    -webkit-app-region: no-drag;
-    pointer-events: auto;
-    max-width: min(100%, 540px);
     flex: 1;
+    min-width: 0;
+    justify-content: flex-end;
   }
   .wb-device-select {
     flex: 1 1 auto;
@@ -499,12 +468,11 @@ window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
     cursor: not-allowed;
   }
   .titlebar-end {
-    -webkit-app-region: no-drag;
-    grid-column: 3;
     display: flex;
     align-items: center;
     justify-content: flex-end;
     gap: 10px;
+    flex-shrink: 0;
   }
   .logo {
     width: 18px;
