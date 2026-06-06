@@ -215,10 +215,21 @@ mod platform {
     use winapi::um::fileapi::{CreateFileW, OPEN_EXISTING};
     use winapi::um::handleapi::{CloseHandle, INVALID_HANDLE_VALUE};
     use winapi::um::ioapiset::DeviceIoControl;
-    use winapi::um::winioctl::{
-        ATA_FLAGS_DATA_IN, ATA_PASS_THROUGH_DIRECT, IOCTL_ATA_PASS_THROUGH_DIRECT,
-    };
     use winapi::um::winnt::{FILE_SHARE_READ, FILE_SHARE_WRITE, GENERIC_READ, GENERIC_WRITE};
+
+    // winapi 0.3 does not export these ATA pass-through symbols; define from Windows SDK.
+    const IOCTL_DISK_BASE: DWORD = 0x0000_0007;
+    const METHOD_BUFFERED: DWORD = 0;
+    const FILE_READ_ACCESS: DWORD = 0x0001;
+    const FILE_WRITE_ACCESS: DWORD = 0x0002;
+    const ATA_FLAGS_DATA_IN: u8 = 0x01;
+
+    const fn ctl_code(device_type: DWORD, function: DWORD, method: DWORD, access: DWORD) -> DWORD {
+        (device_type << 16) | (access << 14) | (function << 2) | method
+    }
+
+    const IOCTL_ATA_PASS_THROUGH_DIRECT: DWORD =
+        ctl_code(IOCTL_DISK_BASE, 0x001b, METHOD_BUFFERED, FILE_READ_ACCESS | FILE_WRITE_ACCESS);
 
     #[repr(C)]
     struct AtaPassThroughDirect {
