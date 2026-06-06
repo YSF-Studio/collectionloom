@@ -32,6 +32,7 @@ async function listTools() {
   setBusy(true);
   try { tools = await timeoutPromise(invoke("list_ram_tools"), 5000); } catch(e) {}
   try { ramSize = await timeoutPromise(invoke("get_ram_size"), 5000); } catch(e) {}
+  if (tools.length && !selectedTool) selectedTool = tools[0];
   toolsLoading = false;
   setBusy(false);
 }
@@ -100,7 +101,11 @@ $effect(() => { listTools(); });
       <option value="">{toolsLoading ? "Detecting tools…" : "— Select tool —"}</option>
       {#each tools as tool}<option value={tool}>{tool}</option>{/each}
     </select></label>
+    <button onclick={listTools} class="btn-sm" disabled={busy || toolsLoading}>{toolsLoading ? "…" : "Refresh"}</button>
   </div>
+  {#if !toolsLoading && tools.length === 0}
+    <p class="empty-hint">Place platform RAM tools in <code>./tools/</code> beside the app (avml on Linux, mrs on macOS, winpmem on Windows).</p>
+  {/if}
   <div class="row">
     <label>Output: <input type="text" bind:value={outputPath} disabled={busy} /></label>
     <label><input type="checkbox" bind:checked={compress} disabled={busy} /> Compress</label>
@@ -136,6 +141,8 @@ $effect(() => { listTools(); });
 
 <style>
 .info { font-size:12px; color:var(--text-secondary); margin-bottom:10px; }
+.empty-hint { font-size:12px; color:var(--text-muted); margin:-4px 0 12px; }
+.empty-hint code { font-size:11px; }
 .row { display:flex; gap:10px; align-items:center; margin-bottom:12px; }
 select, input { background: var(--input-bg); color: var(--text); border:1px solid var(--border); border-radius:6px; padding:6px 10px; }
 .actions { display:flex; gap:8px; align-items:center; margin-bottom:12px; }

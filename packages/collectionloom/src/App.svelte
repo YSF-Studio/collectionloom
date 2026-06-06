@@ -32,7 +32,7 @@ let diskState = {};
 let ramState = {};
 let encryptionState = {};
 let cocState = { caseId: "", operator: "" };
-let wbState = $state({ active: false, device: "" });
+let wbDevice = $state("");
 let wbDisks = $state([]);
 let wbDisksLoading = $state(false);
 let showConfirmDisableWb = $state(false);
@@ -82,8 +82,7 @@ function handleAcquireProgress({ label, percent, busy: isBusy }) {
 }
 
 function handleDeviceSelect({ device, wbActive: active }) {
-  wbState.device = device;
-  wbState.active = active;
+  wbDevice = device;
   wbActive = active;
 }
 
@@ -98,18 +97,15 @@ async function loadWbDisks() {
 }
 
 async function refreshWbStatus() {
-  if (!wbState.device) {
-    wbState.active = false;
+  if (!wbDevice) {
     wbActive = false;
     return;
   }
   try {
-    const r = await invoke("check_write_blocker", { device: wbState.device });
+    const r = await invoke("check_write_blocker", { device: wbDevice });
     const active = !!(r?.active ?? r?.enabled);
-    wbState.active = active;
     wbActive = active;
   } catch {
-    wbState.active = false;
     wbActive = false;
   }
 }
@@ -119,23 +115,23 @@ async function onWbDeviceChange() {
 }
 
 let wbTitle = $derived(
-  wbState.device
+  wbDevice
     ? wbActive
-      ? `Disable write-blocker on ${wbState.device}`
-      : `Enable write-blocker on ${wbState.device}`
+      ? `Disable write-blocker on ${wbDevice}`
+      : `Enable write-blocker on ${wbDevice}`
     : "Select a disk, then enable write-blocker"
 );
 
 let wbSelectedDiskLabel = $derived.by(() => {
-  if (!wbState.device) return "Select disk for write-blocker";
-  const disk = wbDisks.find((d) => d.device === wbState.device);
-  if (!disk) return wbState.device;
+  if (!wbDevice) return "Select disk for write-blocker";
+  const disk = wbDisks.find((d) => d.device === wbDevice);
+  if (!disk) return wbDevice;
   return `${disk.device} · ${disk.model || "Unknown"} (${(disk.sizeBytes / 1e9).toFixed(1)} GB)`;
 });
 
 function requestToggleWriteBlocker() {
-  if (!wbState.device || wbBusy || busy) {
-    if (!wbState.device) setMsg("WARN: Select a target disk in the titlebar first");
+  if (!wbDevice || wbBusy || busy) {
+    if (!wbDevice) setMsg("WARN: Select a target disk in the titlebar first");
     return;
   }
   if (wbActive) {
@@ -147,14 +143,13 @@ function requestToggleWriteBlocker() {
 
 async function toggleWriteBlocker() {
   showConfirmDisableWb = false;
-  if (!wbState.device || wbBusy || busy) return;
+  if (!wbDevice || wbBusy || busy) return;
   wbBusy = true;
   const enabling = !wbActive;
   try {
     const cmd = enabling ? "enable_write_blocker" : "disable_write_blocker";
-    const r = await timeoutPromise(invoke(cmd, { device: wbState.device }), 15000);
+    const r = await timeoutPromise(invoke(cmd, { device: wbDevice }), 15000);
     const active = !!(r?.active ?? r?.enabled);
-    wbState.active = active;
     wbActive = active;
     setMsg(
       enabling
@@ -231,24 +226,26 @@ window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
 </script>
 
 <div class="app-shell">
-  <div class="titlebar" data-tauri-drag-region>
+  <div class="titlebar">
     {#if isTauri() && guessPlatform() === "macos"}
       <WindowControls variant="macos" />
     {:else}
       <span class="titlebar-spacer" aria-hidden="true"></span>
     {/if}
     <div class="titlebar-center">
-      <img src="/icon.png" class="logo" alt="CollectionLoom" />
-      <span class="title">CollectionLoom</span>
-      {#if wbActive}
-        <PillBadge variant="active" label="Write-Blocker Active" />
-      {:else}
-        <PillBadge variant="inactive" label="Write-Blocker Inactive" />
-      {/if}
+      <div class="titlebar-brand" data-tauri-drag-region>
+        <img src="/icon.png" class="logo" alt="CollectionLoom" />
+        <span class="title">CollectionLoom</span>
+        {#if wbActive}
+          <PillBadge variant="active" label="Write-Blocker Active" />
+        {:else}
+          <PillBadge variant="inactive" label="Write-Blocker Inactive" />
+        {/if}
+      </div>
       <div class="wb-titlebar-controls">
         <select
           class="wb-device-select"
-          bind:value={wbState.device}
+          bind:value={wbDevice}
           onchange={onWbDeviceChange}
           disabled={wbBusy || wbDisksLoading}
           title={wbSelectedDiskLabel}
@@ -276,7 +273,7 @@ window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
           class="wb-titlebar-btn"
           class:wb-on={wbActive}
           onclick={requestToggleWriteBlocker}
-          disabled={wbBusy || busy || !wbState.device}
+          disabled={wbBusy || busy || !wbDevice}
           title={wbTitle}
           aria-label={wbActive ? "Disable software write-blocker" : "Enable software write-blocker"}
         >
@@ -331,6 +328,7 @@ window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
           busy={busy}
           sharedState={diskState}
           caseState={cocState}
+          wbDevice={wbDevice}
           {setBusy}
           {setMsg}
           {timeoutPromise}
@@ -438,7 +436,6 @@ window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-bottom: 1px solid var(--shell-border);
-    -webkit-app-region: drag;
     transition: background 0.2s, border-color 0.2s;
   }
   .titlebar :global(.traffic-lights),
@@ -455,16 +452,22 @@ window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
     align-items: center;
     gap: 8px;
     justify-content: center;
-    -webkit-app-region: drag;
     grid-column: 2;
     min-width: 0;
     flex-wrap: wrap;
+  }
+  .titlebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    -webkit-app-region: drag;
   }
   .wb-titlebar-controls {
     display: flex;
     align-items: center;
     gap: 4px;
     -webkit-app-region: no-drag;
+    pointer-events: auto;
     max-width: min(100%, 540px);
     flex: 1;
   }

@@ -13,6 +13,7 @@ import { wbPillLabel } from "../wb.js";
 let {
   sharedState,
   caseState = {},
+  wbDevice = "",
   busy,
   setBusy,
   setMsg,
@@ -103,15 +104,14 @@ $effect(() => {
 
 async function listDisks() {
   disksLoading = true;
-  setBusy(true);
   try {
     disks = await timeoutPromise(invoke("list_disks"), 15000);
+    if (!disks.length) setMsg("WARN: No disks detected — connect a drive and click Refresh");
   } catch (e) {
     const err = typeof e === "string" ? e : String(e);
     if (err !== "TIMEOUT" && !isPreviewError(e)) setMsg(`ERR: ${err}`);
   }
   disksLoading = false;
-  setBusy(false);
 }
 
 async function checkEncryption() {
@@ -205,6 +205,12 @@ $effect(() => {
   if (selectedDisk) {
     checkEncryption();
     checkWriteBlocker();
+  }
+});
+
+$effect(() => {
+  if (wbDevice && wbDevice !== selectedDisk) {
+    selectedDisk = wbDevice;
   }
 });
 
@@ -302,7 +308,12 @@ $effect(() => {
 
   <MacCard title="Source Drive">
     <div class="row">
-      <select bind:value={selectedDisk} disabled={collBusy || busy || disksLoading} class="full">
+      <select
+        bind:value={selectedDisk}
+        disabled={collBusy || disksLoading}
+        class="full"
+        onchange={() => onDeviceSelect({ device: selectedDisk, wbActive: wbStatus?.active ?? wbStatus?.enabled ?? false })}
+      >
         <option value="">{disksLoading ? "Loading disks…" : "— Select disk —"}</option>
         {#each disks as disk}
           <option value={disk.device}>
@@ -319,7 +330,7 @@ $effect(() => {
       <div class="empty-state">
         <span class="icon">💾</span>
         <p>No disks detected</p>
-        <p class="empty-hint">Connect a source drive and click Refresh, or check preview-mode fixtures.</p>
+        <p class="empty-hint">Connect a source drive and click Refresh. All physical disks are listed via native diskutil / PowerShell.</p>
       </div>
     {/if}
     {#if selectedDiskInfo}

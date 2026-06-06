@@ -16,32 +16,43 @@ pub enum RamCaptureTool {
     MRS,
 }
 
-/// Detect available RAM capture tools
+fn ram_tool_available(names: &[&str]) -> bool {
+    names.iter().any(|n| crate::portable::tool_available(n))
+}
+
+/// Detect available RAM capture tools (./tools/ first, then PATH).
 pub fn detect_tools() -> Vec<RamCaptureTool> {
     let mut tools = vec![];
 
     #[cfg(target_os = "linux")]
     {
-        if crate::portable::tool_available("avml") {
+        if ram_tool_available(&["avml"]) {
             tools.push(RamCaptureTool::Avml);
         }
-        // LiME is a kernel module — check if it exists
-        if std::path::Path::new("/usr/lib/lime/lime.ko").exists()
-            || std::path::Path::new("/lib/modules").exists() {
+        let lime_in_kit = crate::portable::tools_dir()
+            .map(|t| t.join("lime").is_dir())
+            .unwrap_or(false);
+        if lime_in_kit || std::path::Path::new("/usr/lib/lime/lime.ko").exists() {
             tools.push(RamCaptureTool::LiME);
         }
     }
 
     #[cfg(target_os = "windows")]
     {
-        if crate::portable::tool_available("winpmem_mini_x64_rc2") {
+        if ram_tool_available(&["winpmem_mini_x64_rc2", "winpmem", "WinPmem"]) {
             tools.push(RamCaptureTool::WinPmem);
+        }
+        if ram_tool_available(&["avml"]) {
+            tools.push(RamCaptureTool::Avml);
         }
     }
 
     #[cfg(target_os = "macos")]
     {
-        if crate::portable::tool_available("mrs") {
+        if ram_tool_available(&["avml"]) {
+            tools.push(RamCaptureTool::Avml);
+        }
+        if ram_tool_available(&["mrs", "MRS"]) {
             tools.push(RamCaptureTool::MRS);
         }
     }
@@ -72,9 +83,18 @@ pub fn capture_avml(output: &str, compress: bool) -> Result<String, String> {
     }
 }
 
+fn resolve_winpmem_command() -> Result<std::process::Command, String> {
+    for name in ["winpmem_mini_x64_rc2", "winpmem", "WinPmem"] {
+        if let Ok(cmd) = crate::portable::command(name) {
+            return Ok(cmd);
+        }
+    }
+    Err("WinPmem not found in ./tools/ or PATH".into())
+}
+
 /// Capture RAM using WinPmem (Windows)
 pub fn capture_winpmem(output: &str) -> Result<String, String> {
-    let status = crate::portable::command("winpmem_mini_x64_rc2")?
+    let status = resolve_winpmem_command()?
         .args(["-o", output])
         .status()
         .map_err(|e| format!("WinPmem failed: {}", e))?;

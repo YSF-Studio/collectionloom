@@ -206,10 +206,16 @@ fn check_ram_tools() -> Vec<PreflightCheck> {
     #[cfg(target_os = "macos")]
     {
         checks.push(check_external_tool(
-            "mrs",
-            "mrs",
-            "MRS (RAM capture)",
+            "avml",
+            "avml",
+            "avml (RAM capture)",
             "RAM Capture (macOS)",
+        ));
+        checks.push(check_external_tool(
+            "mrs",
+            "mrs",
+            "MRS (RAM capture, optional)",
+            "RAM Capture (macOS, optional)",
         ));
     }
 

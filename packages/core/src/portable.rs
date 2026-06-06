@@ -275,21 +275,103 @@ fn tool_filename(name: &str) -> String {
 }
 
 fn command_on_path(name: &str) -> Option<PathBuf> {
-    #[cfg(windows)]
-    let probe = Command::new("where").arg(name).output();
-    #[cfg(not(windows))]
-    let probe = Command::new("which").arg(name).output();
-    let output = probe.ok().filter(|o| o.status.success())?;
-    let line = String::from_utf8_lossy(&output.stdout)
-        .lines()
-        .next()?
-        .trim()
-        .to_string();
-    if line.is_empty() {
-        None
-    } else {
-        Some(PathBuf::from(line))
+    for path in system_tool_paths(name) {
+        if path.is_file() {
+            return Some(path);
+        }
     }
+    None
+}
+
+/// Standard install locations GUI apps often miss (Homebrew, system paths).
+fn system_tool_paths(name: &str) -> Vec<PathBuf> {
+    let file = tool_filename(name);
+    let mut dirs: Vec<PathBuf> = Vec::new();
+
+    #[cfg(target_os = "macos")]
+    {
+        dirs.extend([
+            PathBuf::from("/opt/homebrew/bin"),
+            PathBuf::from("/opt/homebrew/sbin"),
+            PathBuf::from("/usr/local/bin"),
+            PathBuf::from("/usr/local/sbin"),
+            PathBuf::from("/usr/bin"),
+            PathBuf::from("/bin"),
+        ]);
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        dirs.extend([
+            PathBuf::from("/usr/local/bin"),
+            PathBuf::from("/usr/bin"),
+            PathBuf::from("/bin"),
+            PathBuf::from("/sbin"),
+        ]);
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        if let Ok(pf) = std::env::var("ProgramFiles") {
+            dirs.push(PathBuf::from(pf));
+        }
+        if let Ok(pfx) = std::env::var("ProgramFiles(x86)") {
+            dirs.push(PathBuf::from(pfx));
+        }
+        dirs.push(PathBuf::from("C:\\Windows\\System32"));
+    }
+
+    if let Ok(path) = std::env::var("PATH") {
+        #[cfg(windows)]
+        let sep = ';';
+        #[cfg(not(windows))]
+        let sep = ':';
+        for part in path.split(sep).filter(|p| !p.is_empty()) {
+            dirs.push(PathBuf::from(part));
+        }
+    }
+
+    let mut seen = std::collections::HashSet::new();
+    let mut paths = Vec::new();
+    for dir in dirs {
+        if !seen.insert(dir.clone()) {
+            continue;
+        }
+        paths.push(dir.join(&file));
+    }
+
+    #[cfg(not(windows))]
+    {
+        if let Ok(output) = Command::new("which").arg(name).output() {
+            if output.status.success() {
+                let line = String::from_utf8_lossy(&output.stdout)
+                    .lines()
+                    .next()
+                    .unwrap_or("")
+                    .trim()
+                    .to_string();
+                if !line.is_empty() {
+                    paths.push(PathBuf::from(line));
+                }
+            }
+        }
+    }
+
+    #[cfg(windows)]
+    {
+        if let Ok(output) = Command::new("where").arg(name).output() {
+            if output.status.success() {
+                for line in String::from_utf8_lossy(&output.stdout).lines() {
+                    let line = line.trim();
+                    if !line.is_empty() {
+                        paths.push(PathBuf::from(line));
+                    }
+                }
+            }
+        }
+    }
+
+    paths
 }
 
 fn load_manifest(tools: &Path) -> Option<ToolManifest> {
