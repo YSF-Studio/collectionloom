@@ -29,14 +29,14 @@
       msg = "ERR: Select a file and enter the expected hash";
       return;
     }
-    setBusy(true);
+    busy = true;
     result = null;
     try {
       result = await invoke("verify_hash", { path: filePath, expectedHash, algorithm });
     } catch (e) {
       msg = `ERR: ${typeof e === 'string' ? e : String(e)}`;
     }
-    setBusy(false);
+    busy = false;
   }
 
   function sizeStr(bytes) {

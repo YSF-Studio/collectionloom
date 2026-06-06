@@ -38,7 +38,21 @@ CollectionLoom helps first responders and forensic analysts capture disk images,
 
 ## Screenshots
 
-Screenshots are captured from the live UI using sample files in [`samples/`](samples/) (real SHA-256 hashes, 10 MB test disk image).
+Screenshots are captured from the live UI in **light mode** using real sample files in [`samples/`](samples/) (SHA-256 hashes computed from actual bytes — not mocked).
+
+Each capture exercises UI controls: disk imaging with acquisition summary (hash from `source_disk.img`), hash verify on `verify_me.txt`, write-blocker/HPA in titlebar, cloud credential picker, network capture stats, and chain-of-custody with evidence ID `BR2026-DSK-001`.
+
+Regenerate documentation screenshots:
+
+```bash
+npm run screenshots
+# or step-by-step:
+node scripts/prepare-screenshot-data.mjs
+cd packages/collectionloom && VITE_FIXTURE_MODE=1 npm run build
+node ../../scripts/capture-screenshots.mjs
+```
+
+Fixture data is written to `packages/collectionloom/public/fixtures/`; sample files are copied to `public/fixtures/samples/` for preview mode.
 
 ### Acquisition
 

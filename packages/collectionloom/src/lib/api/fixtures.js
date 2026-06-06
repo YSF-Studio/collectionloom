@@ -1,12 +1,19 @@
 /** Fixture backend for screenshot / preview mode — data from real processed sample files. */
 
 let cache = null;
+let imagingStarted = false;
+let imagingPolls = 0;
+let networkCapturing = false;
 
 async function load() {
   if (cache) return cache;
   const res = await fetch("/fixtures/screenshot-data.json");
   cache = await res.json();
   return cache;
+}
+
+function uiState(data) {
+  return data.uiState ?? {};
 }
 
 /** @param {string} cmd @param {Record<string, unknown>} args */
@@ -69,27 +76,64 @@ export async function fixtureInvoke(cmd, args = {}) {
     return table.verify_hash?.actual ?? "";
   }
   if (cmd === "hpa_dco_detect") {
-    return {
-      device: args.device ?? "/dev/sda",
+    return table.hpa_dco_detect ?? {
+      device: args.device ?? "/dev/disk4",
       supported: true,
       hpaDetected: false,
       dcoDetected: false,
-      identifyMaxLba: 1953525168,
-      nativeMaxLba: 1953525168,
+      identifyMaxLba: null,
+      nativeMaxLba: null,
       dcoMaxLba: null,
       hiddenSectors: null,
-      model: "Demo Drive",
+      model: "Sample USB Evidence Drive",
       notes: "Fixture mode — no ATA pass-through",
     };
   }
   if (cmd === "pick_cloud_credentials") {
-    return "/tmp/demo-credentials.json";
+    return uiState(data).cloudCredentialPath ?? "/fixtures/samples/demo-aws-credentials.json";
   }
-  if (cmd === "start_disk_imaging" || cmd === "start_network_capture" || cmd === "capture_ram" || cmd === "adb_backup") {
+  if (cmd === "create_cloud_snapshot") {
+    return table.create_cloud_snapshot ?? { snapshot_id: "snap-0demo1234567890ab", status: "completed" };
+  }
+  if (cmd === "get_imaging_progress") {
+    if (imagingStarted) {
+      imagingPolls += 1;
+      if (imagingPolls >= 2) {
+        imagingStarted = false;
+        return table.get_imaging_progress_done ?? table.get_imaging_progress;
+      }
+      return table.get_imaging_progress;
+    }
+    return table.get_imaging_progress_done ?? table.get_imaging_progress;
+  }
+  if (cmd === "start_disk_imaging") {
+    imagingStarted = true;
+    imagingPolls = 0;
     return "started";
   }
-  if (cmd === "cancel_imaging" || cmd === "cancel_network_capture") {
+  if (cmd === "start_network_capture") {
+    networkCapturing = true;
+    return "started";
+  }
+  if (cmd === "get_capture_stats") {
+    if (networkCapturing) return table.get_capture_stats;
+    return { packets: 0, bytes: 0, bytes_captured: 0 };
+  }
+  if (cmd === "get_capture_packets") {
+    if (networkCapturing) return table.get_capture_packets;
+    return [];
+  }
+  if (cmd === "cancel_network_capture") {
+    networkCapturing = false;
     return null;
+  }
+  if (cmd === "cancel_imaging") {
+    imagingStarted = false;
+    imagingPolls = 0;
+    return null;
+  }
+  if (cmd === "capture_ram" || cmd === "adb_backup") {
+    return "started";
   }
   if (cmd === "start_snapshot") {
     return table.list_snapshots_cmd?.[0] ?? {};

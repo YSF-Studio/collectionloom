@@ -4,14 +4,16 @@
  * Hashes are computed from actual bytes on disk — not mocked values.
  */
 import { createHash } from "node:crypto";
-import { readFileSync, statSync, writeFileSync, mkdirSync } from "node:fs";
+import { readFileSync, statSync, writeFileSync, mkdirSync, copyFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const samples = join(root, "samples");
 const outDir = join(root, "packages/collectionloom/public/fixtures");
+const samplesOut = join(outDir, "samples");
 mkdirSync(outDir, { recursive: true });
+mkdirSync(samplesOut, { recursive: true });
 
 function sha256File(path) {
   const data = readFileSync(path);
@@ -24,9 +26,33 @@ const expectedLine = readFileSync(join(samples, "expected.sha256"), "utf8").trim
 const verifyHash = expectedLine.split(/\s+/)[0].toLowerCase();
 const verifyHashComputed = sha256File(verifyPath);
 const diskSize = statSync(diskPath).size;
+const diskHash = sha256File(diskPath);
+
+copyFileSync(verifyPath, join(samplesOut, "verify_me.txt"));
+copyFileSync(diskPath, join(samplesOut, "source_disk.img"));
+copyFileSync(join(samples, "expected.sha256"), join(samplesOut, "expected.sha256"));
+copyFileSync(join(samples, "case_notes.txt"), join(samplesOut, "case_notes.txt"));
 
 const caseId = "CL-2026-DEMO";
 const snapshotId = "snap-001-baseline";
+const evidenceId = "BR2026-DSK-001";
+const sampleDevice = "/dev/disk4";
+const fixtureVerifyPath = "/fixtures/samples/verify_me.txt";
+const fixtureDestPath = "~/Evidence/samples/source_disk.img.dd";
+const fixtureCredPath = "/fixtures/samples/demo-aws-credentials.json";
+
+writeFileSync(
+  join(samplesOut, "demo-aws-credentials.json"),
+  JSON.stringify(
+    {
+      access_key_id: "AKIA_DEMO_READONLY",
+      secret_access_key: "demo-secret-not-real",
+      note: "Screenshot fixture — revoke real keys immediately after use",
+    },
+    null,
+    2
+  )
+);
 
 const data = {
   meta: {
@@ -34,7 +60,8 @@ const data = {
     verifyMeSha256: verifyHash,
     verifyMeSha256RawFile: verifyHashComputed,
     sourceDiskBytes: diskSize,
-    sourceDiskSha256: sha256File(diskPath),
+    sourceDiskSha256: diskHash,
+    theme: "light",
   },
   commands: {
     about_info: {
@@ -45,10 +72,12 @@ const data = {
       features: [
         "Bit-for-bit disk imaging (RAW, E01, AFF4) with SHA-256 verification and split support for multi-TB drives",
         "Hardware and one-click software write-blocker (Linux BLKROSET, macOS unmount, Windows IOCTL)",
+        "HPA/DCO detection via ATA IDENTIFY (Linux/Windows)",
+        "Pre-imaging source integrity check (sectors 0–99) and acquisition summary",
         "Volatile RAM capture via avml / LiME with live process listing",
         "Mobile triage — Android ADB and iOS logical backup workflows",
-        "Cloud snapshot — AWS EBS, Azure managed disks, GCP persistent disks",
-        "Network packet capture with BPF filters and live statistics",
+        "Cloud snapshot — AWS EBS (SigV4), Azure managed disks, GCP persistent disks",
+        "Network packet capture with BPF filters and 1-hour default timeout",
         "System snapshot profiles (triage, IR, deep) with A/B compare engine",
         "Acquire All — orchestrated multi-module batch acquisition",
         "Encryption detection (BitLocker, LUKS, VeraCrypt, FileVault)",
@@ -57,14 +86,14 @@ const data = {
         "100% offline — no telemetry, no cloud dependency for core workflows",
       ],
       disclaimer:
-        "This software is provided \"AS IS\" for forensic triage and evidence collection. Operators must follow organizational policy and jurisdictional requirements. Independently verify hashes and chain-of-custody before use in legal proceedings.",
+        'This software is provided "AS IS" for forensic triage and evidence collection. Operators must follow organizational policy and jurisdictional requirements. Independently verify hashes and chain-of-custody before use in legal proceedings.',
       offline: true,
       privacy:
         "All processing runs locally on your workstation. CollectionLoom does not transmit evidence, telemetry, or analytics to external servers.",
     },
     list_disks: [
       {
-        device: "/dev/disk4",
+        device: sampleDevice,
         model: "Sample USB Evidence Drive",
         sizeBytes: diskSize,
         sectorSize: 512,
@@ -83,8 +112,8 @@ const data = {
     scan_encryption: {
       drives: [
         {
-          device: "/dev/disk4",
-          path: "/dev/disk4",
+          device: sampleDevice,
+          path: sampleDevice,
           encrypted: false,
           type: "Unencrypted",
         },
@@ -106,6 +135,18 @@ const data = {
       software: true,
       notes: "Software write-blocker active — volumes unmounted, imaging via raw device path.",
     },
+    hpa_dco_detect: {
+      device: sampleDevice,
+      supported: true,
+      hpaDetected: false,
+      dcoDetected: false,
+      identifyMaxLba: Math.floor(diskSize / 512) - 1,
+      nativeMaxLba: Math.floor(diskSize / 512) - 1,
+      dcoMaxLba: null,
+      hiddenSectors: null,
+      model: "Sample USB Evidence Drive",
+      notes: "No HPA/DCO anomalies detected (fixture — hashes from samples/source_disk.img).",
+    },
     list_ram_tools: ["Avml", "LiME", "DumpIt"],
     get_ram_size: 17179869184,
     list_interfaces: ["en0", "en1", "lo0", "bridge0"],
@@ -118,11 +159,28 @@ const data = {
     ],
     get_imaging_progress: {
       percent: 67.4,
-      status: `Imaging: 6.7 GB / 10.0 GB`,
+      status: "Imaging: 6.7 MB / 10.0 MB",
       bytesProcessed: Math.floor(diskSize * 0.674),
       totalBytes: diskSize,
       isDone: false,
       error: null,
+    },
+    get_imaging_progress_done: {
+      percent: 100,
+      status: "Complete",
+      bytesProcessed: diskSize,
+      totalBytes: diskSize,
+      isDone: true,
+      error: null,
+      summary: {
+        sha256: diskHash,
+        sectorsRead: Math.floor(diskSize / 512),
+        avgSpeedBytesPerSec: 52428800,
+        errorSectors: 0,
+        durationSecs: 12.4,
+        sourceIntegrityOk: true,
+        bytesWritten: diskSize,
+      },
     },
     verify_hash: {
       algorithm: "sha256",
@@ -131,8 +189,15 @@ const data = {
       matched: true,
       size: statSync(verifyPath).size,
     },
-    generate_evidence_id: "EV-2026-0606-A1B2C3",
+    generate_evidence_id: evidenceId,
     generate_qr_label: null,
+    create_cloud_snapshot: {
+      provider: "aws",
+      snapshot_id: "snap-0demo1234567890ab",
+      SnapshotId: "snap-0demo1234567890ab",
+      status: "completed",
+      source: fixtureVerifyPath,
+    },
     list_cases_cmd: [
       {
         case_id: caseId,
@@ -195,7 +260,7 @@ const data = {
         created_at: "2026-06-06T10:00:00Z",
       },
     ],
-    get_capture_stats: { packets: 1247, bytes: 892416 },
+    get_capture_stats: { packets: 1247, bytes: 892416, bytes_captured: 892416 },
     get_capture_packets: [
       { time: "08:01:02.441", src: "192.168.1.42", dst: "8.8.8.8", proto: "DNS", info: "Standard query A google.com" },
       { time: "08:01:02.512", src: "192.168.1.42", dst: "142.250.80.78", proto: "TLS", info: "Client Hello" },
@@ -209,14 +274,20 @@ const data = {
     },
   },
   uiState: {
-    verifyFilePath: join(samples, "verify_me.txt"),
+    verifyFilePath: fixtureVerifyPath,
     verifyExpectedHash: verifyHash,
-    cocCaseName: "CL-2026-DEMO",
+    cocCaseName: "Incident Response — Workstation Triage",
     cocOperator: "J. Analyst",
-    cocDevice: "/dev/disk4",
+    cocDevice: sampleDevice,
+    cocEvidenceId: evidenceId,
+    diskDevice: sampleDevice,
+    diskDestination: fixtureDestPath,
+    cloudCredentialPath: fixtureCredPath,
+    cloudResourceId: "vol-0demo1234567890abcd",
   },
 };
 
 writeFileSync(join(outDir, "screenshot-data.json"), JSON.stringify(data, null, 2));
 console.log("Wrote fixture data with real SHA-256:", verifyHash);
-console.log("Source disk:", diskSize, "bytes");
+console.log("Source disk:", diskSize, "bytes, SHA-256:", diskHash);
+console.log("Copied samples to", samplesOut);
