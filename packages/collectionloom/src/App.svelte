@@ -123,6 +123,13 @@ let wbTitle = $derived(
     : "Select a disk, then enable write-blocker"
 );
 
+let wbSelectedDiskLabel = $derived.by(() => {
+  if (!wbState.device) return "Select disk for write-blocker";
+  const disk = wbDisks.find((d) => d.device === wbState.device);
+  if (!disk) return wbState.device;
+  return `${disk.device} · ${disk.model || "Unknown"} (${(disk.sizeBytes / 1e9).toFixed(1)} GB)`;
+});
+
 function requestToggleWriteBlocker() {
   if (!wbState.device || wbBusy || busy) {
     if (!wbState.device) setMsg("WARN: Select a target disk in the titlebar first");
@@ -227,7 +234,7 @@ window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
           bind:value={wbState.device}
           onchange={onWbDeviceChange}
           disabled={wbBusy || wbDisksLoading}
-          title="Target disk for write-blocker"
+          title={wbSelectedDiskLabel}
           aria-label="Select disk for write-blocker"
         >
           <option value="">— Select disk —</option>
@@ -448,12 +455,13 @@ window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
     align-items: center;
     gap: 4px;
     -webkit-app-region: no-drag;
-    max-width: min(100%, 420px);
+    max-width: min(100%, 540px);
+    flex: 1;
   }
   .wb-device-select {
-    flex: 1;
-    min-width: 0;
-    max-width: 220px;
+    flex: 1 1 auto;
+    min-width: 140px;
+    max-width: 360px;
     padding: 4px 8px;
     font-size: 11px;
     border-radius: 6px;

@@ -96,7 +96,7 @@ const sections = [
     id: "acquire-all",
     file: "collection_acquire_all.png",
     setup: async (page) => {
-      await page.locator("button", { hasText: "Detect Devices" }).click();
+      await page.locator("button", { hasText: "Detect Sources" }).click();
       await page.waitForTimeout(900);
       const sel = page.locator("select.full").first();
       if (await sel.count()) await sel.selectOption(sampleDevice).catch(() => {});

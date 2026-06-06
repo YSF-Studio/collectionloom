@@ -241,7 +241,7 @@ export const acquireAllGuide = {
     {
       title: "Detect and select modules",
       description:
-        "Click **Detect Devices** to refresh disk, RAM tool, network interface, and mobile lists. Enable only the modules you need (Disk, RAM, Network, Mobile). Each module runs in order; failures in one module do not stop the rest.",
+        "Click **Detect Sources** to refresh disk, RAM tool, network interface, and mobile source lists (not the output folder). Enable only the modules you need (Disk, RAM, Network, Mobile). Each module runs in order; failures in one module do not stop the rest.",
     },
     {
       title: "Enable write protection before disk imaging",

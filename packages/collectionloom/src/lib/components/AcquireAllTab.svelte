@@ -112,8 +112,14 @@ async function detectModules() {
     const android = await timeoutPromise(invoke("list_android_devices"), 5000).catch(() => []);
     const ios = await timeoutPromise(invoke("list_ios_devices"), 5000).catch(() => []);
     const allMobile = [...(android || []), ...(ios || [])];
+    const wasMobileDetected = mobileDetected;
     mobileDetected = allMobile.length > 0;
-    if (mobileDetected) mobileDeviceId = allMobile[0].id || allMobile[0].device_id || "";
+    if (mobileDetected) {
+      mobileDeviceId = allMobile[0].id || allMobile[0].device_id || "";
+      if (!wasMobileDetected) mobileEnabled = true;
+    } else {
+      mobileEnabled = false;
+    }
 
     cloudConfigured = false;
     if (selectedDevice) await refreshWriteBlocker();
@@ -337,7 +343,7 @@ $effect(() => {
   <div class="sources-toolbar">
     <button class="btn-sm" onclick={detectModules} disabled={detecting || running}>
       {#if detecting}<span class="spinner">↻</span>{/if}
-      {detecting ? "Refreshing…" : "Refresh Sources"}
+      {detecting ? "Detecting…" : "Detect Sources"}
     </button>
     <p class="hint">Refreshes disk, RAM, network, and mobile source lists — not the output folder.</p>
   </div>

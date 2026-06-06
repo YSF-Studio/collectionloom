@@ -124,7 +124,7 @@ See [Limitations](LIMITATIONS.md#cloud-snapshot) for credential format and scope
 
 **Tab:** Acquire All
 
-1. Click **Detect Devices**.
+1. Click **Detect Sources**.
 2. Enable modules (Disk, RAM, Network, Mobile).
 3. Configure split size for disk module if needed.
 4. Enable write-blocker on selected disk (automatic before imaging if inactive).
