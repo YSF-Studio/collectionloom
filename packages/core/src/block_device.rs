@@ -1,6 +1,5 @@
 //! Block device size detection — supports drives of any capacity (u64 bytes).
 
-use std::fs::OpenOptions;
 use std::path::Path;
 
 /// Returns total size in bytes for block devices and regular files.
@@ -33,6 +32,7 @@ pub fn device_size(path: &str) -> Result<u64, String> {
 
 #[cfg(unix)]
 fn unix_block_size(path: &str) -> Result<u64, String> {
+    use std::fs::OpenOptions;
     use std::os::unix::io::AsRawFd;
 
     let file = OpenOptions::new()
