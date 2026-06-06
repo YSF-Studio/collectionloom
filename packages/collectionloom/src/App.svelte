@@ -114,8 +114,19 @@ $effect(() => {
   if (wbState.active !== wbActive) wbActive = wbState.active;
 });
 
+$effect(() => {
+  const applyHash = () => {
+    const id = window.location.hash.replace(/^#/, "");
+    if (id && window.__sections?.includes(id)) activeSection = id;
+  };
+  applyHash();
+  window.addEventListener("hashchange", applyHash);
+  return () => window.removeEventListener("hashchange", applyHash);
+});
+
 window.__goTo = (id) => {
   activeSection = id;
+  window.location.hash = id;
 };
 window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
 </script>
@@ -126,7 +137,7 @@ window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
       <span class="tl red"></span><span class="tl yellow"></span><span class="tl green"></span>
     </div>
     <div class="titlebar-center">
-      <img src="/logo.svg" class="logo" alt="CL" />
+      <img src="/icon.png" class="logo" alt="CollectionLoom" />
       <span class="title">CollectionLoom</span>
       {#if wbActive}
         <PillBadge variant="active" label="Write-Blocker Active" />
@@ -151,6 +162,7 @@ window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
             <button
               class="sidebar-item"
               class:active={activeSection === item.id}
+              data-nav-id={item.id}
               onclick={() => (activeSection = item.id)}
             >
               {item.label}
@@ -189,6 +201,7 @@ window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
           {setMsg}
           {timeoutPromise}
           onProgressChange={handleAcquireProgress}
+          onDeviceSelect={handleDeviceSelect}
         />
       {:else if activeSection === "encryption"}
         <EncryptionTab busy={busy} sharedState={encryptionState} {setBusy} {setMsg} {timeoutPromise} />

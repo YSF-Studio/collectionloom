@@ -1,7 +1,11 @@
 {
   "name": "ysf-forensic-suite",
   "private": true,
-  "workspaces": ["packages/collectionloom", "packages/analysisloom", "packages/ziploom"],
+  "workspaces": [
+    "packages/collectionloom",
+    "packages/analysisloom",
+    "packages/ziploom"
+  ],
   "scripts": {
     "dev:collectionloom": "cd packages/collectionloom && npm run tauri dev",
     "dev:analysisloom": "cd packages/analysisloom && npm run tauri dev",
@@ -9,6 +13,13 @@
     "build:analysisloom": "cd packages/analysisloom && npm run tauri build",
     "test:core": "cd packages/core && cargo test",
     "test:all": "cd packages/core && cargo test && cd ../collectionloom/src-tauri && cargo test && cd ../../analysisloom/src-tauri && cargo test",
-    "lint": "cd packages/core && cargo clippy"
+    "lint": "cd packages/core && cargo clippy",
+    "screenshots": "node scripts/prepare-screenshot-data.mjs && cd packages/collectionloom && VITE_FIXTURE_MODE=1 npm run build && node ../../scripts/capture-screenshots.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.52.0"
+  },
+  "devDependencies": {
+    "playwright": "^1.60.0"
   }
 }

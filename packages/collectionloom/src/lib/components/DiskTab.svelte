@@ -33,6 +33,7 @@ let eta = $state("");
 let startTime = $state(null);
 let bitlockerDetected = $state(false);
 let encryptionScan = $state(null);
+let wbStatus = $state(null);
 
 let selectedDiskInfo = $derived(disks.find((d) => d.device === selectedDisk) || null);
 
@@ -72,14 +73,49 @@ async function checkEncryption() {
 }
 
 async function checkWriteBlocker() {
-  if (!selectedDisk) return;
+  if (!selectedDisk) {
+    wbStatus = null;
+    return;
+  }
   try {
-    const status = await invoke("check_write_blocker", { device: selectedDisk });
-    const active = status?.active ?? status?.enabled ?? false;
+    wbStatus = await invoke("check_write_blocker", { device: selectedDisk });
+    const active = wbStatus?.active ?? wbStatus?.enabled ?? false;
     onDeviceSelect({ device: selectedDisk, wbActive: active });
   } catch {
+    wbStatus = null;
     onDeviceSelect({ device: selectedDisk, wbActive: false });
   }
+}
+
+async function enableWriteBlocker() {
+  if (!selectedDisk) {
+    setMsg("WARN: Select a disk first");
+    return;
+  }
+  setBusy(true);
+  try {
+    wbStatus = await timeoutPromise(invoke("enable_write_blocker", { device: selectedDisk }), 15000);
+    const active = wbStatus?.active ?? wbStatus?.enabled ?? false;
+    onDeviceSelect({ device: selectedDisk, wbActive: active });
+    setMsg(active ? "OK: Software write-blocker enabled" : "WARN: Write-blocker not confirmed");
+  } catch (e) {
+    setMsg(`ERR: ${typeof e === "string" ? e : String(e)}`);
+  }
+  setBusy(false);
+}
+
+async function disableWriteBlocker() {
+  if (!selectedDisk) return;
+  setBusy(true);
+  try {
+    wbStatus = await timeoutPromise(invoke("disable_write_blocker", { device: selectedDisk }), 15000);
+    const active = wbStatus?.active ?? wbStatus?.enabled ?? false;
+    onDeviceSelect({ device: selectedDisk, wbActive: active });
+    setMsg("OK: Software write-blocker disabled");
+  } catch (e) {
+    setMsg(`ERR: ${typeof e === "string" ? e : String(e)}`);
+  }
+  setBusy(false);
 }
 
 $effect(() => {
@@ -143,7 +179,7 @@ async function startImaging() {
           collBusy = false;
           eta = "";
           startTime = null;
-          setMsg(p.error ? `❌ ${p.error}` : "✅ Imaging complete!");
+          setMsg(p.error ? `ERR: ${p.error}` : "OK: Imaging complete");
           onProgressChange({ progress: p, collBusy: false, eta: "", selectedDisk, imageFormat });
         }
       } catch {
@@ -179,7 +215,7 @@ async function detectHpaDco() {
     const result = await timeoutPromise(invoke("hpa_dco_detect", { device: selectedDisk }), 30000);
     hpaDcoResult = typeof result === "string" ? result : JSON.stringify(result, null, 2);
   } catch (e) {
-    hpaDcoResult = `❌ ${typeof e === "string" ? e : String(e)}`;
+    hpaDcoResult = `ERR: ${typeof e === "string" ? e : String(e)}`;
   }
 }
 
@@ -214,6 +250,20 @@ $effect(() => {
     {/if}
     {#if selectedDiskInfo?.isSsd}
       <p class="warn-text">SSD TRIM may have erased deleted data. Use a hardware write blocker when possible.</p>
+    {/if}
+    {#if selectedDisk}
+      <div class="wb-section">
+        {#if wbStatus}
+          <PillBadge variant={wbStatus.active ? "active" : "inactive"} label={wbStatus.active ? "Write-Blocker Active" : "Write-Blocker Inactive"} />
+          <span class="wb-detail">{wbStatus.method}{wbStatus.hardware ? " · hardware" : ""}{wbStatus.software ? " · software" : ""}</span>
+        {/if}
+        <div class="wb-btns">
+          <button onclick={enableWriteBlocker} class="btn-sm" disabled={collBusy || busy || !selectedDisk}>Enable Software Write-Blocker</button>
+          <button onclick={disableWriteBlocker} class="btn-sm" disabled={collBusy || busy || !selectedDisk || !wbStatus?.software}>Disable</button>
+          <button onclick={checkWriteBlocker} class="btn-sm" disabled={collBusy || !selectedDisk}>Refresh</button>
+        </div>
+        {#if wbStatus?.notes}<p class="wb-notes">{wbStatus.notes}</p>{/if}
+      </div>
     {/if}
   </MacCard>
 
@@ -258,6 +308,10 @@ $effect(() => {
   }
   .drive-detail { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 12px; color: var(--text-secondary); }
   .warn-text { margin: 0; font-size: 12px; color: var(--warn); }
+  .wb-section { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+  .wb-detail { font-size: 11px; color: var(--text-secondary); }
+  .wb-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+  .wb-notes { margin: 0; font-size: 11px; color: var(--text-muted); }
   .split-row { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; align-items: center; }
   .check { display: flex; align-items: center; gap: 6px; }
   .actions { display: flex; gap: 10px; margin: 8px 0 16px; }

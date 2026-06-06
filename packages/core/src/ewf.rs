@@ -28,8 +28,9 @@ impl EwfWriter {
         source: &str,
         cancel: &AtomicBool,
     ) -> Result<String, String> {
+        let src_size = crate::block_device::device_size(source)?;
         let src = File::open(source).map_err(|e| format!("Cannot open {source}: {e}"))?;
-        let src_size = src.metadata().map_err(|e| e.to_string())?.len();
+        let has_known_size = src_size > 0;
         let mut reader = std::io::BufReader::with_capacity(super::hashing::HASH_BUFFER_SIZE, src);
 
         let mut out = File::create(&self.dest)
@@ -59,7 +60,7 @@ impl EwfWriter {
             enc.write_all(slice).map_err(|e| e.to_string())?;
             chunks.push(enc.finish().map_err(|e| e.to_string())?);
 
-            let pct = if src_size > 0 {
+            let pct = if has_known_size {
                 (total_read as f64 / src_size as f64) * 90.0
             } else {
                 0.0
@@ -67,12 +68,16 @@ impl EwfWriter {
             super::progress::update_progress(
                 pct,
                 &format!(
-                    "E01 imaging: {:.1} GB / {:.1} GB",
-                    total_read as f64 / 1e9,
-                    src_size as f64 / 1e9
+                    "E01 imaging: {} / {}",
+                    crate::block_device::format_capacity(total_read),
+                    if has_known_size {
+                        crate::block_device::format_capacity(src_size)
+                    } else {
+                        "unknown".into()
+                    }
                 ),
                 total_read,
-                src_size,
+                if has_known_size { src_size } else { 0 },
             );
         }
 
@@ -89,7 +94,8 @@ impl EwfWriter {
         out.flush().map_err(|e| e.to_string())?;
 
         let hash = format!("{:x}", sha256_digest);
-        super::progress::update_progress(100.0, "E01 acquisition complete", src_size, src_size);
+        let done_total = if has_known_size { src_size } else { total_read };
+        super::progress::update_progress(100.0, "E01 acquisition complete", done_total, done_total);
         super::progress::finish_progress(Ok(hash.clone()));
         Ok(hash)
     }

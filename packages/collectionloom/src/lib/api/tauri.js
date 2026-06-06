@@ -1,5 +1,7 @@
 /** Shared Tauri bridge — safe in browser preview (vite preview / dev without backend). */
 
+import { fixtureInvoke, isFixtureMode } from "./fixtures.js";
+
 export const PREVIEW_MODE = "PREVIEW_MODE";
 
 /** @returns {boolean} */
@@ -15,6 +17,9 @@ export function isPreviewError(err) {
 
 /** @type {typeof import('@tauri-apps/api/core').invoke} */
 export async function invoke(cmd, args = {}) {
+  if (isFixtureMode()) {
+    return fixtureInvoke(cmd, args);
+  }
   if (!isTauri()) {
     throw new Error(PREVIEW_MODE);
   }

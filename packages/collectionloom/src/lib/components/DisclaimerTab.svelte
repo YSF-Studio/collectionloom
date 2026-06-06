@@ -7,20 +7,21 @@ async function load() {
     if (loaded) return;
     try {
         info = await invoke("about_info");
-        loaded = true;
     } catch(e) { /* use defaults */ }
+    loaded = true;
 }
 $effect(() => { load(); });
 </script>
 
 <div class="about" style="max-width:580px;margin:0 auto">
     <div style="text-align:center;margin-bottom:24px">
-        <img src="/src-tauri/icons/icon.png" style="width:72px;height:72px;border-radius:16px;margin-bottom:8px" alt="CollectionLoom" />
+        <img src="/icon.png" style="width:88px;height:88px;border-radius:18px;margin-bottom:12px;box-shadow:0 4px 20px rgba(0,0,0,0.25)" alt="CollectionLoom" />
         <h3 style="margin:0 0 4px;font-size:20px">
             {info.appName}
             <span style="color:var(--text-muted);font-size:12px;margin-left:8px">v{info.version}</span>
         </h3>
         <p style="color:var(--text-secondary);font-size:13px;margin:0">Portable Forensic Acquisition Toolkit</p>
+        <p style="color:var(--text-muted);font-size:11px;margin:6px 0 0">ISO 27037-aligned evidence collection for macOS, Windows, and Linux</p>
     </div>
 
     <div class="card" style="margin-bottom:12px">
@@ -40,7 +41,7 @@ $effect(() => { load(); });
 
     <div class="card" style="margin-bottom:12px;border-left:3px solid var(--warn)">
         <h4>Disclaimer</h4>
-        <p style="font-size:13px;color:var(--text-secondary);margin:0;font-style:italic">{info.disclaimer}</p>
+        <p style="font-size:13px;color:var(--text-secondary);margin:0;font-style:italic;line-height:1.5">{info.disclaimer}</p>
     </div>
 
     <div class="card" style="margin-bottom:12px">

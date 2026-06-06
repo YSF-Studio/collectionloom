@@ -85,12 +85,12 @@ pub fn capture_ram(tool: String, output: String, compress: bool) -> Result<Strin
 // ─── Write Blocker ───
 
 #[tauri::command]
-pub fn enable_write_blocker(device: String) -> Result<(), String> {
+pub fn enable_write_blocker(device: String) -> Result<write_blocker::WriteBlockerStatus, String> {
     write_blocker::enable_write_blocker(&device)
 }
 
 #[tauri::command]
-pub fn disable_write_blocker(device: String) -> Result<(), String> {
+pub fn disable_write_blocker(device: String) -> Result<write_blocker::WriteBlockerStatus, String> {
     write_blocker::disable_write_blocker(&device)
 }
 
@@ -329,19 +329,24 @@ pub fn about_info() -> serde_json::Value {
         "appName": "CollectionLoom",
         "version": "0.1.0",
         "developer": "YSF Studio — Yusuf Shalahuddin",
-        "build": "Master Build — All Features Unlocked",
+        "build": "Portable Forensic Acquisition Toolkit — macOS / Windows / Linux",
         "features": [
-            "Bit-for-bit Disk Imaging with SHA-256 Verification",
-            "RAM Capture & Memory Acquisition",
-            "Mobile Device Triage (Android & iOS)",
-            "Network Packet Capture & Encryption Detection",
-            "Write Blocker — Hardware & Software Protection",
-            "System Snapshot for point-in-time preservation",
-            "100% Offline — Zero Data Collection. All processing runs locally."
+            "Bit-for-bit disk imaging (RAW, E01, AFF4) with SHA-256 verification and split support for multi-TB drives",
+            "Hardware and one-click software write-blocker (Linux BLKROSET, macOS unmount, Windows IOCTL)",
+            "Volatile RAM capture via avml / LiME with live process listing",
+            "Mobile triage — Android ADB and iOS logical backup workflows",
+            "Cloud snapshot — AWS EBS, Azure managed disks, GCP persistent disks",
+            "Network packet capture with BPF filters and live statistics",
+            "System snapshot profiles (triage, IR, deep) with A/B compare engine",
+            "Acquire All — orchestrated multi-module batch acquisition",
+            "Encryption detection (BitLocker, LUKS, VeraCrypt, FileVault)",
+            "Hash verification, chain of custody with Ed25519 signatures and QR labels",
+            "Case dashboard, export bundles (JSON, Markdown, ZIP), AnalysisLoom handoff",
+            "100% offline — no telemetry, no cloud dependency for core workflows"
         ],
-        "disclaimer": "This software is provided 'AS-IS'. Results should be independently verified before use in legal proceedings.",
+        "disclaimer": "This software is provided \"AS IS\" for forensic triage and evidence collection. Operators must follow organizational policy and jurisdictional requirements. Independently verify hashes and chain-of-custody before use in legal proceedings.",
         "offline": true,
-        "privacy": "100% offline — zero data collection. No telemetry, no analytics, no external network calls."
+        "privacy": "All processing runs locally on your workstation. CollectionLoom does not transmit evidence, telemetry, or analytics to external servers."
     })
 }
 

@@ -25,8 +25,9 @@ impl Aff4Writer {
         source: &str,
         cancel: &AtomicBool,
     ) -> Result<String, String> {
+        let src_size = crate::block_device::device_size(source)?;
         let mut src = File::open(source).map_err(|e| format!("Cannot open {source}: {e}"))?;
-        let src_size = src.metadata().map_err(|e| e.to_string())?.len();
+        let has_known_size = src_size > 0;
 
         let file = File::create(&self.dest)
             .map_err(|e| format!("Cannot create {}: {e}", self.dest.display()))?;
@@ -65,7 +66,7 @@ impl Aff4Writer {
             sha256.update(&buf[..n]);
             zip.write_all(&buf[..n]).map_err(|e| e.to_string())?;
             total += n as u64;
-            let pct = if src_size > 0 {
+            let pct = if has_known_size {
                 (total as f64 / src_size as f64) * 100.0
             } else {
                 0.0
@@ -73,12 +74,16 @@ impl Aff4Writer {
             crate::progress::update_progress(
                 pct,
                 &format!(
-                    "AFF4 imaging: {:.1} GB / {:.1} GB",
-                    total as f64 / 1e9,
-                    src_size as f64 / 1e9
+                    "AFF4 imaging: {} / {}",
+                    crate::block_device::format_capacity(total),
+                    if has_known_size {
+                        crate::block_device::format_capacity(src_size)
+                    } else {
+                        "unknown".into()
+                    }
                 ),
                 total,
-                src_size,
+                if has_known_size { src_size } else { 0 },
             );
         }
 

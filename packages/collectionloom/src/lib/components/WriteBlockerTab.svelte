@@ -43,9 +43,14 @@ async function checkBlockerStatus() {
 async function enable() {
   setBusy(true);
   try {
-    await timeoutPromise(invoke("enable_write_blocker", { device }), 10000);
-    await checkBlockerStatus();
-    setMsg("OK: Write blocker enabled");
+    const r = await timeoutPromise(invoke("enable_write_blocker", { device }), 10000);
+    if (r && typeof r === "object") {
+      enabled = !!(r.active ?? r.enabled);
+      status = enabled ? "Enabled" : "Disabled";
+      if (r.method) blockerMethod = r.method;
+      if (r.notes) blockerNotes = r.notes;
+    }
+    setMsg(enabled ? "OK: Write blocker enabled" : "WARN: Write blocker not confirmed");
   } catch(e) {
     const err = typeof e === "string" ? e : String(e);
     setMsg(`ERR: ${err}`);
@@ -55,8 +60,16 @@ async function enable() {
 async function disable() {
   setBusy(true);
   try {
-    await timeoutPromise(invoke("disable_write_blocker", { device }), 10000);
-    await checkBlockerStatus();
+    const r = await timeoutPromise(invoke("disable_write_blocker", { device }), 10000);
+    if (r && typeof r === "object") {
+      enabled = !!(r.active ?? r.enabled);
+      status = enabled ? "Enabled" : "Disabled";
+      if (r.method) blockerMethod = r.method;
+      if (r.notes) blockerNotes = r.notes;
+    } else {
+      enabled = false;
+      status = "Disabled";
+    }
     setMsg("OK: Write blocker disabled");
   } catch(e) { setMsg(`ERR: ${typeof e === "string" ? e : String(e)}`); }
   setBusy(false);
@@ -68,7 +81,7 @@ async function disable() {
   <div class="row">
     <label>Device: <input type="text" bind:value={device} placeholder="/dev/sda" disabled={busy} /></label>
   </div>
-  <div class="status" class:active={enabled}>{enabled ? "🟢 Enabled" : "🔴 Disabled"}</div>
+  <div class="status" class:active={enabled}>{enabled ? "Enabled" : "Disabled"}</div>
   <div class="method-info">
     <span class="method-label">Platform:</span>
     <span class="method-value">{platform || "Unknown"}</span>
@@ -77,7 +90,7 @@ async function disable() {
     <span class="method-value">{blockerMethod}</span>
   </div>
   <div class="actions">
-    <button onclick={enable} class="btn-primary" disabled={busy||!device}>Enable</button>
+    <button onclick={enable} class="btn-primary" disabled={busy||!device}>Enable Software Write-Blocker</button>
     <button onclick={disable} class="btn-danger" disabled={busy||!enabled}>Disable</button>
     <button onclick={checkBlockerStatus} class="btn-sm" disabled={busy||!device}>Refresh</button>
   </div>

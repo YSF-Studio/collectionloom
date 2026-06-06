@@ -21,6 +21,7 @@ pub enum AcquisitionState {
 }
 
 #[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct DiskInfo {
     pub device: String,
     pub model: String,
@@ -205,11 +206,12 @@ impl DiskImager {
     fn run_raw(&self, source: &str, cancel_flag: &std::sync::atomic::AtomicBool) -> Result<String, String> {
         let src = File::open(source)
             .map_err(|e| format!("Cannot open source {source}: {e}"))?;
-        let src_size = src.metadata().map_err(|e| e.to_string())?.len();
+        let src_size = crate::block_device::device_size(source)?;
         let mut reader = BufReader::with_capacity(super::hashing::HASH_BUFFER_SIZE, src);
+        let has_known_size = src_size > 0;
 
         let mut total_written: u64 = 0;
-        let mut part_num: u16 = 0;
+        let mut part_num: u32 = 0;
         let mut hasher = sha2::Sha256::new();
 
         // Determine output path
@@ -224,7 +226,9 @@ impl DiskImager {
             // Open output part
             part_num += 1;
             let out_name = if self.split_size.is_some() && part_num > 1 {
-                format!("{}.{:03}", stem, part_num)
+                format!("{}.{:05}", stem, part_num)
+            } else if self.split_size.is_some() && part_num == 1 {
+                format!("{}.00001", stem)
             } else {
                 stem.to_string()
             };
@@ -251,12 +255,24 @@ impl DiskImager {
                 part_written += n as u64;
                 total_written += n as u64;
 
-                let pct = if src_size > 0 { (total_written as f64 / src_size as f64) * 100.0 } else { 0.0 };
+                let pct = if has_known_size && src_size > 0 {
+                    (total_written as f64 / src_size as f64) * 100.0
+                } else {
+                    0.0
+                };
                 super::progress::update_progress(
                     pct,
-                    &format!("Imaging: {:.1} GB / {:.1} GB", total_written as f64 / 1e9, src_size as f64 / 1e9),
+                    &format!(
+                        "Imaging: {} / {}",
+                        crate::block_device::format_capacity(total_written),
+                        if has_known_size {
+                            crate::block_device::format_capacity(src_size)
+                        } else {
+                            "unknown".into()
+                        }
+                    ),
                     total_written,
-                    src_size,
+                    if has_known_size { src_size } else { 0 },
                 );
 
                 if part_written >= split_limit { break; }
@@ -264,19 +280,40 @@ impl DiskImager {
 
             writer.flush().map_err(|e| e.to_string())?;
 
-            if self.split_size.is_none() || total_written >= src_size { break; }
+            if self.split_size.is_none() {
+                break;
+            }
+            // EOF: last read returned 0 before filling this part
+            if part_written < split_limit {
+                break;
+            }
+            if has_known_size && total_written >= src_size {
+                break;
+            }
         }
 
         let hash = format!("{:x}", hasher.finalize());
 
-        if self.verify {
-            super::progress::update_progress(99.0, "Verifying image hash…", total_written, src_size);
+        if self.verify && self.split_size.is_none() {
+            super::progress::update_progress(
+                99.0,
+                "Verifying image hash…",
+                total_written,
+                if has_known_size { src_size } else { total_written },
+            );
             let verify_hash = crate::imaging_format::hash_file_sha256(&self.destination)?;
             if verify_hash != hash {
                 return Err(format!(
                     "Verify failed: stream hash {hash} != file hash {verify_hash}"
                 ));
             }
+        } else if self.verify && self.split_size.is_some() {
+            super::progress::update_progress(
+                99.0,
+                "Split image — stream SHA-256 recorded (multi-part verify via manifest)",
+                total_written,
+                if has_known_size { src_size } else { total_written },
+            );
         }
 
         super::progress::finish_progress(Ok(hash.clone()));

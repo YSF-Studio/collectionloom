@@ -24,9 +24,9 @@ export const diskImagingGuide = {
     {
       title: "Verify write blocker",
       description:
-        "Connect a hardware write blocker between the source drive and the acquisition workstation. Confirm the blocker is powered on and its read-only indicator is lit. On Linux, verify the device appears read-only by checking `/sys/block/<dev>/ro` returns `1`.",
+        "Use a hardware write blocker when possible (Tableau, WiebeTech, etc.) — CollectionLoom auto-detects USB blockers and shows a green badge in the titlebar. If no hardware blocker is available, select the source disk and click **Enable Software Write-Blocker**: Linux sets BLKROSET read-only; macOS force-unmounts volumes before imaging via `/dev/rdiskN`; Windows sets the disk read-only via IOCTL (Administrator required).",
       warning:
-        "Never connect a suspect drive directly to a system without a write blocker — even a mount operation can modify metadata.",
+        "Software write-blocking reduces risk but is not a substitute for certified hardware on contested evidence. Never mount suspect volumes read-write before imaging.",
     },
     {
       title: "Select source and destination",
@@ -36,7 +36,7 @@ export const diskImagingGuide = {
     {
       title: "Configure split and verification options",
       description:
-        "Set an optional split size (e.g., 4096 MB) to produce manageable chunk files. Enable verification so the tool computes a hash of the source before imaging and compares it against the output post-acquisition.",
+        "For drives larger than 4 GB, set split size (e.g., 4096 MB) when the destination volume uses FAT32 or when you need manageable chunk files. CollectionLoom supports u64 byte counts — there is no built-in size cap. Enable verification so SHA-256 is computed during imaging and compared after write (single-part images).",
     },
     {
       title: "Acquire the image",
@@ -213,7 +213,7 @@ export const writeBlockerGuide = {
     {
       title: "Connect and enable the device",
       description:
-        "Connect the source drive to the write blocker, then power on the blocker before connecting to the workstation. Confirm the LED indicator shows 'Protected' / 'Read-Only'. CollectionLoom auto-detects Tableau/WiebeTech USB blockers and shows a green badge in the titlebar. On Linux, click Enable to set BLKROSET, or run `hdparm -r /dev/sdX` and verify read-only is `1`. On macOS, click Enable to unmount all volumes on the disk (`diskutil unmountDisk force`) before imaging via `/dev/rdiskN`.",
+        "Connect the source drive to the write blocker, then power on the blocker before connecting to the workstation. Confirm the LED indicator shows 'Protected' / 'Read-Only'. CollectionLoom auto-detects Tableau/WiebeTech USB blockers and shows a green badge in the titlebar. Without hardware: click **Enable Software Write-Blocker** — Linux: BLKROSET (`/sys/block/<dev>/ro` = 1); macOS: `diskutil unmountDisk force` then image via `/dev/rdiskN`; Windows: IOCTL read-only (run as Administrator).",
     },
     {
       title: "Verify read-only state before imaging",
@@ -225,6 +225,46 @@ export const writeBlockerGuide = {
     "ISO/IEC 27037:2012 — Hardware write-blocking requirements",
     "NIST CFTT — Computer Forensics Tool Testing Program (https://www.nist.gov/itl/ssd/software-quality-group/computer-forensics-tool-testing-program-cftt)",
     "NIST SP 800-86 — Acquisition hardware requirements",
+  ],
+};
+
+/** @type {Guide} */
+export const acquireAllGuide = {
+  title: "Acquire All Guide",
+  icon: "◉",
+  steps: [
+    {
+      title: "Prepare evidence storage",
+      description:
+        "Choose an output folder on a dedicated evidence volume with free space at least equal to the source drive size plus 10% overhead. Use NTFS, APFS, or ext4 — avoid FAT32 for images larger than 4 GB unless you enable split (e.g., 4096 MB). CollectionLoom streams sector-by-sector with no application-level size limit.",
+    },
+    {
+      title: "Detect and select modules",
+      description:
+        "Click **Detect Devices** to refresh disk, RAM tool, network interface, and mobile lists. Enable only the modules you need (Disk, RAM, Network, Mobile). Each module runs in order; failures in one module do not stop the rest.",
+    },
+    {
+      title: "Enable write protection before disk imaging",
+      description:
+        "When Disk is enabled, select the source device. CollectionLoom checks hardware blockers automatically (green titlebar badge). If inactive, click **Enable Software Write-Blocker** before starting — Linux BLKROSET, macOS unmount + raw disk path, Windows read-only IOCTL. Acquire All enables software blocking automatically when disk imaging starts if protection is not yet active.",
+      warning:
+        "Do not start disk acquisition on a mounted read-write volume. Software blocking on Windows requires Administrator privileges.",
+    },
+    {
+      title: "Configure split for large drives",
+      description:
+        "For drives over 4 GB (or multi-terabyte sources), set **Split (MB)** to 4096 or higher so each segment stays within filesystem limits and is easier to copy. Leave at 0 for a single contiguous image when the destination supports large files. Progress shows human-readable capacity (TB/GB) during imaging.",
+    },
+    {
+      title: "Run batch acquisition and verify",
+      description:
+        "Click **Start Acquire All**. Disk imaging runs first when enabled, then RAM, network, and mobile in sequence. Monitor per-module progress. After completion, record SHA-256 hashes from disk/RAM outputs in the Chain of Custody tab and export the case bundle when ready.",
+    },
+  ],
+  references: [
+    "ISO/IEC 27037:2012 — Integrated digital evidence collection",
+    "NIST SP 800-86 — Live response and volatile data ordering",
+    "NIST CFReDS — https://cfreds.nist.gov",
   ],
 };
 

@@ -7,6 +7,7 @@ pub mod hashing;
 pub mod crypto;
 pub mod evidence;
 pub mod encryption_detect;
+pub mod block_device;
 pub mod imaging;
 pub mod imaging_format;
 pub mod ewf;
