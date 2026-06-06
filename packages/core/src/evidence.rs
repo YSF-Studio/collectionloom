@@ -190,9 +190,10 @@ mod tests {
 
     #[test]
     fn evidence_id_format_example() {
-        let eid = EvidenceId::new("BR2026", "DSK");
+        let unique = format!("XY{}", std::process::id());
+        let eid = EvidenceId::new(&unique, "DSK");
         let s = eid.to_string();
-        assert!(s.starts_with("BR2026-DSK-"), "Got: {s}");
-        assert!(s.ends_with("-001") || s.ends_with("-002") || s.ends_with("-003"));
+        assert!(s.starts_with(&format!("{unique}-DSK-")), "Got: {s}");
+        assert!(s.ends_with("-001"), "Expected first sequence 001, got: {s}");
     }
 }

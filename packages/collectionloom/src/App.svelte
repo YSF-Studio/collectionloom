@@ -15,19 +15,22 @@ import AcquireAllTab from "./lib/components/AcquireAllTab.svelte";
 import PillBadge from "./lib/components/ui/PillBadge.svelte";
 import ProgressStatusBar from "./lib/components/ui/ProgressStatusBar.svelte";
 import ThemeToggle from "./lib/components/ui/ThemeToggle.svelte";
-import { isTauri } from "./lib/api/tauri.js";
+import { invoke, isTauri } from "./lib/api/tauri.js";
 import { isError, isWarn } from "./lib/messages.js";
 
 let activeSection = $state("disk");
 let msg = $state("");
 let busy = $state(false);
 let wbActive = $state(false);
+let wbBusy = $state(false);
 
 let diskState = {};
 let ramState = {};
 let encryptionState = {};
 let cocState = {};
-let wbState = { active: false, device: "" };
+let wbState = $state({ active: false, device: "" });
+let wbDisks = $state([]);
+let wbDisksLoading = $state(false);
 let acquireAllState = {};
 
 let statusBar = $state({
@@ -74,9 +77,74 @@ function handleAcquireProgress({ label, percent, busy: isBusy }) {
 }
 
 function handleDeviceSelect({ device, wbActive: active }) {
-  wbState.active = active;
   wbState.device = device;
+  wbState.active = active;
   wbActive = active;
+}
+
+async function loadWbDisks() {
+  wbDisksLoading = true;
+  try {
+    wbDisks = await timeoutPromise(invoke("list_disks"), 15000);
+  } catch {
+    wbDisks = [];
+  }
+  wbDisksLoading = false;
+}
+
+async function refreshWbStatus() {
+  if (!wbState.device) {
+    wbState.active = false;
+    wbActive = false;
+    return;
+  }
+  try {
+    const r = await invoke("check_write_blocker", { device: wbState.device });
+    const active = !!(r?.active ?? r?.enabled);
+    wbState.active = active;
+    wbActive = active;
+  } catch {
+    wbState.active = false;
+    wbActive = false;
+  }
+}
+
+async function onWbDeviceChange() {
+  await refreshWbStatus();
+}
+
+let wbTitle = $derived(
+  wbState.device
+    ? wbActive
+      ? `Disable write-blocker on ${wbState.device}`
+      : `Enable write-blocker on ${wbState.device}`
+    : "Select a disk, then enable write-blocker"
+);
+
+async function toggleWriteBlocker() {
+  if (!wbState.device || wbBusy || busy) {
+    if (!wbState.device) setMsg("WARN: Select a target disk in the titlebar first");
+    return;
+  }
+  wbBusy = true;
+  const enabling = !wbActive;
+  try {
+    const cmd = enabling ? "enable_write_blocker" : "disable_write_blocker";
+    const r = await timeoutPromise(invoke(cmd, { device: wbState.device }), 15000);
+    const active = !!(r?.active ?? r?.enabled);
+    wbState.active = active;
+    wbActive = active;
+    setMsg(
+      enabling
+        ? active
+          ? "OK: Software write-blocker enabled"
+          : "WARN: Write-blocker not confirmed"
+        : "OK: Write-blocker disabled"
+    );
+  } catch (e) {
+    setMsg(`ERR: ${typeof e === "string" ? e : String(e)}`);
+  }
+  wbBusy = false;
 }
 
 const sidebarSections = [
@@ -111,10 +179,7 @@ const sidebarSections = [
 ];
 
 $effect(() => {
-  if (wbState.active !== wbActive) wbActive = wbState.active;
-});
-
-$effect(() => {
+  loadWbDisks();
   const applyHash = () => {
     const id = window.location.hash.replace(/^#/, "");
     if (id && window.__sections?.includes(id)) activeSection = id;
@@ -144,6 +209,50 @@ window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
       {:else}
         <PillBadge variant="inactive" label="Write-Blocker Inactive" />
       {/if}
+      <div class="wb-titlebar-controls">
+        <select
+          class="wb-device-select"
+          bind:value={wbState.device}
+          onchange={onWbDeviceChange}
+          disabled={wbBusy || wbDisksLoading}
+          title="Target disk for write-blocker"
+          aria-label="Select disk for write-blocker"
+        >
+          <option value="">— Select disk —</option>
+          {#each wbDisks as disk}
+            <option value={disk.device}>
+              {disk.device} · {disk.model || "Unknown"} ({(disk.sizeBytes / 1e9).toFixed(1)} GB)
+            </option>
+          {/each}
+        </select>
+        <button
+          type="button"
+          class="wb-icon-btn"
+          onclick={loadWbDisks}
+          disabled={wbDisksLoading}
+          title="Refresh disk list"
+          aria-label="Refresh disk list"
+        >
+          {wbDisksLoading ? "…" : "↻"}
+        </button>
+        <button
+          type="button"
+          class="wb-titlebar-btn"
+          class:wb-on={wbActive}
+          onclick={toggleWriteBlocker}
+          disabled={wbBusy || busy || !wbState.device}
+          title={wbTitle}
+          aria-label={wbActive ? "Disable software write-blocker" : "Enable software write-blocker"}
+        >
+          {#if wbBusy}
+            …
+          {:else if wbActive}
+            Disable WB
+          {:else}
+            Enable WB
+          {/if}
+        </button>
+      </div>
     </div>
     <div class="titlebar-end">
       {#if !isTauri()}
@@ -302,6 +411,41 @@ window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
     -webkit-app-region: drag;
     grid-column: 2;
     min-width: 0;
+    flex-wrap: wrap;
+  }
+  .wb-titlebar-controls {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    -webkit-app-region: no-drag;
+    max-width: min(100%, 420px);
+  }
+  .wb-device-select {
+    flex: 1;
+    min-width: 0;
+    max-width: 220px;
+    padding: 4px 8px;
+    font-size: 11px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--input-bg);
+    color: var(--text);
+    cursor: pointer;
+  }
+  .wb-icon-btn {
+    padding: 4px 7px;
+    font-size: 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--btn-secondary-bg);
+    color: var(--btn-secondary-text);
+    cursor: pointer;
+    line-height: 1;
+  }
+  .wb-icon-btn:disabled,
+  .wb-device-select:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
   }
   .titlebar-end {
     -webkit-app-region: no-drag;
@@ -320,6 +464,33 @@ window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
     font-size: 13px;
     font-weight: 600;
     color: var(--title-text);
+  }
+  .wb-titlebar-btn {
+    -webkit-app-region: no-drag;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--btn-secondary-bg);
+    color: var(--btn-secondary-text);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+  .wb-titlebar-btn:hover:not(:disabled) {
+    background: var(--sidebar-hover);
+    border-color: var(--primary);
+    color: var(--primary);
+  }
+  .wb-titlebar-btn.wb-on {
+    background: var(--success-bg);
+    border-color: var(--success);
+    color: var(--success);
+  }
+  .wb-titlebar-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
   }
 
   .two-pane {

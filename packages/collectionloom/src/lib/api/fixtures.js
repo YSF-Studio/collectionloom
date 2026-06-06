@@ -20,6 +20,12 @@ export async function fixtureInvoke(cmd, args = {}) {
   if (cmd === "check_write_blocker") {
     return table.check_write_blocker;
   }
+  if (cmd === "enable_write_blocker" || cmd === "disable_write_blocker") {
+    const base = table.check_write_blocker ?? {};
+    return cmd === "enable_write_blocker"
+      ? { ...base, active: true, enabled: true, software: true, method: "software", notes: "Software write-blocker enabled (preview)." }
+      : { ...base, active: false, enabled: false, software: false, method: "none", notes: "Write-blocker disabled (preview)." };
+  }
   if (cmd === "create_case") {
     return {
       case_id: "CL-2026-NEW",
