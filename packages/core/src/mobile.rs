@@ -1,5 +1,4 @@
 use serde::Serialize;
-use std::process::Command;
 
 fn validate_mobile_device_id(id: &str) -> Result<(), String> {
     let id = id.trim();
@@ -25,7 +24,7 @@ pub struct MobileDevice {
 
 /// List connected Android devices via ADB
 pub fn list_android_devices() -> Result<Vec<MobileDevice>, String> {
-    let output = Command::new("adb")
+    let output = crate::portable::command("adb")?
         .args(["devices", "-l"])
         .output().map_err(|e| format!("ADB not found or failed: {}", e))?;
 
@@ -54,7 +53,7 @@ pub fn list_android_devices() -> Result<Vec<MobileDevice>, String> {
 /// Run ADB backup
 pub fn adb_backup(device_id: &str, output_path: &str) -> Result<String, String> {
     validate_mobile_device_id(device_id)?;
-    let status = Command::new("adb")
+    let status = crate::portable::command("adb")?
         .args(["-s", device_id, "backup", "-apk", "-shared", "-all", "-f", output_path])
         .status()
         .map_err(|e| format!("ADB backup failed: {}", e))?;
@@ -65,7 +64,7 @@ pub fn adb_backup(device_id: &str, output_path: &str) -> Result<String, String> 
 
 /// List paired iOS devices (via idevice_id or iTunes)
 pub fn list_ios_devices() -> Result<Vec<MobileDevice>, String> {
-    let output = Command::new("idevice_id")
+    let output = crate::portable::command("idevice_id")?
         .arg("-l")
         .output().map_err(|_| "idevice_id not found — libimobiledevice not installed".to_string())?;
 
@@ -86,7 +85,7 @@ pub fn list_ios_devices() -> Result<Vec<MobileDevice>, String> {
 /// Run iTunes-style iOS backup (via idevicebackup2)
 pub fn ios_backup(device_id: &str, output_path: &str) -> Result<String, String> {
     validate_mobile_device_id(device_id)?;
-    let status = Command::new("idevicebackup2")
+    let status = crate::portable::command("idevicebackup2")?
         .args(["-u", device_id, "backup", output_path])
         .status()
         .map_err(|e| format!("iOS backup failed: {}", e))?;

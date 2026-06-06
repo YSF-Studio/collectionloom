@@ -22,7 +22,7 @@ pub fn detect_tools() -> Vec<RamCaptureTool> {
 
     #[cfg(target_os = "linux")]
     {
-        if Command::new("which").arg("avml").output().map(|o| o.status.success()).unwrap_or(false) {
+        if crate::portable::tool_available("avml") {
             tools.push(RamCaptureTool::Avml);
         }
         // LiME is a kernel module — check if it exists
@@ -34,12 +34,16 @@ pub fn detect_tools() -> Vec<RamCaptureTool> {
 
     #[cfg(target_os = "windows")]
     {
-        tools.push(RamCaptureTool::WinPmem);
+        if crate::portable::tool_available("winpmem_mini_x64_rc2") {
+            tools.push(RamCaptureTool::WinPmem);
+        }
     }
 
     #[cfg(target_os = "macos")]
     {
-        tools.push(RamCaptureTool::MRS);
+        if crate::portable::tool_available("mrs") {
+            tools.push(RamCaptureTool::MRS);
+        }
     }
 
     tools
@@ -47,7 +51,7 @@ pub fn detect_tools() -> Vec<RamCaptureTool> {
 
 /// Capture RAM using Avml (preferred — no kernel module needed)
 pub fn capture_avml(output: &str, compress: bool) -> Result<String, String> {
-    let mut cmd = Command::new("avml");
+    let mut cmd = crate::portable::command("avml")?;
     if compress { cmd.arg("-c"); }
     cmd.arg(output);
 
@@ -70,7 +74,7 @@ pub fn capture_avml(output: &str, compress: bool) -> Result<String, String> {
 
 /// Capture RAM using WinPmem (Windows)
 pub fn capture_winpmem(output: &str) -> Result<String, String> {
-    let status = Command::new("winpmem_mini_x64_rc2.exe")
+    let status = crate::portable::command("winpmem_mini_x64_rc2")?
         .args(["-o", output])
         .status()
         .map_err(|e| format!("WinPmem failed: {}", e))?;

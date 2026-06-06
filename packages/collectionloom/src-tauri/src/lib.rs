@@ -74,6 +74,7 @@ pub fn run() {
             commands::create_chain_of_custody,
             commands::generate_coc_report,
             commands::about_info,
+            commands::run_preflight_check,
             commands::take_snapshot,
             commands::compare_snapshot,
             commands::create_cloud_snapshot,

@@ -480,6 +480,11 @@ pub fn verify_hash(path: String, expected_hash: String, algorithm: String) -> Re
 }
 
 #[tauri::command]
+pub fn run_preflight_check() -> Result<ysf_core::PreflightReport, String> {
+    Ok(ysf_core::run_preflight())
+}
+
+#[tauri::command]
 pub fn about_info() -> serde_json::Value {
     serde_json::json!({
         "appName": "CollectionLoom",

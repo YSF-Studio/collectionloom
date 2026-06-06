@@ -10,8 +10,52 @@ This guide describes how to use each acquisition module in CollectionLoom. All p
 2. **Document the case** — Create a case in **System Snapshot** or **Case Dashboard** with operator name, timezone, and purpose.
 3. **Enable write protection** — Connect a hardware write blocker when possible. From the **titlebar**, select the target disk and click **Enable WB** (no need to open Disk Imaging first). Alternatively use **Enable Software Write-Blocker** on the Disk Imaging tab.
 4. **Record hashes** — Complete the **Chain of Custody** tab after each acquisition.
+5. **Run pre-flight check** — Open **Prerequisites** (Case Info) to verify external tools (RAM, mobile, network) and privilege level before starting acquisition.
 
 See [Known Limitations](LIMITATIONS.md) for platform scope and verification boundaries.
+
+---
+
+## Prerequisites (External Tools)
+
+CollectionLoom ships core acquisition in **pure Rust** (disk imaging, hashing, CoC signing, PDF, carving). Some modules depend on **system libraries** or **external binaries** that must be installed separately:
+
+| Module | Dependency | Install |
+|--------|------------|---------|
+| **Network Capture** | libpcap (Unix) or Npcap (Windows) | Linux: `libpcap-dev` · macOS: Xcode CLT · Windows: [Npcap](https://npcap.com) |
+| **RAM (Linux)** | avml or LiME | `cargo install avml` or build [LiME](https://github.com/504ensicsLabs/LiME) |
+| **RAM (Windows)** | WinPmem | [Velocidex/WinPmem](https://github.com/Velocidex/WinPmem) |
+| **RAM (macOS)** | MRS | Install MRS and ensure it is on `PATH` (sudo required) |
+| **Mobile Android** | adb | [Android Platform Tools](https://developer.android.com/tools/releases/platform-tools) |
+| **Mobile iOS** | libimobiledevice | macOS: `brew install libimobiledevice` · Linux: `libimobiledevice-utils` |
+| **Cloud Snapshot** | Internet HTTPS | Outbound access to AWS/Azure/GCP APIs |
+| **Write blocker / HPA** | root or Administrator | Linux: `sudo` · Windows: Run as Administrator |
+
+Use **Prerequisites** in the sidebar to detect what is installed on the current workstation. Missing tools show install hints; the app warns at startup when required binaries are absent.
+
+---
+
+## Portable Forensic Kit (Field / IR)
+
+For incident response on suspect machines, **do not install** packages on the evidence system. Prepare a forensic USB with the full kit:
+
+```
+CollectionLoom/
+├── CollectionLoom.app   (or collectionloom / CollectionLoom.exe)
+├── tools/               avml, adb, idevice_id, … (static binaries)
+├── cases/               evidence output
+└── tools/manifest.json  SHA-256 hashes (recommended)
+```
+
+1. **Boot from write-blocked USB** when possible — do not run from the suspect internal drive.
+2. **Launch CollectionLoom** from the USB — zero install on target.
+3. **Open Prerequisites** — confirm `./tools/` binaries are found and hash-verified.
+4. **Acquire All** — output to `cases/` on destination USB, not the source volume.
+5. **Remove USB** when done — no files left on suspect machine (except documented artifacts).
+
+CollectionLoom resolves `./tools/` **before** system PATH. See `tools/README.txt` in the repository for layout and hash generation.
+
+Set `COLLECTIONLOOM_KIT_ROOT` to override kit root in custom deployments.
 
 ---
 

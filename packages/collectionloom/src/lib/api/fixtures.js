@@ -72,7 +72,62 @@ export async function fixtureInvoke(cmd, args = {}) {
     };
   }
   if (cmd === "verify_acquisition_storage") {
-    return { ok: true, outputPath: args.output, notes: "Output storage OK for acquisition" };
+    return { ok: true, outputPath: args.output, notes: "Output storage OK for acquisition", sameVolumeAsSource: false };
+  }
+  if (cmd === "run_preflight_check") {
+    return (
+      table.run_preflight_check ?? {
+        platform: "preview",
+        checkedAt: new Date().toISOString(),
+        missingCount: 2,
+        warningCount: 1,
+        summary: "2 tool(s) missing from ./tools/ — copy binaries to forensic USB before field use.",
+        portable: {
+          kitRoot: "/Volumes/ForensicUSB/CollectionLoom",
+          toolsDir: "/Volumes/ForensicUSB/CollectionLoom/tools",
+          toolsDirExists: true,
+          manifestLoaded: false,
+          portableMode: true,
+        },
+        checks: [
+          {
+            id: "disk_imaging",
+            name: "Disk imaging (RAW/E01/AFF4)",
+            category: "pure_rust",
+            requiredFor: "Disk Imaging",
+            available: true,
+            detail: "Built into CollectionLoom (pure Rust)",
+          },
+          {
+            id: "avml",
+            name: "avml (RAM capture)",
+            category: "external_binary",
+            requiredFor: "RAM Capture (Linux)",
+            available: false,
+            detail: "avml not found",
+            installHint: "cargo install avml  or  https://github.com/microsoft/avml",
+          },
+          {
+            id: "adb",
+            name: "adb (Android triage)",
+            category: "external_binary",
+            requiredFor: "Mobile Triage (Android)",
+            available: false,
+            detail: "adb not found",
+            installHint: "Android Platform Tools",
+          },
+          {
+            id: "priv_root",
+            name: "Administrator / sudo",
+            category: "privilege",
+            requiredFor: "RAM capture, disk access",
+            available: false,
+            detail: "Standard user — some operations will prompt for sudo",
+            installHint: "Use sudo for elevated acquisition",
+          },
+        ],
+      }
+    );
   }
   if (cmd === "hash_and_verify_evidence") {
     return {

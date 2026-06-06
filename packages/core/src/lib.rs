@@ -29,6 +29,8 @@ pub mod bad_sector;
 pub mod timestamp;
 pub mod storage_check;
 pub mod evidence_hash;
+pub mod preflight;
+pub mod portable;
 
 // Re-export commonly used types
 pub use progress::{ProgressState, CancelFlag, set_cancel_flag, is_cancelled, ImagingSummary};
@@ -38,6 +40,11 @@ pub use evidence::{EvidenceId, ActionLog, ChainOfCustody, generate_qr_label};
 pub use timestamp::{TimestampToken, create_local_timestamp, create_timestamp_with_optional_tsa, verify_local_timestamp};
 pub use storage_check::{StorageCheckReport, verify_acquisition_storage};
 pub use evidence_hash::{EvidenceHashReport, hash_and_verify_evidence};
+pub use preflight::{PreflightCategory, PreflightCheck, PreflightReport, run_preflight};
+pub use portable::{
+    PortableStatus, ResolvedTool, command as portable_command, portable_status, resolve_kit_root,
+    resolve_tool, same_volume, tool_available, tool_path, tools_dir,
+};
 pub use hpa_dco::{HpaDcoReport, detect as detect_hpa_dco};
 pub use bad_sector::{BadSectorLog, read_resilient, DEFAULT_SECTOR_SIZE};
 pub use encryption_detect::{EncryptionReport, FdeType, scan_encryption};

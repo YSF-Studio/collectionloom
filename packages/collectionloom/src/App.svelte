@@ -12,6 +12,7 @@ import ExportTab from "./lib/components/ExportTab.svelte";
 import DashboardTab from "./lib/components/DashboardTab.svelte";
 import DisclaimerTab from "./lib/components/DisclaimerTab.svelte";
 import AcquireAllTab from "./lib/components/AcquireAllTab.svelte";
+import PreflightTab from "./lib/components/PreflightTab.svelte";
 import PillBadge from "./lib/components/ui/PillBadge.svelte";
 import ProgressStatusBar from "./lib/components/ui/ProgressStatusBar.svelte";
 import ThemeToggle from "./lib/components/ui/ThemeToggle.svelte";
@@ -190,6 +191,7 @@ const sidebarSections = [
     label: "CASE INFO",
     items: [
       { id: "dashboard", label: "Case Dashboard" },
+      { id: "preflight", label: "Prerequisites" },
       { id: "coc", label: "Custody Chain" },
       { id: "export", label: "Export Bundle" },
       { id: "about", label: "About" },
@@ -199,6 +201,17 @@ const sidebarSections = [
 
 $effect(() => {
   loadWbDisks();
+  if (isTauri()) {
+    invoke("run_preflight_check")
+      .then((r) => {
+        if (r?.missingCount > 0) {
+          setMsg(`WARN: ${r.missingCount} prerequisite tool(s) missing — open Prerequisites tab`);
+        } else if (r?.warningCount > 0) {
+          setMsg(`WARN: ${r.summary}`);
+        }
+      })
+      .catch(() => {});
+  }
   const applyHash = () => {
     const id = window.location.hash.replace(/^#/, "");
     if (id && window.__sections?.includes(id)) activeSection = id;
@@ -347,6 +360,8 @@ window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
         <CocTab busy={busy} sharedState={cocState} caseState={cocState} {setBusy} {setMsg} {timeoutPromise} />
       {:else if activeSection === "dashboard"}
         <DashboardTab busy={busy} {setBusy} {setMsg} {timeoutPromise} />
+      {:else if activeSection === "preflight"}
+        <PreflightTab busy={busy} {setBusy} {setMsg} {timeoutPromise} />
       {:else if activeSection === "export"}
         <ExportTab busy={busy} {setBusy} {setMsg} {timeoutPromise} />
       {:else if activeSection === "about"}

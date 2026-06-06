@@ -1,0 +1,22 @@
+{
+  "avml": {
+    "file": "avml",
+    "sha256": ""
+  },
+  "adb": {
+    "file": "adb",
+    "sha256": ""
+  },
+  "idevice_id": {
+    "file": "idevice_id",
+    "sha256": ""
+  },
+  "idevicebackup2": {
+    "file": "idevicebackup2",
+    "sha256": ""
+  },
+  "winpmem_mini_x64_rc2": {
+    "file": "winpmem_mini_x64_rc2.exe",
+    "sha256": ""
+  }
+}

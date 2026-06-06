@@ -9,6 +9,7 @@ pub struct StorageCheckReport {
     pub ok: bool,
     pub output_path: String,
     pub notes: String,
+    pub same_volume_as_source: bool,
 }
 
 /// Verify output path is suitable for volatile evidence (not the source device path).
@@ -26,6 +27,9 @@ pub fn verify_acquisition_storage(output: &str, source_device: Option<&str>) -> 
         let out_norm = output.trim();
         if out_norm.starts_with(src_norm) || src_norm.starts_with(out_norm) {
             issues.push("Output must not be on the source evidence device");
+        }
+        if crate::portable::same_volume(output, Some(src)) {
+            issues.push("Output is on the same volume as the source device — use external evidence storage");
         }
         if cfg!(unix) {
             if out_norm.starts_with("/dev/") {
@@ -64,6 +68,10 @@ pub fn verify_acquisition_storage(output: &str, source_device: Option<&str>) -> 
         }
     }
 
+    let same_vol = source_device
+        .filter(|s| !s.is_empty())
+        .is_some_and(|src| crate::portable::same_volume(output, Some(src)));
+
     let ok = issues.is_empty();
     StorageCheckReport {
         ok,
@@ -73,5 +81,6 @@ pub fn verify_acquisition_storage(output: &str, source_device: Option<&str>) -> 
         } else {
             issues.join("; ")
         },
+        same_volume_as_source: same_vol,
     }
 }
