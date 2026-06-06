@@ -1,4 +1,4 @@
-/// Full integration test suite — ZipLoom-compatible patterns
+/// Full integration test suite — shared forensic patterns
 /// Creates real sample archives and runs forensic_load + forensic_report
 
 use ysf_core::*;

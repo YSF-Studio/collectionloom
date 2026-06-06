@@ -1,4 +1,4 @@
-//! YSF Core — Shared forensic library for ZipLoom, CollectionLoom, AnalysisLoom
+//! YSF Core — Shared forensic library for CollectionLoom
 //!
 //! All modules are pure Rust with no Tauri dependencies — testable independently.
 

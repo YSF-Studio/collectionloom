@@ -155,7 +155,7 @@ Export formats:
 | Markdown | Human-readable case report |
 | ZIP Bundle | Full case folder archive with manifest |
 
-Use **Open in AnalysisLoom** from Case Dashboard for analyst handoff.
+Use **Export Bundle** from Case Dashboard to package evidence for analyst handoff.
 
 ---
 

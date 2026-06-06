@@ -1,4 +1,4 @@
-//! File Preview — View files directly inside AnalysisLoom
+//! File Preview — View files directly inside forensic apps
 //!
 //! Provides text preview, image preview, hex dump, and metadata for
 //! any file on the filesystem. Backend-only (pure Rust), sends raw
