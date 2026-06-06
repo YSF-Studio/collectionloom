@@ -16,8 +16,10 @@ import PreflightTab from "./lib/components/PreflightTab.svelte";
 import PillBadge from "./lib/components/ui/PillBadge.svelte";
 import ProgressStatusBar from "./lib/components/ui/ProgressStatusBar.svelte";
 import ThemeToggle from "./lib/components/ui/ThemeToggle.svelte";
+import WindowControls from "./lib/components/ui/WindowControls.svelte";
 import ConfirmDialog from "./lib/components/ui/ConfirmDialog.svelte";
 import { invoke, isTauri } from "./lib/api/tauri.js";
+import { guessPlatform } from "./lib/window.js";
 import { isError, isWarn } from "./lib/messages.js";
 
 let activeSection = $state("disk");
@@ -229,10 +231,12 @@ window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
 </script>
 
 <div class="app-shell">
-  <div class="titlebar">
-    <div class="traffic-lights">
-      <span class="tl red"></span><span class="tl yellow"></span><span class="tl green"></span>
-    </div>
+  <div class="titlebar" data-tauri-drag-region>
+    {#if isTauri() && guessPlatform() === "macos"}
+      <WindowControls variant="macos" />
+    {:else}
+      <span class="titlebar-spacer" aria-hidden="true"></span>
+    {/if}
     <div class="titlebar-center">
       <img src="/icon.png" class="logo" alt="CollectionLoom" />
       <span class="title">CollectionLoom</span>
@@ -295,6 +299,8 @@ window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
         >
           <PillBadge variant="warning" label="Preview Mode" />
         </span>
+      {:else if guessPlatform() !== "macos"}
+        <WindowControls variant="windows" />
       {/if}
       <ThemeToggle />
     </div>
@@ -435,25 +441,14 @@ window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
     -webkit-app-region: drag;
     transition: background 0.2s, border-color 0.2s;
   }
-  .traffic-lights {
-    display: flex;
-    gap: 7px;
+  .titlebar :global(.traffic-lights),
+  .titlebar :global(.win-controls) {
     -webkit-app-region: no-drag;
     grid-column: 1;
   }
-  .tl {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-  }
-  .tl.red {
-    background: #ff5f57;
-  }
-  .tl.yellow {
-    background: #ffbd2e;
-  }
-  .tl.green {
-    background: #28c840;
+  .titlebar-spacer {
+    width: 52px;
+    grid-column: 1;
   }
   .titlebar-center {
     display: flex;
