@@ -1,0 +1,35 @@
+# Aturan Pengembangan Tauri & Rust — CollectionLoom
+
+## IPC (Rust ↔ Frontend)
+
+1. **Registrasi IPC wajib:** Setiap fungsi dengan `#[tauri::command]` HARUS langsung ditambahkan ke `tauri::generate_handler![...]` di `packages/collectionloom/src-tauri/src/lib.rs`. Jalankan `npm run audit:ipc` sebelum commit.
+2. **Serde & penamaan:** Frontend camelCase, Rust snake_case. Struct yang lewat IPC wajib `#[derive(Serialize, Deserialize)]` + `#[serde(rename_all = "camelCase")]` bila perlu.
+3. **Jangan blokir UI:** I/O file, komputasi berat, dan network wajib `async fn` + `spawn_blocking` untuk CPU-bound Rust.
+4. **Error handling:** Jangan `.unwrap()` / `.expect()` di `#[tauri::command]`. Kembalikan `Result<T, String>`.
+5. **Frontend invoke:** Pakai `invoke()` dari `src/lib/api/tauri.js` (sudah log `console.error` di mode Tauri). Bungkus UI calls dengan try/catch + pesan user.
+
+## Debugging GUI
+
+- Saat `npm run tauri:dev`: klik kanan → Inspect, atau **Cmd+Option+I** (Mac) / **Ctrl+Shift+I** (Win/Linux).
+- Tab **Console**: cari `command '…' not found` → command belum terdaftar di `generate_handler!`.
+- Tab **Network** tidak relevan untuk IPC; gunakan Console + Rust `eprintln!` di dev.
+
+## Testing
+
+- `npm run test:core` — unit test Rust core
+- `npm run audit:ipc` — cocokkan invoke frontend vs handler Rust
+- `npm run test:e2e` — Playwright: buka UI fixture, klik sidebar, gagal jika ada error console
+- CI menjalankan E2E fixture di Ubuntu; full Tauri WebDriver opsional (xvfb).
+
+## Hybrid tools (bukan static monolith)
+
+- Tauri binary = framework statis
+- Tool eksternal (avml, winpmem) di-embed via `npm run download-tools` → `src-tauri/resources/tools/`
+- Portable USB kit masih bisa override dengan `./tools/`
+
+## File penting
+
+- Commands: `src-tauri/src/commands.rs`, `prd_commands.rs`
+- Handler registry: `src-tauri/src/lib.rs`
+- Bridge: `src/lib/api/tauri.js`
+- E2E: `e2e/app.spec.mjs`

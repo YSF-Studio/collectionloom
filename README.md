@@ -145,6 +145,15 @@ Skip tool download (offline dev): `SKIP_TOOL_DOWNLOAD=1 npm run tauri:build`
 
 See **[docs/INSTALL.md](docs/INSTALL.md)** for using each artifact after a local build.
 
+### Quality & debugging
+
+```bash
+npm run audit:ipc   # frontend invoke() vs Rust generate_handler!
+npm run test:e2e    # Playwright GUI smoke (fixture mode)
+npm run tauri:dev   # then Cmd+Option+I → Console for IPC errors
+```
+
+
 ---
 
 ## Documentation

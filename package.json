@@ -16,6 +16,8 @@
     "build:collectionloom": "npm run build",
     "test:core": "cd packages/core && cargo test",
     "test:all": "cd packages/core && cargo test && cd ../collectionloom/src-tauri && cargo test",
+    "audit:ipc": "node scripts/audit-tauri-ipc.mjs",
+    "test:e2e": "node e2e/app.spec.mjs",
     "lint": "cd packages/core && cargo clippy",
     "screenshots": "node scripts/prepare-screenshot-data.mjs && cd packages/collectionloom && VITE_FIXTURE_MODE=1 npm run build && node ../../scripts/capture-screenshots.mjs"
   },

@@ -22,8 +22,13 @@ export async function invoke(cmd, args = {}) {
   if (!isTauri()) {
     throw new Error(PREVIEW_MODE);
   }
-  const { invoke: tauriInvoke } = await import("@tauri-apps/api/core");
-  return tauriInvoke(cmd, args);
+  try {
+    const { invoke: tauriInvoke } = await import("@tauri-apps/api/core");
+    return await tauriInvoke(cmd, args);
+  } catch (err) {
+    console.error(`[CollectionLoom IPC] invoke('${cmd}') failed:`, err);
+    throw err;
+  }
 }
 
 /** @param {import('@tauri-apps/plugin-dialog').OpenDialogOptions} [options] */

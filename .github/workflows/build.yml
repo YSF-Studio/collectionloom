@@ -148,3 +148,30 @@ jobs:
           if [ -f "$APPDIR/src-tauri/Cargo.toml" ]; then
             cd "$APPDIR/src-tauri" && cargo audit
           fi
+
+  e2e-ui:
+    name: E2E UI (Playwright fixture)
+    needs: detect
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: ${{ needs.detect.outputs.npm_lock }}
+
+      - name: Install npm deps
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install chromium --with-deps
+
+      - name: IPC audit (invoke vs generate_handler)
+        run: npm run audit:ipc
+
+      - name: GUI E2E (fixture preview)
+        run: npm run test:e2e
+        env:
+          SKIP_TOOL_DOWNLOAD: "1"
