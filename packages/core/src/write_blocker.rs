@@ -1,6 +1,7 @@
 
 use once_cell::sync::Lazy;
 use serde::Serialize;
+use ts_rs::TS;
 use std::collections::HashSet;
 use std::sync::Mutex;
 
@@ -32,7 +33,8 @@ fn normalize_device_key(device: &str) -> String {
 }
 
 /// Structured write-blocker status for UI and titlebar badge.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, TS)]
+#[ts(export, export_to = "../../collectionloom/src/lib/generated/WriteBlockerStatus.ts")]
 pub struct WriteBlockerStatus {
     pub active: bool,
     pub enabled: bool,

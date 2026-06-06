@@ -2,9 +2,11 @@
 
 use chrono::Utc;
 use serde::Serialize;
+use ts_rs::TS;
 
-#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq, TS)]
 #[serde(rename_all = "snake_case")]
+#[ts(export, export_to = "../../collectionloom/src/lib/generated/PreflightCategory.ts")]
 pub enum PreflightCategory {
     PureRust,
     SystemLibrary,
@@ -12,8 +14,9 @@ pub enum PreflightCategory {
     Privilege,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "../../collectionloom/src/lib/generated/PreflightCheck.ts")]
 pub struct PreflightCheck {
     pub id: String,
     pub name: String,
@@ -24,8 +27,9 @@ pub struct PreflightCheck {
     pub install_hint: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "../../collectionloom/src/lib/generated/PreflightReport.ts")]
 pub struct PreflightReport {
     pub platform: String,
     pub checked_at: String,

@@ -2,6 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
+use ts_rs::TS;
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -31,8 +32,9 @@ pub struct ResolvedTool {
     pub sha256: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "../../collectionloom/src/lib/generated/PortableLayout.ts")]
 pub struct PortableLayout {
     pub platform: String,
     pub kit_root: Option<String>,
@@ -522,8 +524,9 @@ pub fn command(name: &str) -> Result<Command, String> {
     Ok(Command::new(resolved.path))
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "../../collectionloom/src/lib/generated/PortableStatus.ts")]
 pub struct PortableStatus {
     pub kit_root: Option<String>,
     pub tools_dir: Option<String>,

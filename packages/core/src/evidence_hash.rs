@@ -1,13 +1,15 @@
 //! Post-acquisition hashing and integrity verification (ISO 27037 §6.5).
 
 use serde::Serialize;
+use ts_rs::TS;
 use sha2::{Digest, Sha256};
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "../../collectionloom/src/lib/generated/EvidenceHashReport.ts")]
 pub struct EvidenceHashReport {
     pub path: String,
     pub sha256: String,

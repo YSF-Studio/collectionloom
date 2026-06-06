@@ -1,9 +1,11 @@
 use serde::Serialize;
+use ts_rs::TS;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "../../collectionloom/src/lib/generated/ImagingSummary.ts")]
 pub struct ImagingSummary {
     pub sha256: String,
     pub sectors_read: u64,
@@ -16,8 +18,9 @@ pub struct ImagingSummary {
     pub bad_sectors_log: Option<String>,
 }
 
-#[derive(Clone, Debug, Serialize, Default)]
+#[derive(Clone, Debug, Serialize, Default, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "../../collectionloom/src/lib/generated/ProgressState.ts")]
 pub struct ProgressState {
     pub percent: f64,
     pub status: String,

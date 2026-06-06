@@ -1,4 +1,5 @@
 use serde::Serialize;
+use ts_rs::TS;
 
 fn validate_mobile_device_id(id: &str) -> Result<(), String> {
     let id = id.trim();
@@ -14,7 +15,8 @@ fn validate_mobile_device_id(id: &str) -> Result<(), String> {
     Ok(())
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, TS)]
+#[ts(export, export_to = "../../collectionloom/src/lib/generated/MobileDevice.ts")]
 pub struct MobileDevice {
     pub id: String,
     pub device_type: String,  // "android" | "ios"

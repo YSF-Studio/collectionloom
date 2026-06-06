@@ -148,9 +148,21 @@ See **[docs/INSTALL.md](docs/INSTALL.md)** for using each artifact after a local
 ### Quality & debugging
 
 ```bash
-npm run audit:ipc   # frontend invoke() vs Rust generate_handler!
-npm run test:e2e    # Playwright GUI smoke (fixture mode)
-npm run tauri:dev   # then Cmd+Option+I → Console for IPC errors
+npm run audit:ipc      # frontend invoke() vs Rust generate_handler!
+npm run generate:types # ts-rs: Rust IPC structs → src/lib/generated/*.ts
+npm run test:e2e       # Playwright GUI smoke (fixture mode)
+npm run test:e2e:tauri # WebDriverIO + tauri-driver (Linux/Windows only; needs built binary)
+npm run tauri:dev      # then Cmd+Option+I → Console for IPC errors
+```
+
+**TypeScript bindings:** IPC DTOs are generated from `ysf-core` with [ts-rs](https://github.com/Aleph-Alpha/ts-rs). After changing Rust structs used in commands, run `npm run generate:types` and commit `packages/collectionloom/src/lib/generated/`.
+
+**WebDriver E2E:** Requires `cargo install tauri-driver --locked`, platform WebDriver (`webkit2gtk-driver` on Debian/Ubuntu), and a debug Tauri binary. On macOS, WKWebView has no WebDriver server — run WebDriver tests on Linux CI or a Linux VM. Locally on Linux:
+
+```bash
+sudo apt-get install webkit2gtk-driver xvfb   # Debian/Ubuntu
+cargo install tauri-driver --locked
+xvfb-run --auto-servernum -- npm run test:e2e:tauri
 ```
 
 

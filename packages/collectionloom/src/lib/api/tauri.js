@@ -2,6 +2,26 @@
 
 import { fixtureInvoke, isFixtureMode } from "./fixtures.js";
 
+/**
+ * Rust IPC types (generated from ysf-core via ts-rs).
+ * Regenerate: `npm run generate:types`
+ *
+ * @typedef {import('./generated/DiskInfo').DiskInfo} DiskInfo
+ * @typedef {import('./generated/DiskPartitionInfo').DiskPartitionInfo} DiskPartitionInfo
+ * @typedef {import('./generated/ProgressState').ProgressState} ProgressState
+ * @typedef {import('./generated/ImagingSummary').ImagingSummary} ImagingSummary
+ * @typedef {import('./generated/WriteBlockerStatus').WriteBlockerStatus} WriteBlockerStatus
+ * @typedef {import('./generated/HpaDcoReport').HpaDcoReport} HpaDcoReport
+ * @typedef {import('./generated/PreflightReport').PreflightReport} PreflightReport
+ * @typedef {import('./generated/PreflightCheck').PreflightCheck} PreflightCheck
+ * @typedef {import('./generated/PortableLayout').PortableLayout} PortableLayout
+ * @typedef {import('./generated/StorageCheckReport').StorageCheckReport} StorageCheckReport
+ * @typedef {import('./generated/EvidenceHashReport').EvidenceHashReport} EvidenceHashReport
+ * @typedef {import('./generated/MobileDevice').MobileDevice} MobileDevice
+ * @typedef {import('./generated/ProcessEntry').ProcessEntry} ProcessEntry
+ * @typedef {import('./generated/EncryptionReport').EncryptionReport} EncryptionReport
+ */
+
 export const PREVIEW_MODE = "PREVIEW_MODE";
 
 /** @returns {boolean} */

@@ -1,10 +1,13 @@
 use serde::Serialize;
+use ts_rs::TS;
 use std::process::Command;
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, TS)]
+#[ts(export, export_to = "../../collectionloom/src/lib/generated/EncryptionReport.ts")]
 pub struct EncryptionReport {
     pub platform: String,
     pub has_fde: bool,
+    #[ts(type = "unknown | null")]
     pub fde_type: Option<FdeType>,
     pub tpm_present: bool,
     pub tpm_version: Option<String>,
@@ -26,7 +29,12 @@ pub enum FdeType {
     DeviceEncryption,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, TS)]
+#[ts(
+    export,
+    export_to = "../../collectionloom/src/lib/generated/EncryptedPartitionInfo.ts",
+    rename = "EncryptedPartitionInfo"
+)]
 pub struct PartitionInfo {
     pub device: String,
     pub mount_point: Option<String>,

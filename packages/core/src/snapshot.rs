@@ -7,6 +7,7 @@
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 use std::collections::{HashMap, HashSet};
 use std::path::Path;
 #[cfg(unix)]
@@ -36,7 +37,8 @@ pub struct FileEntry {
 }
 
 /// A running process entry
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, TS)]
+#[ts(export, export_to = "../../collectionloom/src/lib/generated/ProcessEntry.ts")]
 pub struct ProcessEntry {
     pub pid: u32,
     pub name: String,

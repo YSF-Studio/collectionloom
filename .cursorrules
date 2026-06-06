@@ -18,8 +18,10 @@
 
 - `npm run test:core` — unit test Rust core
 - `npm run audit:ipc` — cocokkan invoke frontend vs handler Rust
+- `npm run generate:types` — ts-rs: struct IPC Rust → `src/lib/generated/*.ts`
 - `npm run test:e2e` — Playwright: buka UI fixture, klik sidebar, gagal jika ada error console
-- CI menjalankan E2E fixture di Ubuntu; full Tauri WebDriver opsional (xvfb).
+- `npm run test:e2e:tauri` — WebDriverIO + tauri-driver: binary Tauri nyata (Linux/Windows; xvfb di CI)
+- CI menjalankan E2E fixture + WebDriver (xvfb) di Ubuntu.
 
 ## Hybrid tools (bukan static monolith)
 
@@ -32,4 +34,4 @@
 - Commands: `src-tauri/src/commands.rs`, `prd_commands.rs`
 - Handler registry: `src-tauri/src/lib.rs`
 - Bridge: `src/lib/api/tauri.js`
-- E2E: `e2e/app.spec.mjs`
+- E2E: `e2e/app.spec.mjs` (Playwright fixture), `e2e-webdriver/` (WebDriverIO + tauri-driver)

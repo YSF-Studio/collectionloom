@@ -1,8 +1,10 @@
 //! HPA / DCO detection via ATA IDENTIFY DEVICE and native-max queries.
 
 use serde::Serialize;
+use ts_rs::TS;
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, TS)]
+#[ts(export, export_to = "../../collectionloom/src/lib/generated/HpaDcoReport.ts")]
 pub struct HpaDcoReport {
     pub device: String,
     pub supported: bool,

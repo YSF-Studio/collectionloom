@@ -1,10 +1,12 @@
 //! Pre-acquisition checks for evidence output paths (RAM/network/mobile).
 
 use serde::Serialize;
+use ts_rs::TS;
 use std::path::Path;
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "../../collectionloom/src/lib/generated/StorageCheckReport.ts")]
 pub struct StorageCheckReport {
     pub ok: bool,
     pub output_path: String,

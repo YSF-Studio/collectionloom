@@ -40,6 +40,7 @@ crc32fast = "1"
 aes-gcm = "0.10"
 pbkdf2 = { version = "0.12", features = ["simple"] }
 hmac = "0.12"
+ts-rs = { version = "10", features = ["serde-compat", "chrono-impl"] }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
@@ -51,3 +52,7 @@ winapi = { version = "0.3", features = ["winioctl", "fileapi", "handleapi", "win
 [lib]
 name = "ysf_core"
 path = "src/lib.rs"
+
+[[bin]]
+name = "export-types"
+path = "src/bin/export_types.rs"

@@ -17,11 +17,18 @@
     "test:core": "cd packages/core && cargo test",
     "test:all": "cd packages/core && cargo test && cd ../collectionloom/src-tauri && cargo test",
     "audit:ipc": "node scripts/audit-tauri-ipc.mjs",
+    "generate:types": "cd packages/core && cargo run --bin export-types --quiet",
     "test:e2e": "node e2e/app.spec.mjs",
+    "test:e2e:tauri": "wdio run e2e-webdriver/wdio.conf.mjs",
     "lint": "cd packages/core && cargo clippy",
     "screenshots": "node scripts/prepare-screenshot-data.mjs && cd packages/collectionloom && VITE_FIXTURE_MODE=1 npm run build && node ../../scripts/capture-screenshots.mjs"
   },
   "devDependencies": {
-    "playwright": "^1.60.0"
+    "@wdio/cli": "^9.19.0",
+    "@wdio/local-runner": "^9.19.0",
+    "@wdio/mocha-framework": "^9.19.0",
+    "@wdio/spec-reporter": "^9.19.0",
+    "playwright": "^1.60.0",
+    "webdriverio": "^9.19.0"
   }
 }

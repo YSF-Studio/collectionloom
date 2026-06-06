@@ -1,4 +1,5 @@
 use serde::Serialize;
+use ts_rs::TS;
 use std::fs::{File, OpenOptions};
 use std::io::{Read, Seek, Write, BufWriter};
 use std::path::{Path, PathBuf};
@@ -26,8 +27,9 @@ pub enum AcquisitionState {
     Failed(String),
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, TS)]
 #[serde(rename_all = "camelCase")]
+#[ts(export, export_to = "../../collectionloom/src/lib/generated/DiskInfo.ts")]
 pub struct DiskInfo {
     pub device: String,
     pub model: String,
@@ -37,7 +39,12 @@ pub struct DiskInfo {
     pub partitions: Vec<PartitionInfo>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, TS)]
+#[ts(
+    export,
+    export_to = "../../collectionloom/src/lib/generated/DiskPartitionInfo.ts",
+    rename = "DiskPartitionInfo"
+)]
 pub struct PartitionInfo {
     pub device: String,
     pub size_bytes: u64,
