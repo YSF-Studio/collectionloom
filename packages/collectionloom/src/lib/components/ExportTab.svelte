@@ -6,6 +6,8 @@ import PillBadge from "./ui/PillBadge.svelte";
 import { listCases } from "../api/case.js";
 import { listSnapshots } from "../api/snapshot.js";
 import { exportJson, exportMarkdown, exportZip, listExports } from "../api/export.js";
+import { openInAnalysisloom } from "../api/bridge.js";
+import { ok, err, warn } from "../messages.js";
 
 let { busy, setBusy, setMsg, timeoutPromise } = $props();
 
@@ -29,7 +31,7 @@ async function loadCases() {
     cases = await listCases();
     if (cases.length && !selectedCaseId) selectedCaseId = cases[0].case_id;
   } catch (e) {
-    if (!isPreviewError(e)) setMsg(`❌ ${typeof e === "string" ? e : String(e)}`);
+    if (!isPreviewError(e)) setMsg(`ERR: ${typeof e === "string" ? e : String(e)}`);
   }
 }
 
@@ -65,7 +67,7 @@ $effect(() => {
 
 async function generateExport() {
   if (!selectedCaseId) {
-    setMsg("⚠️ Select a case first");
+    setMsg("WARN: Select a case first");
     return;
   }
   setBusy(true);
@@ -82,10 +84,22 @@ async function generateExport() {
     } else {
       lastResult = await timeoutPromise(exportZip(selectedCaseId), 120000);
     }
-    setMsg(`✅ Export saved: ${lastResult.output_path}`);
+    setMsg(`OK: Export saved: ${lastResult.output_path}`);
     await loadExports();
   } catch (e) {
-    setMsg(`❌ ${typeof e === "string" ? e : String(e)}`);
+    setMsg(`ERR: ${typeof e === "string" ? e : String(e)}`);
+  }
+  setBusy(false);
+}
+
+async function sendAnalysis() {
+  if (!selectedCaseId) return;
+  setBusy(true);
+  try {
+    const msg = await timeoutPromise(openInAnalysisloom(selectedCaseId), 15000);
+    setMsg(ok(msg));
+  } catch (e) {
+    setMsg(err(String(e)));
   }
   setBusy(false);
 }
@@ -143,9 +157,14 @@ async function openFolder() {
     {/if}
   </MacCard>
 
-  <button class="btn-primary" onclick={generateExport} disabled={busy || !selectedCaseId}>
-    Generate Export
-  </button>
+  <div class="action-row">
+    <button class="btn-primary" onclick={generateExport} disabled={busy || !selectedCaseId}>
+      Generate Export
+    </button>
+    {#if selectedCaseId}
+      <button class="btn-secondary" onclick={sendAnalysis} disabled={busy}>Send to AnalysisLoom</button>
+    {/if}
+  </div>
 
   {#if lastResult}
     <MacCard title="Last Export">
@@ -183,8 +202,11 @@ async function openFolder() {
   .fmt-label { font-weight: 600; font-size: 13px; grid-column: 2; }
   .fmt-desc { font-size: 11px; color: var(--text-secondary); grid-column: 2; }
   .check { display: flex; gap: 8px; font-size: 13px; margin-top: 8px; }
-  .btn-primary { padding: 10px 24px; background: var(--primary); color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; margin: 12px 0; }
+  .btn-primary { padding: 10px 24px; background: var(--primary); color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; }
   .btn-primary:disabled { opacity: 0.5; }
+  .action-row { display: flex; gap: 10px; flex-wrap: wrap; margin: 12px 0; align-items: center; }
+  .btn-secondary { padding: 10px 18px; background: var(--btn-secondary-bg); color: var(--btn-secondary-text); border: 1px solid var(--border); border-radius: 10px; font-weight: 600; cursor: pointer; }
+  .btn-secondary:disabled { opacity: 0.5; }
   .btn-sm { padding: 6px 12px; background: var(--btn-secondary-bg); border: 1px solid var(--border); border-radius: 6px; color: var(--btn-secondary-text); cursor: pointer; margin-top: 8px; }
   .result-row { display: flex; gap: 12px; align-items: center; font-size: 12px; margin-bottom: 6px; }
   .result-row span:first-child { color: var(--text-muted); min-width: 60px; }

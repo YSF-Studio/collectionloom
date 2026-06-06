@@ -45,10 +45,10 @@ async function enable() {
   try {
     await timeoutPromise(invoke("enable_write_blocker", { device }), 10000);
     await checkBlockerStatus();
-    setMsg("✅ Write blocker enabled");
+    setMsg("OK: Write blocker enabled");
   } catch(e) {
     const err = typeof e === "string" ? e : String(e);
-    setMsg(`❌ ${err}`);
+    setMsg(`ERR: ${err}`);
   }
   setBusy(false);
 }
@@ -57,14 +57,14 @@ async function disable() {
   try {
     await timeoutPromise(invoke("disable_write_blocker", { device }), 10000);
     await checkBlockerStatus();
-    setMsg("✅ Write blocker disabled");
-  } catch(e) { setMsg(`❌ ${typeof e === "string" ? e : String(e)}`); }
+    setMsg("OK: Write blocker disabled");
+  } catch(e) { setMsg(`ERR: ${typeof e === "string" ? e : String(e)}`); }
   setBusy(false);
 }
 </script>
 
 <div>
-  <h3>🛡️ Write Blocker</h3>
+  <h3>Write Blocker</h3>
   <div class="row">
     <label>Device: <input type="text" bind:value={device} placeholder="/dev/sda" disabled={busy} /></label>
   </div>
@@ -77,8 +77,8 @@ async function disable() {
     <span class="method-value">{blockerMethod}</span>
   </div>
   <div class="actions">
-    <button onclick={enable} class="btn-primary" disabled={busy||!device}>🛡️ Enable</button>
-    <button onclick={disable} class="btn-danger" disabled={busy||!enabled}>🔓 Disable</button>
+    <button onclick={enable} class="btn-primary" disabled={busy||!device}>Enable</button>
+    <button onclick={disable} class="btn-danger" disabled={busy||!enabled}>Disable</button>
     <button onclick={checkBlockerStatus} class="btn-sm" disabled={busy||!device}>Refresh</button>
   </div>
   {#if blockerNotes}

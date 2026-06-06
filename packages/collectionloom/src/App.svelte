@@ -9,12 +9,14 @@ import VerificationTab from "./lib/components/VerificationTab.svelte";
 import CocTab from "./lib/components/CocTab.svelte";
 import SnapshotTab from "./lib/components/SnapshotTab.svelte";
 import ExportTab from "./lib/components/ExportTab.svelte";
+import DashboardTab from "./lib/components/DashboardTab.svelte";
 import DisclaimerTab from "./lib/components/DisclaimerTab.svelte";
 import AcquireAllTab from "./lib/components/AcquireAllTab.svelte";
 import PillBadge from "./lib/components/ui/PillBadge.svelte";
 import ProgressStatusBar from "./lib/components/ui/ProgressStatusBar.svelte";
 import ThemeToggle from "./lib/components/ui/ThemeToggle.svelte";
 import { isTauri } from "./lib/api/tauri.js";
+import { isError, isWarn } from "./lib/messages.js";
 
 let activeSection = $state("disk");
 let msg = $state("");
@@ -81,28 +83,29 @@ const sidebarSections = [
   {
     label: "ACQUISITION",
     items: [
-      { id: "disk", icon: "◉", label: "Disk Imaging" },
-      { id: "ram", icon: "◇", label: "RAM Capture" },
-      { id: "mobile", icon: "☎", label: "Mobile Triage" },
-      { id: "cloud", icon: "☁", label: "Cloud Snapshot" },
-      { id: "network", icon: "⊙", label: "Network Capture" },
-      { id: "snapshot", icon: "◈", label: "System Snapshot" },
-      { id: "acquire-all", icon: "★", label: "Acquire All" },
+      { id: "disk", label: "Disk Imaging" },
+      { id: "ram", label: "RAM Capture" },
+      { id: "mobile", label: "Mobile Triage" },
+      { id: "cloud", label: "Cloud Snapshot" },
+      { id: "network", label: "Network Capture" },
+      { id: "snapshot", label: "System Snapshot" },
+      { id: "acquire-all", label: "Acquire All" },
     ],
   },
   {
     label: "ANALYSIS",
     items: [
-      { id: "encryption", icon: "⚷", label: "Encryption" },
-      { id: "verify", icon: "◎", label: "Hash Verify" },
+      { id: "encryption", label: "Encryption" },
+      { id: "verify", label: "Hash Verify" },
     ],
   },
   {
     label: "CASE INFO",
     items: [
-      { id: "coc", icon: "☰", label: "Custody Chain" },
-      { id: "export", icon: "⬡", label: "Export Bundle" },
-      { id: "about", icon: "ⓘ", label: "About" },
+      { id: "dashboard", label: "Case Dashboard" },
+      { id: "coc", label: "Custody Chain" },
+      { id: "export", label: "Export Bundle" },
+      { id: "about", label: "About" },
     ],
   },
 ];
@@ -150,7 +153,6 @@ window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
               class:active={activeSection === item.id}
               onclick={() => (activeSection = item.id)}
             >
-              <span class="icon">{item.icon}</span>
               {item.label}
             </button>
           {/each}
@@ -194,6 +196,8 @@ window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
         <VerificationTab busy={busy} {setBusy} {setMsg} {timeoutPromise} />
       {:else if activeSection === "coc"}
         <CocTab busy={busy} sharedState={cocState} {setBusy} {setMsg} {timeoutPromise} />
+      {:else if activeSection === "dashboard"}
+        <DashboardTab busy={busy} {setBusy} {setMsg} {timeoutPromise} />
       {:else if activeSection === "export"}
         <ExportTab busy={busy} {setBusy} {setMsg} {timeoutPromise} />
       {:else if activeSection === "about"}
@@ -212,9 +216,9 @@ window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
   />
 
   {#if msg}
-    <div class="toast" class:error={msg.includes("❌")} class:warn={msg.includes("⚠️")}>
+    <div class="toast" class:error={isError(msg)} class:warn={isWarn(msg)}>
       {msg}
-      <button class="close-toast" onclick={() => (msg = "")}>✕</button>
+      <button class="close-toast" onclick={() => (msg = "")} aria-label="Close">×</button>
     </div>
   {/if}
 </div>

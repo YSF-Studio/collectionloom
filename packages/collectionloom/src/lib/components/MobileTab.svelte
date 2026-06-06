@@ -11,12 +11,12 @@ let iosBackupProgress = $state({});
 
 async function scanAndroid() {
   setBusy(true);
-  try { androidDevices = await timeoutPromise(invoke("list_android_devices"), 10000); } catch(e) { setMsg(`❌ ${typeof e === "string" ? e : String(e)}`); }
+  try { androidDevices = await timeoutPromise(invoke("list_android_devices"), 10000); } catch(e) { setMsg(`ERR: ${typeof e === "string" ? e : String(e)}`); }
   setBusy(false);
 }
 async function scanIos() {
   setBusy(true);
-  try { iosDevices = await timeoutPromise(invoke("list_ios_devices"), 10000); } catch(e) { setMsg(`❌ ${typeof e === "string" ? e : String(e)}`); }
+  try { iosDevices = await timeoutPromise(invoke("list_ios_devices"), 10000); } catch(e) { setMsg(`ERR: ${typeof e === "string" ? e : String(e)}`); }
   setBusy(false);
 }
 async function backupAndroid(id) {
@@ -24,10 +24,10 @@ async function backupAndroid(id) {
   androidBackupProgress[id] = "Backing up...";
   try {
     const r = await timeoutPromise(invoke("adb_backup", { deviceId: id, output: outputPath }), 300000);
-    setMsg(`✅ ${r}`);
+    setMsg(`OK: ${r}`);
     androidBackupProgress[id] = "✅ Complete";
   } catch(e) {
-    setMsg(`❌ ${typeof e === "string" ? e : String(e)}`);
+    setMsg(`ERR: ${typeof e === "string" ? e : String(e)}`);
     androidBackupProgress[id] = `❌ ${typeof e === "string" ? e : String(e)}`;
   }
   setBusy(false);
@@ -37,10 +37,10 @@ async function backupIos(id) {
   iosBackupProgress[id] = "Backing up...";
   try {
     const r = await timeoutPromise(invoke("ios_backup", { deviceId: id, output: outputPath }), 300000);
-    setMsg(`✅ ${r}`);
+    setMsg(`OK: ${r}`);
     iosBackupProgress[id] = "✅ Complete";
   } catch(e) {
-    setMsg(`❌ ${typeof e === "string" ? e : String(e)}`);
+    setMsg(`ERR: ${typeof e === "string" ? e : String(e)}`);
     iosBackupProgress[id] = `❌ ${typeof e === "string" ? e : String(e)}`;
   }
   setBusy(false);
@@ -48,19 +48,19 @@ async function backupIos(id) {
 </script>
 
 <div>
-  <h3>📱 Mobile Triage</h3>
+  <h3>Mobile Triage</h3>
   <div class="row">
     <label>Backup destination: <input type="text" bind:value={outputPath} disabled={busy} placeholder="/tmp/mobile_backup.ab" /></label>
   </div>
   <div class="cols">
     <div class="col">
       <h4>Android</h4>
-      <button onclick={scanAndroid} disabled={busy} class="btn-sm">🔍 Scan ADB</button>
+      <button onclick={scanAndroid} disabled={busy} class="btn-sm">Scan ADB</button>
       {#each androidDevices as d}
         <div class="device">
           <span>{d.model} ({d.id})</span>
           <span>
-            <button onclick={() => backupAndroid(d.id)} class="btn-sm" disabled={busy}>📦 Backup</button>
+            <button onclick={() => backupAndroid(d.id)} class="btn-sm" disabled={busy}>Backup</button>
             {#if androidBackupProgress[d.id]}
               <span class="progress-label">{androidBackupProgress[d.id]}</span>
             {/if}
@@ -70,12 +70,12 @@ async function backupIos(id) {
     </div>
     <div class="col">
       <h4>iOS</h4>
-      <button onclick={scanIos} disabled={busy} class="btn-sm">🔍 Scan idevice</button>
+      <button onclick={scanIos} disabled={busy} class="btn-sm">Scan idevice</button>
       {#each iosDevices as d}
         <div class="device">
           <span>{d.model} ({d.id})</span>
           <span>
-            <button onclick={() => backupIos(d.id)} class="btn-sm" disabled={busy}>📦 Backup</button>
+            <button onclick={() => backupIos(d.id)} class="btn-sm" disabled={busy}>Backup</button>
             {#if iosBackupProgress[d.id]}
               <span class="progress-label">{iosBackupProgress[d.id]}</span>
             {/if}
@@ -84,7 +84,7 @@ async function backupIos(id) {
       {/each}
     </div>
   </div>
-  <p class="note">⚠️ Faraday bag reminder: isolate mobile devices before acquisition</p>
+  <p class="note">Note: Faraday bag reminder: isolate mobile devices before acquisition</p>
 
   <GuideCard title={mobileTriageGuide.title} icon={mobileTriageGuide.icon} steps={mobileTriageGuide.steps} references={mobileTriageGuide.references} />
 </div>

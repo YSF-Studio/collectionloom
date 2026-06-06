@@ -59,7 +59,7 @@ $effect(() => {
 
 async function createNewCase() {
   if (!newCaseTitle.trim()) {
-    setMsg("⚠️ Case title required");
+    setMsg("WARN: Case title required");
     return;
   }
   setBusy(true);
@@ -74,16 +74,16 @@ async function createNewCase() {
     selectedCaseId = c.case_id;
     newCaseTitle = "";
     showNewCase = false;
-    setMsg(`✅ Case created: ${c.title}`);
+    setMsg(`OK: Case created: ${c.title}`);
   } catch (e) {
-    setMsg(`❌ ${typeof e === "string" ? e : String(e)}`);
+    setMsg(`ERR: ${typeof e === "string" ? e : String(e)}`);
   }
   setBusy(false);
 }
 
 async function runSnapshot() {
   if (!selectedCaseId) {
-    setMsg("⚠️ Select or create a case first");
+    setMsg("WARN: Select or create a case first");
     return;
   }
   running = true;
@@ -91,10 +91,10 @@ async function runSnapshot() {
   try {
     const meta = await timeoutPromise(startSnapshot(selectedCaseId, selectedProfile), 300000);
     lastSnapshot = meta;
-    setMsg(`✅ Snapshot ${meta.status}: ${meta.snapshot_id.slice(0, 8)}…`);
+    setMsg(`OK: Snapshot ${meta.status}: ${meta.snapshot_id.slice(0, 8)}…`);
     await loadSnapshots();
   } catch (e) {
-    setMsg(`❌ ${typeof e === "string" ? e : String(e)}`);
+    setMsg(`ERR: ${typeof e === "string" ? e : String(e)}`);
   }
   running = false;
   setBusy(false);
@@ -103,7 +103,7 @@ async function runSnapshot() {
 
 async function runCompare() {
   if (!compareA || !compareB) {
-    setMsg("⚠️ Select two snapshots");
+    setMsg("WARN: Select two snapshots");
     return;
   }
   setBusy(true);
@@ -113,9 +113,9 @@ async function runCompare() {
       60000
     );
     const s = compareResult.summary;
-    setMsg(`✅ Compare: +${s?.total_added || 0} / -${s?.total_removed || 0} / ~${s?.total_changed || 0}`);
+    setMsg(`OK: Compare: +${s?.total_added || 0} / -${s?.total_removed || 0} / ~${s?.total_changed || 0}`);
   } catch (e) {
-    setMsg(`❌ ${typeof e === "string" ? e : String(e)}`);
+    setMsg(`ERR: ${typeof e === "string" ? e : String(e)}`);
   }
   setBusy(false);
 }

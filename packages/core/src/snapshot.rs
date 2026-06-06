@@ -8,9 +8,10 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
-use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
-use std::time::SystemTime;
+#[cfg(unix)]
+use std::os::unix::fs::PermissionsExt;
+use sysinfo::System;
 
 /// Unique snapshot identifier
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
@@ -150,13 +151,13 @@ pub struct DiffSummary {
 
 /// Take a full system snapshot — files, processes, network, system info
 pub fn take_snapshot(label: &str, scan_root: Option<&str>) -> Result<SystemSnapshot, String> {
-    let root = scan_root.unwrap_or("/home");
-    
+    let root = scan_root.unwrap_or_else(|| default_scan_root());
+
     let info = capture_system_info()?;
     let files = scan_filesystem(root)?;
     let processes = capture_processes()?;
     let network = capture_network()?;
-    
+
     Ok(SystemSnapshot {
         id: SnapshotId::new(label),
         timestamp: Utc::now().to_rfc3339(),
@@ -166,6 +167,16 @@ pub fn take_snapshot(label: &str, scan_root: Option<&str>) -> Result<SystemSnaps
         processes,
         network,
     })
+}
+
+fn default_scan_root() -> &'static str {
+    if cfg!(target_os = "macos") {
+        "/Users"
+    } else if cfg!(windows) {
+        "C:\\Users"
+    } else {
+        "/home"
+    }
 }
 
 /// Compare two snapshots and produce a diff
@@ -358,49 +369,23 @@ pub fn generate_diff_report(diff: &SnapshotDiff) -> String {
 // ═══════════════════════════════════════
 
 fn capture_system_info() -> Result<SystemInfo, String> {
-    let hostname = std::fs::read_to_string("/proc/sys/kernel/hostname")
-        .unwrap_or_else(|_| "unknown".to_string())
-        .trim()
-        .to_string();
-    
-    let kernel = std::fs::read_to_string("/proc/version")
-        .unwrap_or_else(|_| "unknown".to_string())
-        .split_whitespace()
-        .nth(2)
-        .unwrap_or("unknown")
-        .to_string();
-    
-    let uptime = std::fs::read_to_string("/proc/uptime")
-        .ok()
-        .and_then(|s| s.split_whitespace().next()?.parse::<f64>().ok())
-        .unwrap_or(0.0) as u64;
-    
-    let (total_mb, avail_mb) = read_memory_info();
-    
+    let mut sys = System::new_all();
+    sys.refresh_all();
+
     Ok(SystemInfo {
-        hostname,
-        kernel,
-        uptime_secs: uptime,
-        total_memory_mb: total_mb,
-        available_memory_mb: avail_mb,
+        hostname: System::host_name().unwrap_or_else(|| "unknown".into()),
+        kernel: System::kernel_version().unwrap_or_else(|| "unknown".into()),
+        uptime_secs: System::uptime(),
+        total_memory_mb: sys.total_memory() / 1024,
+        available_memory_mb: sys.available_memory() / 1024,
     })
 }
 
+#[allow(dead_code)]
 fn read_memory_info() -> (u64, u64) {
-    let content = std::fs::read_to_string("/proc/meminfo").unwrap_or_default();
-    let total = content.lines()
-        .find(|l| l.starts_with("MemTotal:"))
-        .and_then(|l| l.split_whitespace().nth(1))
-        .and_then(|v| v.parse::<u64>().ok())
-        .map(|k| k / 1024)
-        .unwrap_or(0);
-    let available = content.lines()
-        .find(|l| l.starts_with("MemAvailable:"))
-        .and_then(|l| l.split_whitespace().nth(1))
-        .and_then(|v| v.parse::<u64>().ok())
-        .map(|k| k / 1024)
-        .unwrap_or(0);
-    (total, available)
+    let mut sys = System::new();
+    sys.refresh_memory();
+    (sys.total_memory() / 1024, sys.available_memory() / 1024)
 }
 
 fn scan_filesystem(root: &str) -> Result<Vec<FileEntry>, String> {
@@ -434,7 +419,16 @@ fn scan_dir(dir: &Path, entries: &mut Vec<FileEntry>, depth: usize, max_depth: u
             })
             .unwrap_or_else(|| "unknown".to_string());
         
-        let perms = format!("{:o}", metadata.permissions().mode() & 0o777);
+        let perms = {
+            #[cfg(unix)]
+            {
+                format!("{:o}", metadata.permissions().mode() & 0o777)
+            }
+            #[cfg(not(unix))]
+            {
+                String::from("---")
+            }
+        };
         
         entries.push(FileEntry {
             path: path.to_string_lossy().to_string(),
@@ -453,72 +447,35 @@ fn scan_dir(dir: &Path, entries: &mut Vec<FileEntry>, depth: usize, max_depth: u
 }
 
 fn capture_processes() -> Result<Vec<ProcessEntry>, String> {
+    let mut sys = System::new_all();
+    sys.refresh_all();
+
     let mut processes = Vec::new();
-    let proc_dir = std::fs::read_dir("/proc").map_err(|e| format!("Cannot read /proc: {}", e))?;
-    
-    for entry in proc_dir {
-        let entry = match entry {
-            Ok(e) => e,
-            Err(_) => continue,
-        };
-        let name = entry.file_name();
-        let pid: u32 = match name.to_string_lossy().parse() {
-            Ok(p) => p,
-            Err(_) => continue,
-        };
-        
-        let stat_path = entry.path().join("stat");
-        let stat_content = match std::fs::read_to_string(&stat_path) {
-            Ok(c) => c,
-            Err(_) => continue,
-        };
-        
-        // Parse /proc/[pid]/stat: PID (comm) state ...
-        let after_paren = match stat_content.find(") ") {
-            Some(i) => &stat_content[i+2..],
-            None => continue,
-        };
-        let state = after_paren.chars().next().unwrap_or('?').to_string();
-        
-        // Get process name from between parentheses
-        let pname_start = stat_content.find('(').unwrap_or(0) + 1;
-        let pname_end = stat_content.rfind(')').unwrap_or(0);
-        let pname = if pname_end > pname_start {
-            stat_content[pname_start..pname_end].to_string()
-        } else {
-            name.to_string_lossy().to_string()
-        };
-        
-        // Memory from status
-        let status_path = entry.path().join("status");
-        let mem_bytes = std::fs::read_to_string(&status_path)
-            .ok()
-            .and_then(|s| {
-                s.lines()
-                    .find(|l| l.starts_with("VmRSS:"))
-                    .and_then(|l| l.split_whitespace().nth(1))
-                    .and_then(|v| v.parse::<u64>().ok())
-                    .map(|kb| kb * 1024)
-            })
-            .unwrap_or(0);
-        
+    for (pid, proc_) in sys.processes() {
         processes.push(ProcessEntry {
-            pid,
-            name: pname,
-            state,
-            cpu_percent: 0.0, // would need multiple samples
-            memory_bytes: mem_bytes,
+            pid: pid.as_u32(),
+            name: proc_.name().to_string_lossy().into_owned(),
+            state: format!("{:?}", proc_.status()),
+            cpu_percent: proc_.cpu_usage() as f64,
+            memory_bytes: proc_.memory(),
         });
     }
-    
+    processes.sort_by_key(|p| p.pid);
     Ok(processes)
 }
 
 fn capture_network() -> Result<Vec<NetworkEntry>, String> {
-    let mut entries = Vec::new();
-    entries.extend(parse_proc_net_tcp("/proc/net/tcp", "TCP")?);
-    entries.extend(parse_proc_net_tcp("/proc/net/tcp6", "TCP6")?);
-    Ok(entries)
+    #[cfg(target_os = "linux")]
+    {
+        let mut entries = Vec::new();
+        entries.extend(parse_proc_net_tcp("/proc/net/tcp", "TCP")?);
+        entries.extend(parse_proc_net_tcp("/proc/net/tcp6", "TCP6")?);
+        return Ok(entries);
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        Ok(vec![])
+    }
 }
 
 fn parse_proc_net_tcp(path: &str, protocol: &str) -> Result<Vec<NetworkEntry>, String> {

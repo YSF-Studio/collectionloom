@@ -88,9 +88,9 @@ async function createCoc() {
       },
     ];
     await loadQr();
-    setMsg(`✅ Chain of custody created: ${evidenceId}`);
+    setMsg(`OK: Chain of custody created: ${evidenceId}`);
   } catch (e) {
-    setMsg(`❌ ${typeof e === "string" ? e : String(e)}`);
+    setMsg(`ERR: ${typeof e === "string" ? e : String(e)}`);
   }
   setBusy(false);
 }
@@ -103,9 +103,9 @@ async function generatePdf() {
   setBusy(true);
   try {
     const path = await timeoutPromise(invoke("generate_coc_report", { evidenceId }), 15000);
-    setMsg(`✅ PDF report saved to ${path}`);
+    setMsg(`OK: PDF report saved to ${path}`);
   } catch (e) {
-    setMsg(`❌ ${typeof e === "string" ? e : String(e)}`);
+    setMsg(`ERR: ${typeof e === "string" ? e : String(e)}`);
   }
   setBusy(false);
 }
@@ -117,9 +117,9 @@ async function signCoc() {
     const result = await timeoutPromise(invoke("sign_coc", { evidenceId }), 10000);
     signature = result.signature_hex || result.signature || "";
     publicKey = result.public_key_hex || result.public_key || "";
-    setMsg("✅ CoC signed successfully");
+    setMsg("OK: CoC signed successfully");
   } catch (e) {
-    setMsg(`❌ ${typeof e === "string" ? e : String(e)}`);
+    setMsg(`ERR: ${typeof e === "string" ? e : String(e)}`);
   }
   signLoading = false;
 }

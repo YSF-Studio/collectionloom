@@ -6664,6 +6664,7 @@ dependencies = [
  "sevenz-rust",
  "sha1",
  "sha2",
+ "sysinfo",
  "tar",
  "tokio",
  "twox-hash",

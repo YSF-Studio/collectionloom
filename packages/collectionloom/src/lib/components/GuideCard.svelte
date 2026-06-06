@@ -10,7 +10,7 @@
    *   references  (string[], optional)
    *                              — Citation / resource links
    */
-  let { title = "", icon = "📖", steps = [], references = [] } = $props();
+  let { title = "", icon = "", steps = [], references = [] } = $props();
 
   let expanded = $state(false);
 
@@ -38,7 +38,7 @@
               <p class="step-desc">{step.description}</p>
               {#if step.warning}
                 <div class="step-warning">
-                  <span class="warn-icon">⚠️</span>
+                  <span class="warn-icon">Note:</span>
                   <span>{step.warning}</span>
                 </div>
               {/if}
@@ -50,7 +50,7 @@
       <!-- References section -->
       {#if references.length > 0}
         <div class="references">
-          <div class="ref-header">📚 References</div>
+          <div class="ref-header">References</div>
           <ul class="ref-list">
             {#each references as ref}
               <li class="ref-item">{ref}</li>

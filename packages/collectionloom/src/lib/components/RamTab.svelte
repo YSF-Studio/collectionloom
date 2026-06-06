@@ -29,7 +29,7 @@ async function capture() {
   hashResult = "";
   try {
     const result = await timeoutPromise(invoke("capture_ram", { tool: selectedTool, output: outputPath, compress }), 120000);
-    setMsg(`✅ ${result}`);
+    setMsg(`OK: ${result}`);
     // Auto hash after successful capture
     if (autoHash && outputPath) {
       try {
@@ -39,7 +39,7 @@ async function capture() {
         hashResult = `❌ Hash computation failed: ${typeof e === "string" ? e : String(e)}`;
       }
     }
-  } catch(e) { setMsg(`❌ ${typeof e === "string" ? e : String(e)}`); }
+  } catch(e) { setMsg(`ERR: ${typeof e === "string" ? e : String(e)}`); }
   setBusy(false);
 }
 
@@ -48,7 +48,7 @@ async function listProcesses() {
   try {
     processList = await timeoutPromise(invoke("list_processes"), 10000);
   } catch(e) {
-    setMsg(`❌ ${typeof e === "string" ? e : String(e)}`);
+    setMsg(`ERR: ${typeof e === "string" ? e : String(e)}`);
   }
 }
 
@@ -56,7 +56,7 @@ async function refreshProcesses() {
   try {
     processList = await timeoutPromise(invoke("list_processes"), 10000);
   } catch(e) {
-    setMsg(`❌ ${typeof e === "string" ? e : String(e)}`);
+    setMsg(`ERR: ${typeof e === "string" ? e : String(e)}`);
   }
 }
 
@@ -64,7 +64,7 @@ $effect(() => { listTools(); });
 </script>
 
 <div>
-  <h3>🧠 RAM Capture</h3>
+  <h3>RAM Capture</h3>
   {#if ramSize}<p class="info">System RAM: {(ramSize/1e9).toFixed(1)} GB</p>{/if}
   <div class="row">
     <label>Tool: <select bind:value={selectedTool} disabled={busy}>
@@ -81,7 +81,7 @@ $effect(() => { listTools(); });
   </div>
   <div class="actions">
     <button onclick={capture} class="btn-primary" disabled={busy||!selectedTool}>▶ Capture RAM</button>
-    <button onclick={listProcesses} class="btn-sm" disabled={busy}>📋 List Processes</button>
+    <button onclick={listProcesses} class="btn-sm" disabled={busy}>List Processes</button>
   </div>
 
   {#if hashResult}
@@ -92,7 +92,7 @@ $effect(() => { listTools(); });
   <div class="process-section">
     <div class="process-header">
       <span>Running Processes ({processList.length})</span>
-      <button onclick={refreshProcesses} class="btn-sm">🔄 Refresh</button>
+      <button onclick={refreshProcesses} class="btn-sm">Refresh</button>
     </div>
     <div class="process-list">
       {#each processList as proc}

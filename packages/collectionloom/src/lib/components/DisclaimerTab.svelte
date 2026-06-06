@@ -24,7 +24,7 @@ $effect(() => { load(); });
     </div>
 
     <div class="card" style="margin-bottom:12px">
-        <h4>🚀 Features</h4>
+        <h4>Features</h4>
         <ul style="margin:0;padding-left:20px">
             {#each info.features as f}
                 <li style="font-size:13px;color:var(--text-secondary);margin-bottom:6px;line-height:1.4">{f}</li>
@@ -33,18 +33,18 @@ $effect(() => { load(); });
     </div>
 
     <div class="card" style="margin-bottom:12px;border-left:3px solid var(--success)">
-        <h4>🔒 Privacy</h4>
+        <h4>Privacy</h4>
         <p style="font-size:13px;color:var(--text-secondary);margin:0;line-height:1.5">{info.privacy}</p>
-        <span class="offline-badge" style="margin-top:8px">✅ Fully Offline</span>
+        <span class="offline-badge" style="margin-top:8px">Fully Offline</span>
     </div>
 
     <div class="card" style="margin-bottom:12px;border-left:3px solid var(--warn)">
-        <h4>⚖️ Disclaimer</h4>
+        <h4>Disclaimer</h4>
         <p style="font-size:13px;color:var(--text-secondary);margin:0;font-style:italic">{info.disclaimer}</p>
     </div>
 
     <div class="card" style="margin-bottom:12px">
-        <h4>👨‍💻 Developer</h4>
+        <h4>Developer</h4>
         <p style="font-size:13px;color:var(--text);margin:0 0 4px;font-weight:600">{info.developer}</p>
         <p style="font-size:12px;color:var(--primary);margin:0">{info.build}</p>
     </div>

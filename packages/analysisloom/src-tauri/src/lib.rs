@@ -70,6 +70,7 @@ pub fn run() {
             commands::list_bookmarks,
             commands::delete_bookmark,
             commands::about_info,
+            commands::import_collectionloom_handoff,
         ])
         .run(tauri::generate_context!())
         .expect("error while running AnalysisLoom");

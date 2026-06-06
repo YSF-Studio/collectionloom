@@ -52,7 +52,7 @@ async function startCapture() {
     setMsg("Capture started");
     pollId = setInterval(refreshStats, 2000);
   } catch (e) {
-    setMsg(`❌ ${typeof e === "string" ? e : String(e)}`);
+    setMsg(`ERR: ${typeof e === "string" ? e : String(e)}`);
     capturing = false;
   }
 }

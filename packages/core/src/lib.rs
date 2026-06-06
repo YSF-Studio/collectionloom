@@ -9,6 +9,8 @@ pub mod evidence;
 pub mod encryption_detect;
 pub mod imaging;
 pub mod imaging_format;
+pub mod ewf;
+pub mod aff4_native;
 pub mod write_blocker;
 pub mod ram;
 pub mod mobile;

@@ -95,6 +95,8 @@ pub fn run() {
             prd_commands::generate_qr_label,
             prd_commands::get_capture_packets,
             prd_commands::get_capture_stats,
+            prd_commands::list_case_summaries_cmd,
+            prd_commands::open_in_analysisloom,
         ])
         .run(tauri::generate_context!())
         .expect("error while running CollectionLoom");

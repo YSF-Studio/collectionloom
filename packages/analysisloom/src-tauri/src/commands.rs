@@ -411,11 +411,24 @@ pub fn delete_bookmark(id: i64) -> Result<(), String> {
 }
 
 #[tauri::command]
+pub fn import_collectionloom_handoff(handoff_path: String) -> Result<Case, String> {
+    let data = std::fs::read_to_string(&handoff_path).map_err(|e| e.to_string())?;
+    let json: serde_json::Value = serde_json::from_str(&data).map_err(|e| e.to_string())?;
+    let title = json
+        .get("case_title")
+        .and_then(|v| v.as_str())
+        .unwrap_or("Imported Case")
+        .to_string();
+    let operator = "CollectionLoom Import".to_string();
+    create_case(title, operator)
+}
+
+#[tauri::command]
 pub fn about_info() -> serde_json::Value {
     serde_json::json!({
         "appName": "AnalysisLoom",
         "version": "0.1.0",
-        "developer": "YSF Studio — Built with ❤️ by Yusuf Shalahuddin",
+        "developer": "YSF Studio — Yusuf Shalahuddin",
         "build": "Master Build — All Features Unlocked",
         "features": [
             "Forensic-grade NTFS/MFT Parser & File Browser",

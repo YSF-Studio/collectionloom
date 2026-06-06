@@ -12,6 +12,11 @@ export async function listCases(filter = {}) {
   return /** @type {Case[]} */ (await invoke("list_cases_cmd", filter));
 }
 
+/** @returns {Promise<Array<{ case: Case, snapshot_count: number, export_count: number, diff_count: number, case_dir: string }>>} */
+export async function listCaseSummaries() {
+  return invoke("list_case_summaries_cmd");
+}
+
 /** @param {string} caseId */
 export async function getCase(caseId) {
   return /** @type {Case} */ (await invoke("get_case", { caseId }));

@@ -97,7 +97,6 @@ fn test_hash_consistency() {
 }
 
 #[test]
-#[cfg_attr(not(target_os = "linux"), ignore = "take_snapshot requires /proc (Linux only)")]
 fn test_system_snapshot() {
     let test_dir = test_dir();
     ensure_binary_fixtures(&test_dir);

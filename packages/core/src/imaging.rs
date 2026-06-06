@@ -186,24 +186,25 @@ impl DiskImager {
     }
 
     pub fn run(&self, cancel_flag: &std::sync::atomic::AtomicBool) -> Result<String, String> {
+        let source = crate::imaging_format::normalize_block_source(&self.source);
         match self.format {
             ImageFormat::E01 => {
-                crate::imaging_format::acquire_e01(&self.source, &self.destination, cancel_flag)
+                crate::imaging_format::acquire_e01(&source, &self.destination, cancel_flag)
             }
             ImageFormat::Aff4 => crate::imaging_format::acquire_aff4(
-                &self.source,
+                &source,
                 &self.destination,
                 self.split_size,
                 self.verify,
                 cancel_flag,
             ),
-            ImageFormat::Raw => self.run_raw(cancel_flag),
+            ImageFormat::Raw => self.run_raw(&source, cancel_flag),
         }
     }
 
-    fn run_raw(&self, cancel_flag: &std::sync::atomic::AtomicBool) -> Result<String, String> {
-        let src = File::open(&self.source)
-            .map_err(|e| format!("Cannot open source {}: {}", self.source, e))?;
+    fn run_raw(&self, source: &str, cancel_flag: &std::sync::atomic::AtomicBool) -> Result<String, String> {
+        let src = File::open(source)
+            .map_err(|e| format!("Cannot open source {source}: {e}"))?;
         let src_size = src.metadata().map_err(|e| e.to_string())?.len();
         let mut reader = BufReader::with_capacity(super::hashing::HASH_BUFFER_SIZE, src);
 

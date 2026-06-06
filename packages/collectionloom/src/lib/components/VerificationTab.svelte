@@ -11,7 +11,7 @@
   let msg = $state("");
 
   $effect(() => {
-    if (msg && !msg.startsWith("❌")) {
+    if (msg && !msg.startsWith("ERR:")) {
       const t = setTimeout(() => msg = "", 8000);
       return () => clearTimeout(t);
     }
@@ -21,12 +21,12 @@
     try {
       const p = await openDialog({ directory: false, multiple: false });
       if (p) filePath = p;
-    } catch (e) { msg = `❌ ${String(e)}`; }
+    } catch (e) { msg = `ERR: ${String(e)}`; }
   }
 
   async function doVerify() {
     if (!filePath || !expectedHash) {
-      msg = "❌ Select a file and enter the expected hash";
+      msg = "ERR: Select a file and enter the expected hash";
       return;
     }
     setBusy(true);
@@ -34,7 +34,7 @@
     try {
       result = await invoke("verify_hash", { path: filePath, expectedHash, algorithm });
     } catch (e) {
-      msg = `❌ ${typeof e === 'string' ? e : String(e)}`;
+      msg = `ERR: ${typeof e === 'string' ? e : String(e)}`;
     }
     setBusy(false);
   }
@@ -48,7 +48,7 @@
 </script>
 
 <div>
-  <h3>🔐 Hash Verification</h3>
+  <h3>Hash Verification</h3>
   <p class="note">Verify file integrity by comparing computed hash against expected value. Supports SHA-256, SHA-1, and MD5.</p>
 
   <div class="row">
@@ -65,7 +65,7 @@
     <label>File:</label>
     <div class="file-row">
       <input type="text" bind:value={filePath} disabled={busy} placeholder="/path/to/evidence.dd" />
-      <button class="btn-ghost" onclick={browseFile} disabled={busy}>📂</button>
+      <button class="btn-ghost" onclick={browseFile} disabled={busy}>Browse</button>
     </div>
   </div>
 
@@ -77,16 +77,16 @@
   </div>
 
   {#if msg}
-    <div class="result-card" class:error={msg.startsWith("❌")}>{msg}</div>
+    <div class="result-card" class:error={msg.startsWith("ERR:")}>{msg}</div>
   {/if}
 
   <button class="btn-primary" onclick={doVerify} disabled={busy || !filePath || !expectedHash}>
-    {busy ? '🔄 Verifying...' : '🔍 Verify'}
+    {busy ? 'Verifying...' : 'Verify'}
   </button>
 
   {#if result}
     <div class="result-card" class:match={result.matched} class:mismatch={!result.matched}>
-      <span class="result-icon">{result.matched ? '✅' : '❌'}</span>
+      <span class="result-icon">{result.matched ? 'OK' : 'FAIL'}</span>
       <div>
         <strong>{result.matched ? 'MATCH — Hash verified!' : 'MISMATCH — Hash does not match!'}</strong><br />
         <div class="hash-compare">

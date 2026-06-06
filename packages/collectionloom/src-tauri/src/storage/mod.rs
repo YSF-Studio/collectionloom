@@ -176,3 +176,48 @@ pub fn new_snapshot_id() -> String {
 pub fn validate_schema_version(v: &str) -> bool {
     v == SCHEMA_VERSION
 }
+
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct CaseSummary {
+    pub case: Case,
+    pub snapshot_count: usize,
+    pub export_count: usize,
+    pub diff_count: usize,
+    pub case_dir: String,
+}
+
+pub fn list_case_summaries() -> Result<Vec<CaseSummary>, String> {
+    let cases = list_cases()?;
+    let mut out = Vec::new();
+    for case in cases {
+        let dir = case_dir(&case.case_id);
+        let snapshot_count = list_snapshots(&case.case_id).map(|s| s.len()).unwrap_or(0);
+        let diff_count = list_diffs(&case.case_id).map(|d| d.len()).unwrap_or(0);
+        let export_count = fs::read_dir(exports_dir(&case.case_id))
+            .map(|rd| rd.filter_map(|e| e.ok()).count())
+            .unwrap_or(0);
+        out.push(CaseSummary {
+            case,
+            snapshot_count,
+            export_count,
+            diff_count,
+            case_dir: dir.to_string_lossy().into_owned(),
+        });
+    }
+    Ok(out)
+}
+
+pub fn handoff_dir() -> PathBuf {
+    dirs::home_dir()
+        .unwrap_or_else(|| PathBuf::from("/tmp"))
+        .join("CollectionLoom")
+        .join("handoff")
+}
+
+pub fn write_handoff(case_id: &str, payload: &serde_json::Value) -> Result<PathBuf, String> {
+    fs::create_dir_all(handoff_dir()).map_err(|e| e.to_string())?;
+    let path = handoff_dir().join(format!("{case_id}.json"));
+    fs::write(&path, serde_json::to_string_pretty(payload).map_err(|e| e.to_string())?)
+        .map_err(|e| e.to_string())?;
+    Ok(path)
+}

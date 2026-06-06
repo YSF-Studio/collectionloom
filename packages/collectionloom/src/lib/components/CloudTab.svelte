@@ -17,7 +17,7 @@
   let snapshotId = $state("");
 
   $effect(() => {
-    if (msg && !msg.startsWith("❌")) {
+    if (msg && !msg.startsWith("ERR:")) {
       const t = setTimeout(() => msg = "", 8000);
       return () => clearTimeout(t);
     }
@@ -41,7 +41,7 @@
 
   async function doCreateSnapshot() {
     if (!resourceId || !accessKey || !secretKey) {
-      msg = "❌ All fields are required";
+      msg = "ERR: All fields are required";
       return;
     }
     setBusy(true);
@@ -83,7 +83,7 @@
         const m = err.match(/snap-[a-z0-9]+/i);
         if (m) snapshotId = m[0];
       } else {
-        msg = `❌ ${err}`;
+        msg = `ERR: ${err}`;
       }
     }
     setBusy(false);
@@ -92,7 +92,7 @@
 </script>
 
 <div>
-  <h3>☁️ Cloud Snapshot</h3>
+  <h3>Cloud Snapshot</h3>
   <p class="note">API keys held in RAM only — never written to disk</p>
 
   <div class="row">
@@ -132,16 +132,16 @@
   </div>
 
   {#if msg}
-    <div class="result-card" class:error={msg.startsWith("❌")}>{msg}</div>
+    <div class="result-card" class:error={msg.startsWith("ERR:")}>{msg}</div>
   {/if}
 
   <button class="btn-primary" onclick={doCreateSnapshot} disabled={collBusy}>
-    {collBusy ? "🔄 Creating Snapshot..." : "☁️ Create Snapshot"}
+    {collBusy ? "Creating Snapshot..." : "Create Snapshot"}
   </button>
 
   {#if result}
     <div class="result-card success">
-      <strong>✅ Snapshot Request Sent</strong><br />
+      <strong>Snapshot Request Sent</strong><br />
       <span class="muted">Provider: {result.provider || provider}</span>
       {#if snapshotId}
         <div class="snapshot-id">

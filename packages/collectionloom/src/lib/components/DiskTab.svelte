@@ -50,7 +50,7 @@ async function listDisks() {
     disks = await timeoutPromise(invoke("list_disks"), 15000);
   } catch (e) {
     const err = typeof e === "string" ? e : String(e);
-    if (err !== "TIMEOUT" && !isPreviewError(e)) setMsg(`❌ ${err}`);
+    if (err !== "TIMEOUT" && !isPreviewError(e)) setMsg(`ERR: ${err}`);
   }
   setBusy(false);
 }
@@ -106,7 +106,7 @@ function resolveDestPath() {
 
 async function startImaging() {
   if (!selectedDisk || !destPath) {
-    setMsg("⚠️ Select a disk and destination");
+    setMsg("WARN: Select a disk and destination");
     return;
   }
   collBusy = true;
@@ -156,7 +156,7 @@ async function startImaging() {
   } catch (e) {
     collBusy = false;
     const err = typeof e === "string" ? e : String(e);
-    if (err !== "TIMEOUT") setMsg(`❌ ${err}`);
+    if (err !== "TIMEOUT") setMsg(`ERR: ${err}`);
   }
 }
 
@@ -171,7 +171,7 @@ async function cancelImaging() {
 
 async function detectHpaDco() {
   if (!selectedDisk) {
-    setMsg("⚠️ Select a disk first");
+    setMsg("WARN: Select a disk first");
     return;
   }
   hpaDcoResult = "Detecting...";

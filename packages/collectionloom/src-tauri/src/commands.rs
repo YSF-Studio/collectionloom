@@ -328,7 +328,7 @@ pub fn about_info() -> serde_json::Value {
     serde_json::json!({
         "appName": "CollectionLoom",
         "version": "0.1.0",
-        "developer": "YSF Studio — Built with ❤️ by Yusuf Shalahuddin",
+        "developer": "YSF Studio — Yusuf Shalahuddin",
         "build": "Master Build — All Features Unlocked",
         "features": [
             "Bit-for-bit Disk Imaging with SHA-256 Verification",

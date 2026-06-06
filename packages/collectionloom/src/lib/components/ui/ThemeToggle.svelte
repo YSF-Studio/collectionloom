@@ -17,8 +17,8 @@
 >
   <span class="track">
     <span class="thumb" class:light={mode === "light"}></span>
-    <span class="icon sun" class:active={mode === "light"} aria-hidden="true">☀</span>
-    <span class="icon moon" class:active={mode === "dark"} aria-hidden="true">☽</span>
+    <span class="icon sun" class:active={mode === "light"} aria-hidden="true">L</span>
+    <span class="icon moon" class:active={mode === "dark"} aria-hidden="true">D</span>
   </span>
 </button>
 
