@@ -37,6 +37,7 @@ pub struct PortableLayout {
     pub platform: String,
     pub kit_root: Option<String>,
     pub tools_dir: Option<String>,
+    pub bundled_tools_dir: Option<String>,
     pub cases_dir: String,
     pub default_acquisition_dir: String,
     pub portable_mode: bool,
@@ -46,12 +47,34 @@ pub struct PortableLayout {
 }
 
 static KIT_ROOT_OVERRIDE: Mutex<Option<PathBuf>> = Mutex::new(None);
+static BUNDLED_TOOLS_OVERRIDE: Mutex<Option<PathBuf>> = Mutex::new(None);
 
 /// Override kit root (tests / explicit COLLECTIONLOOM_KIT_ROOT).
 pub fn set_kit_root_override(root: Option<PathBuf>) {
     if let Ok(mut guard) = KIT_ROOT_OVERRIDE.lock() {
         *guard = root;
     }
+}
+
+/// Set path to Tauri `resources/tools/` (called from app setup).
+pub fn set_bundled_tools_dir(dir: Option<PathBuf>) {
+    if let Ok(mut guard) = BUNDLED_TOOLS_OVERRIDE.lock() {
+        *guard = dir;
+    }
+}
+
+pub fn bundled_tools_dir() -> Option<PathBuf> {
+    if let Ok(guard) = BUNDLED_TOOLS_OVERRIDE.lock() {
+        if let Some(ref p) = *guard {
+            if p.is_dir() {
+                return Some(p.clone());
+            }
+        }
+    }
+    std::env::var("COLLECTIONLOOM_BUNDLED_TOOLS")
+        .ok()
+        .map(PathBuf::from)
+        .filter(|p| p.is_dir())
 }
 
 fn kit_root_override() -> Option<PathBuf> {
@@ -224,6 +247,7 @@ pub fn portable_layout() -> PortableLayout {
     let _ = ensure_kit_directories();
     let kit = resolve_kit_root();
     let tools = tools_dir();
+    let bundled = bundled_tools_dir();
     let cases = if use_portable_storage() {
         resolve_kit_root()
             .map(|k| k.join("cases"))
@@ -236,6 +260,7 @@ pub fn portable_layout() -> PortableLayout {
         platform: platform_label().into(),
         kit_root: kit.as_ref().map(|p| p.to_string_lossy().into_owned()),
         tools_dir: tools.as_ref().map(|p| p.to_string_lossy().into_owned()),
+        bundled_tools_dir: bundled.as_ref().map(|p| p.to_string_lossy().into_owned()),
         cases_dir: cases.to_string_lossy().into_owned(),
         default_acquisition_dir: default_acquisition_dir().to_string_lossy().into_owned(),
         portable_mode: is_portable_mode(),
@@ -274,16 +299,6 @@ fn tool_filename(name: &str) -> String {
     }
 }
 
-fn command_on_path(name: &str) -> Option<PathBuf> {
-    for path in system_tool_paths(name) {
-        if path.is_file() {
-            return Some(path);
-        }
-    }
-    None
-}
-
-/// Standard install locations GUI apps often miss (Homebrew, system paths).
 fn system_tool_paths(name: &str) -> Vec<PathBuf> {
     let file = tool_filename(name);
     let mut dirs: Vec<PathBuf> = Vec::new();
@@ -417,34 +432,57 @@ fn verify_against_manifest(
     }
 }
 
-/// Resolve executable: `./tools/` first, then PATH. Optional SHA-256 verify via `tools/manifest.json`.
-pub fn resolve_tool(name: &str) -> Option<ResolvedTool> {
-    let manifest = tools_dir().as_ref().and_then(|t| load_manifest(t));
-    let mut candidates: Vec<(PathBuf, &'static str)> = vec![];
-
-    if let Some(tools) = tools_dir() {
-        for bundled in bundled_tool_paths(&tools, name) {
-            if bundled.is_file() && !candidates.iter().any(|(p, _)| p == &bundled) {
-                candidates.push((bundled, "portable"));
-            }
-        }
-        let bundled = tools.join(tool_filename(name));
+fn push_tool_candidates(
+    candidates: &mut Vec<(PathBuf, &'static str)>,
+    tools: &Path,
+    source: &'static str,
+    name: &str,
+    manifest: Option<&ToolManifest>,
+) {
+    for bundled in bundled_tool_paths(tools, name) {
         if bundled.is_file() && !candidates.iter().any(|(p, _)| p == &bundled) {
-            candidates.push((bundled, "portable"));
+            candidates.push((bundled, source));
         }
-        if let Some(ref m) = manifest {
-            if let Some(entry) = m.tools.get(name) {
-                let alt = tools.join(&entry.file);
-                if alt.is_file() && !candidates.iter().any(|(p, _)| p == &alt) {
-                    candidates.push((alt, "portable"));
-                }
+    }
+    let bundled = tools.join(tool_filename(name));
+    if bundled.is_file() && !candidates.iter().any(|(p, _)| p == &bundled) {
+        candidates.push((bundled, source));
+    }
+    if let Some(m) = manifest {
+        if let Some(entry) = m.tools.get(name) {
+            let alt = tools.join(&entry.file);
+            if alt.is_file() && !candidates.iter().any(|(p, _)| p == &alt) {
+                candidates.push((alt, source));
             }
         }
     }
+}
 
-    if let Some(p) = command_on_path(name) {
-        if !candidates.iter().any(|(c, _)| c == &p) {
-            candidates.push((p, "path"));
+fn load_tool_manifest() -> Option<ToolManifest> {
+    if let Some(tools) = tools_dir() {
+        if let Some(m) = load_manifest(&tools) {
+            return Some(m);
+        }
+    }
+    bundled_tools_dir().and_then(|t| load_manifest(&t))
+}
+
+/// Resolve executable: `./tools/` (kit) → bundled resources → PATH.
+pub fn resolve_tool(name: &str) -> Option<ResolvedTool> {
+    let manifest = load_tool_manifest();
+    let mut candidates: Vec<(PathBuf, &'static str)> = vec![];
+
+    if let Some(tools) = tools_dir().filter(|t| t.is_dir()) {
+        push_tool_candidates(&mut candidates, &tools, "portable", name, manifest.as_ref());
+    }
+
+    if let Some(bundled) = bundled_tools_dir() {
+        push_tool_candidates(&mut candidates, &bundled, "bundled", name, manifest.as_ref());
+    }
+
+    for path in system_tool_paths(name) {
+        if path.is_file() && !candidates.iter().any(|(p, _)| p == &path) {
+            candidates.push((path, "path"));
         }
     }
 
@@ -470,12 +508,12 @@ pub fn tool_available(name: &str) -> bool {
 pub fn tool_path(name: &str) -> Result<PathBuf, String> {
     resolve_tool(name)
         .map(|t| PathBuf::from(t.path))
-        .ok_or_else(|| format!("{name} not found in ./tools/ or PATH"))
+        .ok_or_else(|| format!("{name} not found in kit ./tools/, app resources, or PATH"))
 }
 
 /// Run a resolved external tool; fails if manifest hash mismatch when hash is specified.
 pub fn command(name: &str) -> Result<Command, String> {
-    let resolved = resolve_tool(name).ok_or_else(|| format!("{name} not found in ./tools/ or PATH"))?;
+    let resolved = resolve_tool(name).ok_or_else(|| format!("{name} not found in kit ./tools/, app resources, or PATH"))?;
     if resolved.hash_verified == Some(false) {
         return Err(format!(
             "{name} SHA-256 mismatch — replace binary in ./tools/ or update manifest.json"
@@ -490,6 +528,8 @@ pub struct PortableStatus {
     pub kit_root: Option<String>,
     pub tools_dir: Option<String>,
     pub tools_dir_exists: bool,
+    pub bundled_tools_dir: Option<String>,
+    pub bundled_tools_available: bool,
     pub manifest_loaded: bool,
     pub portable_mode: bool,
     pub distribution_mode: String,
@@ -498,14 +538,21 @@ pub struct PortableStatus {
 pub fn portable_status() -> PortableStatus {
     let kit = resolve_kit_root();
     let tools = tools_dir();
+    let bundled = bundled_tools_dir();
     let tools_exists = tools.as_ref().is_some_and(|t| t.is_dir());
+    let bundled_exists = bundled.as_ref().is_some_and(|t| t.is_dir());
     let manifest_loaded = tools
         .as_ref()
-        .is_some_and(|t| t.join("manifest.json").is_file());
+        .is_some_and(|t| t.join("manifest.json").is_file())
+        || bundled
+            .as_ref()
+            .is_some_and(|t| t.join("manifest.json").is_file());
     PortableStatus {
         kit_root: kit.as_ref().map(|p| p.to_string_lossy().into_owned()),
         tools_dir: tools.as_ref().map(|p| p.to_string_lossy().into_owned()),
         tools_dir_exists: tools_exists,
+        bundled_tools_dir: bundled.as_ref().map(|p| p.to_string_lossy().into_owned()),
+        bundled_tools_available: bundled_exists,
         manifest_loaded,
         portable_mode: is_portable_mode(),
         distribution_mode: distribution_mode().into(),
@@ -559,6 +606,25 @@ pub fn same_volume(output_path: &str, source_device: Option<&str>) -> bool {
 mod tests {
     use super::*;
     use std::fs;
+
+    #[test]
+    fn resolve_bundled_resource_tool() {
+        let tmp = std::env::temp_dir().join("cl_bundled_tools_test");
+        let _ = fs::remove_dir_all(&tmp);
+        fs::create_dir_all(&tmp).unwrap();
+        fs::write(tmp.join("avml"), b"#!/bin/sh\necho avml\n").unwrap();
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            fs::set_permissions(tmp.join("avml"), fs::Permissions::from_mode(0o755)).unwrap();
+        }
+        set_bundled_tools_dir(Some(tmp.clone()));
+        set_kit_root_override(None);
+        let r = resolve_tool("avml").expect("avml");
+        assert_eq!(r.source, "bundled");
+        set_bundled_tools_dir(None);
+        let _ = fs::remove_dir_all(&tmp);
+    }
 
     #[test]
     fn resolve_bundled_tool_first() {

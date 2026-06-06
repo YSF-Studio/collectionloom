@@ -15,6 +15,11 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
         .setup(|app| {
+            if let Ok(path) = app.path().resolve("tools", tauri::path::BaseDirectory::Resource) {
+                if path.is_dir() {
+                    ysf_core::set_bundled_tools_dir(Some(path));
+                }
+            }
             let _ = ysf_core::ensure_kit_directories();
             let window = app.get_webview_window("main").unwrap();
             window.set_title("CollectionLoom — Portable Forensic Acquisition")?;

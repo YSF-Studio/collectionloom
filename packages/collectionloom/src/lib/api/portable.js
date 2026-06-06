@@ -2,7 +2,7 @@
 
 import { invoke, isTauri } from "./tauri.js";
 
-/** @typedef {{ platform: string, kitRoot?: string, toolsDir?: string, casesDir: string, defaultAcquisitionDir: string, portableMode: boolean, distributionMode: string, pathSeparator: string }} PortableLayout */
+/** @typedef {{ platform: string, kitRoot?: string, toolsDir?: string, bundledToolsDir?: string, casesDir: string, defaultAcquisitionDir: string, portableMode: boolean, distributionMode: string, pathSeparator: string }} PortableLayout */
 
 /** @returns {Promise<PortableLayout>} */
 export async function getPortableLayout() {

@@ -141,10 +141,12 @@ fn check_external_tool(id: &str, tool: &str, display: &str, required_for: &str) 
                 detail,
                 install_hint: if r.hash_verified == Some(false) {
                     Some("Replace binary in ./tools/ or update tools/manifest.json".into())
-                } else if r.source == "path" {
-                    Some("For field kits, copy binary to ./tools/ on forensic USB (zero install)".into())
-                } else {
+                } else if r.source == "bundled" {
                     None
+                } else if r.source == "portable" {
+                    Some("Portable kit ./tools/ overrides the app-bundled copy".into())
+                } else {
+                    Some("Using system PATH; rebuild with npm run download-tools to embed a copy".into())
                 },
             }
         }
@@ -154,9 +156,9 @@ fn check_external_tool(id: &str, tool: &str, display: &str, required_for: &str) 
             category: PreflightCategory::ExternalBinary,
             required_for: required_for.into(),
             available: false,
-            detail: format!("{tool} not found in ./tools/ or PATH"),
+            detail: format!("{tool} not found in kit ./tools/, app resources, or PATH"),
             install_hint: Some(format!(
-                "Place {tool} in ./tools/ beside CollectionLoom on forensic USB — see tools/README.txt"
+                "Rebuild with npm run download-tools, or place {tool} in ./tools/ for portable kits"
             )),
         },
     }
@@ -394,9 +396,13 @@ pub fn run_preflight() -> PreflightReport {
             format!(
                 "{missing_count} tool(s) missing from ./tools/ — copy binaries to forensic USB before field use."
             )
+        } else if portable.bundled_tools_available {
+            format!(
+                "{missing_count} tool(s) missing — rebuild with npm run download-tools or add to ./tools/."
+            )
         } else {
             format!(
-                "{missing_count} optional/required tool(s) missing — place in ./tools/ or see install hints."
+                "{missing_count} optional/required tool(s) missing — run npm run download-tools before build."
             )
         }
     } else {
@@ -404,7 +410,11 @@ pub fn run_preflight() -> PreflightReport {
     };
 
     if !portable.portable_mode && missing_count == 0 {
-        summary.push_str(" Tip: use ./tools/ on forensic USB for zero-install field deployment.");
+        if portable.bundled_tools_available {
+            summary.push_str(" External tools are embedded in the app bundle.");
+        } else {
+            summary.push_str(" Tip: npm run download-tools embeds RAM/mobile tools at build time.");
+        }
     }
 
     PreflightReport {

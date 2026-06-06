@@ -1,0 +1,40 @@
+{
+  "version": "1",
+  "note": "Third-party tools downloaded at build time into src-tauri/resources/tools/. Licenses belong to upstream projects.",
+  "tools": [
+    {
+      "id": "avml",
+      "release": "v0.7.0",
+      "assets": {
+        "darwin-arm64": {
+          "url": "https://github.com/microsoft/avml/releases/download/v0.7.0/avml",
+          "file": "avml"
+        },
+        "darwin-x64": {
+          "url": "https://github.com/microsoft/avml/releases/download/v0.7.0/avml",
+          "file": "avml"
+        },
+        "linux-x64": {
+          "url": "https://github.com/microsoft/avml/releases/download/v0.7.0/avml",
+          "file": "avml"
+        },
+        "win32-x64": {
+          "url": "https://github.com/microsoft/avml/releases/download/v0.7.0/avml.exe",
+          "file": "avml.exe",
+          "aliases": ["avml"]
+        }
+      }
+    },
+    {
+      "id": "winpmem",
+      "release": "4.1",
+      "assets": {
+        "win32-x64": {
+          "url": "https://github.com/Velocidex/WinPmem/releases/download/v4.1/winpmem_x64.exe",
+          "file": "winpmem_mini_x64_rc2.exe",
+          "aliases": ["winpmem", "WinPmem"]
+        }
+      }
+    }
+  ]
+}

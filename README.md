@@ -126,13 +126,17 @@ Pre-built binaries are **not published**. Build installers or a portable kit fro
 ```bash
 npm install
 
-# Same as npm run build — Tauri app + platform installers
+# Downloads avml/winpmem into src-tauri/resources/tools/ then builds
 npm run tauri:build
 
 # Or explicitly:
 npm run build:install   # installers (DMG / NSIS / deb / AppImage)
 npm run build:portable  # installers + portable zip in dist/portable/
 ```
+
+**Hybrid tooling:** Tauri ships as one static binary; RAM/WinPmem tools are downloaded at build time (`npm run download-tools`) and embedded in `src-tauri/resources/tools/`. No separate `tools/` folder needed for installed builds. USB kits can still override via `./tools/`.
+
+Skip tool download (offline dev): `SKIP_TOOL_DOWNLOAD=1 npm run tauri:build`
 
 | Output | Use case |
 |--------|----------|

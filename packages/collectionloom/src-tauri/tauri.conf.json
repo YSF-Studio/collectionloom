@@ -38,6 +38,11 @@
     "shortDescription": "Portable forensic acquisition toolkit",
     "longDescription": "ISO 27037-aligned evidence collection: disk imaging, RAM capture, write blocker, mobile triage, network capture, and chain of custody.",
     "copyright": "YSF Studio",
+    "resources": [
+      "resources/tools/README.txt",
+      "resources/tools/manifest.template.json",
+      "resources/tools/*"
+    ],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

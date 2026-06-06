@@ -7,4 +7,7 @@ build/
 *.log
 .DS_Store
 Thumbs.db
-packages/collectionloom/public/fixtures/samples/
+packages/collectionloom/src-tauri/resources/tools/*
+!packages/collectionloom/src-tauri/resources/tools/.gitkeep
+!packages/collectionloom/src-tauri/resources/tools/README.txt
+!packages/collectionloom/src-tauri/resources/tools/manifest.template.json

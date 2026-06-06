@@ -44,8 +44,8 @@ pub use preflight::{PreflightCategory, PreflightCheck, PreflightReport, run_pref
 pub use portable::{
     PortableLayout, PortableStatus, ResolvedTool, command as portable_command, default_acquisition_dir,
     ensure_kit_directories, is_portable_mode, join_acquisition_path, portable_layout, portable_status,
-    resolve_kit_root, resolve_tool, same_volume, tool_available, tool_path, tools_dir, cases_dir,
-    use_portable_storage,
+    resolve_kit_root, resolve_tool, same_volume, set_bundled_tools_dir, tool_available, tool_path, tools_dir,
+    cases_dir, use_portable_storage,
 };
 pub use hpa_dco::{HpaDcoReport, detect as detect_hpa_dco};
 pub use bad_sector::{BadSectorLog, read_resilient, DEFAULT_SECTOR_SIZE};

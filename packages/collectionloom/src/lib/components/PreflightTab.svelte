@@ -66,7 +66,7 @@ $effect(() => {
 
   {#if loading && !report}
     <MacCard title="Running checks">
-      <p class="hint">Scanning ./tools/, PATH, system libraries, and privileges…</p>
+      <p class="hint">Scanning kit ./tools/, app resources, PATH, libraries, and privileges…</p>
     </MacCard>
   {:else if report}
     <MacCard title="Portable Kit">
@@ -84,10 +84,13 @@ $effect(() => {
       </div>
       <p class="summary-text">
         {#if report.portable?.toolsDirExists}
-          Tools folder: <code>{report.portable.toolsDir}</code>
-          {#if report.portable.manifestLoaded} · manifest.json loaded{/if}
+          Kit tools: <code>{report.portable.toolsDir}</code>
+          {#if report.portable.manifestLoaded} · manifest loaded{/if}
+        {:else if report.portable?.bundledToolsAvailable}
+          Embedded tools: <code>{report.portable.bundledToolsDir}</code>
+          {#if report.portable.manifestLoaded} · manifest loaded{/if}
         {:else}
-          No <code>./tools/</code> folder — copy avml, adb, etc. beside the app on forensic USB for zero-install field use.
+          No kit <code>./tools/</code> and no embedded tools — run <code>npm run download-tools</code> before build, or copy tools beside the app for USB kits.
         {/if}
       </p>
     </MacCard>
@@ -103,7 +106,7 @@ $effect(() => {
       <p class="summary-text">{report.summary}</p>
       {#if report.missingCount > 0}
         <p class="warn-note">
-          External tools (RAM, mobile, network) must be installed separately — CollectionLoom cannot ship them due to licensing and maintenance. See install hints per row.
+          Missing tools can be embedded at build time (<code>npm run download-tools</code>) or placed in <code>./tools/</code> on forensic USB kits.
         </p>
       {/if}
     </MacCard>
