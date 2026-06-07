@@ -11,4 +11,9 @@ Priority at runtime:
   2. Bundled resources (this folder inside the app)
   3. System PATH / Homebrew
 
+Build flavors:
+  - source: build from GitHub source with downloaded official tools
+  - portable: same as source, packaged for USB/offline use
+  - commercial: same binaries, distributed outside GitHub by the publisher
+
 Skip download (offline dev): SKIP_TOOL_DOWNLOAD=1 npm run tauri:build

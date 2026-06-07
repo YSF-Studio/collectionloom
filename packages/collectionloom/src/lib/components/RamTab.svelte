@@ -4,11 +4,13 @@ import { defaultOutputPath } from "../api/portable.js";
 import GuideCard from "./GuideCard.svelte";
 import SectionHeader from "./ui/SectionHeader.svelte";
 import { ramCaptureGuide } from "../guides.js";
+import { getLocale, subscribeLocale } from "../stores/locale.js";
 let { sharedState, caseState = {}, busy, setBusy, setMsg, timeoutPromise } = $props();
 let tools = $state([]);
 let toolsLoading = $state(false);
 let selectedTool = $state("");
 let outputPath = $state("");
+let locale = $state(getLocale());
 
 $effect(() => {
   defaultOutputPath("ram_capture.lime").then((p) => {
@@ -27,13 +29,53 @@ let hashResult = $state("");
 let processList = $state([]);
 let showProcesses = $state(false);
 
+$effect(() => subscribeLocale((_, resolved) => {
+  locale = resolved;
+}));
+
+const text = {
+  en: {
+    title: "RAM Capture",
+    subtitle: "Volatile memory acquisition with optional compression and hashing",
+    tool: "Tool:",
+    output: "Output:",
+    compress: "Compress",
+    autoHash: "Auto hash after capture",
+    capture: "▶ Capture RAM",
+    detect: "Detecting tools…",
+    selectTool: "— Select tool —",
+    refresh: "Refresh",
+    noTools: "Capture is disabled until a valid RAM tool is available. Bundled tools are auto-downloaded at build time when available; source-specific tools like LiME or some macOS-only modules may still need manual staging in ./tools/.",
+    listProcesses: "List Processes",
+    runningProcesses: "Running Processes",
+    refresh: "Refresh",
+  },
+  id: {
+    title: "Tangkap RAM",
+    subtitle: "Akuisisi memori volatil dengan kompresi dan hashing opsional",
+    tool: "Alat:",
+    output: "Keluaran:",
+    compress: "Kompres",
+    autoHash: "Hash otomatis setelah akuisisi",
+    capture: "▶ Tangkap RAM",
+    detect: "Mendeteksi alat…",
+    selectTool: "— Pilih alat —",
+    refresh: "Segarkan",
+    noTools: "Akuisisi dinonaktifkan sampai ada alat RAM yang valid. Alat bundled diunduh otomatis saat build bila tersedia; alat source-specific seperti LiME atau modul macOS tertentu mungkin tetap perlu dipasang manual di ./tools/.",
+    listProcesses: "Daftar Proses",
+    runningProcesses: "Proses Berjalan",
+    refresh: "Segarkan",
+  },
+};
+function tr(key) { return text[locale]?.[key] || text.en[key] || key; }
+
 async function listTools() {
   toolsLoading = true;
   try {
     tools = await timeoutPromise(invoke("list_ram_tools"), 10000);
     if (tools.length && !selectedTool) selectedTool = tools[0];
     if (!tools.length) {
-      setMsg("WARN: No RAM capture tools found — copy avml/mrs/winpmem into ./tools/ (see Prerequisites tab)");
+      setMsg(locale === "id" ? "PERINGATAN: Tidak ada alat RAM capture — tangkap dinonaktifkan sampai alat valid tersedia (lihat tab Prasyarat)" : "WARN: No RAM capture tools found — capture is disabled until a valid tool is available (see Prerequisites tab)");
     }
   } catch (e) {
     const err = typeof e === "string" ? e : String(e);
@@ -100,28 +142,28 @@ $effect(() => { listTools(); });
 </script>
 
 <div class="tab-content">
-  <SectionHeader title="RAM Capture" subtitle="Volatile memory acquisition with optional compression and hashing" />
+  <SectionHeader title={tr("title")} subtitle={tr("subtitle")} />
   {#if ramSize}<p class="info">System RAM: {(ramSize/1e9).toFixed(1)} GB</p>{/if}
   <div class="row">
-    <label>Tool: <select bind:value={selectedTool} disabled={busy || toolsLoading}>
-      <option value="">{toolsLoading ? "Detecting tools…" : "— Select tool —"}</option>
+    <label>{tr("tool")} <select bind:value={selectedTool} disabled={busy || toolsLoading}>
+      <option value="">{toolsLoading ? tr("detect") : tr("selectTool")}</option>
       {#each tools as tool}<option value={tool}>{tool}</option>{/each}
     </select></label>
-    <button onclick={listTools} class="btn-sm" disabled={busy || toolsLoading}>{toolsLoading ? "…" : "Refresh"}</button>
+    <button onclick={listTools} class="btn-sm" disabled={busy || toolsLoading}>{toolsLoading ? "…" : tr("refresh")}</button>
   </div>
   {#if !toolsLoading && tools.length === 0}
-    <p class="empty-hint">Place platform RAM tools in <code>./tools/</code> beside the app (avml on Linux, mrs on macOS, winpmem on Windows).</p>
+    <p class="empty-hint">{tr("noTools")}</p>
   {/if}
   <div class="row">
-    <label>Output: <input type="text" bind:value={outputPath} disabled={busy} /></label>
-    <label><input type="checkbox" bind:checked={compress} disabled={busy} /> Compress</label>
+    <label>{tr("output")} <input type="text" bind:value={outputPath} disabled={busy} /></label>
+    <label><input type="checkbox" bind:checked={compress} disabled={busy} /> {tr("compress")}</label>
   </div>
   <div class="row">
-    <label><input type="checkbox" bind:checked={autoHash} disabled={busy} /> Auto hash after capture</label>
+    <label><input type="checkbox" bind:checked={autoHash} disabled={busy} /> {tr("autoHash")}</label>
   </div>
   <div class="actions">
-    <button onclick={capture} class="btn-primary" disabled={busy||!selectedTool}>▶ Capture RAM</button>
-    <button onclick={listProcesses} class="btn-sm" disabled={busy}>List Processes</button>
+    <button onclick={capture} class="btn-primary" disabled={busy||!selectedTool}>{tr("capture")}</button>
+    <button onclick={listProcesses} class="btn-sm" disabled={busy}>{tr("listProcesses")}</button>
   </div>
 
   {#if hashResult}
@@ -132,7 +174,7 @@ $effect(() => { listTools(); });
   <div class="process-section">
     <div class="process-header">
       <span>Running Processes ({processList.length})</span>
-      <button onclick={refreshProcesses} class="btn-sm">Refresh</button>
+      <button onclick={refreshProcesses} class="btn-sm">{tr("refresh")}</button>
     </div>
     <div class="process-list">
       {#each processList as proc}
@@ -148,7 +190,6 @@ $effect(() => { listTools(); });
 <style>
 .info { font-size:12px; color:var(--text-secondary); margin-bottom:10px; }
 .empty-hint { font-size:12px; color:var(--text-muted); margin:-4px 0 12px; }
-.empty-hint code { font-size:11px; }
 .row { display:flex; gap:10px; align-items:center; margin-bottom:12px; }
 select, input { background: var(--input-bg); color: var(--text); border:1px solid var(--border); border-radius:6px; padding:6px 10px; }
 .actions { display:flex; gap:8px; align-items:center; margin-bottom:12px; }

@@ -18,35 +18,35 @@
 
 /** @type {Guide} */
 export const diskImagingGuide = {
-  title: "Disk Imaging Guide",
+  title: "Panduan Disk Imaging",
   icon: "●",   // disk
   steps: [
     {
-      title: "Verify write blocker",
+      title: "Verifikasi write blocker",
       description:
-        "Use a hardware write blocker when possible (Tableau, WiebeTech, etc.) — CollectionLoom auto-detects USB blockers and shows a green badge in the titlebar. If no hardware blocker is available, select the source disk and click **Enable Software Write-Blocker**: Linux sets BLKROSET read-only; macOS force-unmounts volumes before imaging via `/dev/rdiskN`; Windows sets the disk read-only via IOCTL (Administrator required).",
+        "Gunakan hardware write blocker bila memungkinkan (mis. Tableau, WiebeTech, dan sejenisnya). CollectionLoom akan mendeteksi blocker USB dan menampilkan badge hijau di titlebar. Jika tidak ada hardware blocker, pilih source disk lalu klik **Enable Software Write-Blocker**: Linux mengaktifkan BLKROSET read-only; macOS memaksa unmount volume sebelum imaging melalui `/dev/rdiskN`; Windows mengaktifkan mode read-only lewat IOCTL (butuh Administrator).",
       warning:
-        "Software write-blocking reduces risk but is not a substitute for certified hardware on contested evidence. Never mount suspect volumes read-write before imaging.",
+        "Software write-blocking memang mengurangi risiko, tetapi tidak menggantikan hardware bersertifikasi untuk barang bukti yang diperdebatkan. Jangan pernah me-mount volume tersangka dalam mode read-write sebelum imaging.",
     },
     {
-      title: "Select source and destination",
+      title: "Pilih sumber dan tujuan",
       description:
-        "Identify the source device from the system's device list. Choose a destination path on a dedicated evidence storage volume with enough free space (source size + 10% for split/verification overhead). Format destination as NTFS or ext4, never FAT32 (4 GB file limit).",
+        "Identifikasi perangkat sumber dari daftar device. Pilih path tujuan pada volume penyimpanan bukti khusus yang punya ruang kosong cukup (ukuran source + 10% untuk overhead split/verifikasi). Format tujuan sebaiknya NTFS atau ext4, jangan FAT32 (batas file 4 GB).",
     },
     {
-      title: "Configure split and verification options",
+      title: "Atur opsi split dan verifikasi",
       description:
-        "For drives larger than 4 GB, set split size (e.g., 4096 MB) when the destination volume uses FAT32 or when you need manageable chunk files. CollectionLoom supports u64 byte counts — there is no built-in size cap. Enable verification so SHA-256 is computed during imaging and compared after write (single-part images).",
+        "Untuk drive di atas 4 GB, set split size (misalnya 4096 MB) jika volume tujuan menggunakan FAT32 atau jika kamu ingin file pecahan yang lebih mudah dikelola. CollectionLoom mendukung hitungan byte u64, jadi tidak ada batas ukuran bawaan. Aktifkan verifikasi agar SHA-256 dihitung saat imaging dan dibandingkan setelah penulisan (untuk image satu part).",
     },
     {
-      title: "Acquire the image",
+      title: "Lakukan akuisisi image",
       description:
-        "Launch acquisition. The tool reads the source device sector-by-sector and writes an E01 (EnCase) or dd / split-dd format to the destination. Monitor real-time progress including bytes copied, percentage complete, and estimated time remaining.",
+        "Mulai akuisisi. Tool akan membaca source device sektor demi sektor dan menulis format E01 (EnCase) atau dd / split-dd ke tujuan. Pantau progres real-time termasuk byte yang disalin, persen selesai, dan estimasi sisa waktu.",
     },
     {
-      title: "Verify hash and document chain of custody",
+      title: "Verifikasi hash dan dokumentasikan chain of custody",
       description:
-        "After acquisition completes, compare the computed hash (SHA-256) of the source against the output image. Log the algorithm and hash value in the chain-of-custody (CoC) form. Store the image on write-once media or a tamper-evident NAS share.",
+        "Setelah akuisisi selesai, bandingkan hash (SHA-256) yang dihitung dari source dengan image hasil. Catat algoritma dan nilai hash di formulir chain-of-custody (CoC). Simpan image pada media write-once atau share NAS yang tahan manipulasi.",
     },
   ],
   references: [
@@ -58,32 +58,32 @@ export const diskImagingGuide = {
 
 /** @type {Guide} */
 export const ramCaptureGuide = {
-  title: "RAM Capture Guide",
+  title: "Panduan RAM Capture",
   icon: "◇",   // ram
   steps: [
     {
-      title: "Check available tools",
+      title: "Periksa tool yang tersedia",
       description:
-        "Verify that a memory acquisition tool (e.g., LiME, avml, winpmem, or DumpIt) is present on the target system. For Linux, ensure LiME kernel module or avml static binary is staged. Confirm sufficient free space on the output volume (at least RAM size + 256 MB).",
+        "Pastikan tool akuisisi memori (mis. LiME, avml, winpmem, atau DumpIt) tersedia di sistem target. Untuk Linux, pastikan kernel module LiME atau binary statik avml sudah disiapkan. Konfirmasi ruang kosong pada volume output cukup (minimal ukuran RAM + 256 MB).",
       warning:
-        "Running an untrusted binary on a suspect machine may alter evidence — use a trusted, hashed acquisition utility from read-only media.",
+        "Menjalankan binary yang tidak tepercaya pada mesin tersangka dapat mengubah bukti. Gunakan utility akuisisi yang tepercaya dan sudah di-hash dari media read-only.",
     },
     {
-      title: "Close unnecessary applications",
+      title: "Tutup aplikasi yang tidak perlu",
       description:
-        "Minimize active processes on the target to reduce RAM churn during capture. Do not power off or reboot the system — volatile data is lost on shutdown. Avoid running disk-intensive operations alongside capture.",
+        "Kurangi proses aktif pada target untuk menekan perubahan RAM saat capture. Jangan mematikan atau me-reboot sistem karena data volatil akan hilang saat shutdown. Hindari operasi disk-intensive selama capture berlangsung.",
     },
     {
-      title: "Capture volatile memory",
+      title: "Ambil memori volatil",
       description:
-        "Execute the acquisition tool with appropriate parameters. For Linux with LiME: `insmod lime.ko path=/evidence/ram.lime format=lime`. For avml: `./avml /evidence/ram.avml`. For Windows: run DumpIt or winpmem and specify the output path. Wait for completion — do not interrupt.",
+        "Jalankan tool akuisisi dengan parameter yang sesuai. Untuk Linux dengan LiME: `insmod lime.ko path=/evidence/ram.lime format=lime`. Untuk avml: `./avml /evidence/ram.avml`. Untuk Windows: jalankan DumpIt atau winpmem dan tentukan output path. Tunggu sampai selesai dan jangan dihentikan.",
       warning:
-        "Some anti-virus / EDR software may flag memory acquisition tools as malicious. Pre-authorise the toolpath or temporarily pause endpoint protection if safe to do so.",
+        "Sebagian antivirus / EDR dapat menandai tool akuisisi memori sebagai berbahaya. Pre-authorise path tool atau jeda proteksi endpoint sementara jika itu aman dilakukan.",
     },
     {
-      title: "Compute and record hash",
+      title: "Hitung dan catat hash",
       description:
-        "Generate a SHA-256 hash of the resulting memory dump file immediately after capture. Record the hash alongside the acquisition timestamp, tool version, and target hostname in the CoC documentation. Store the dump on encrypted, access-controlled media.",
+        "Buat hash SHA-256 dari file memory dump segera setelah capture selesai. Catat hash bersama timestamp akuisisi, versi tool, dan hostname target di dokumentasi CoC. Simpan dump pada media terenkripsi yang aksesnya terkontrol.",
     },
   ],
   references: [
@@ -95,30 +95,30 @@ export const ramCaptureGuide = {
 
 /** @type {Guide} */
 export const mobileTriageGuide = {
-  title: "Mobile Triage Guide",
+  title: "Panduan Mobile Triage",
   icon: "☎",   // mobile
   steps: [
     {
-      title: "Isolate device from network",
+      title: "Isolasi perangkat dari jaringan",
       description:
-        "Place the device in a Faraday bag or enable Airplane Mode immediately to prevent remote wipe commands, incoming messages, or cloud sync from altering evidence. If the device is locked, do not attempt to unlock it by guessing PINs (may trigger wipe).",
+        "Masukkan perangkat ke Faraday bag atau aktifkan Airplane Mode segera untuk mencegah remote wipe, pesan masuk, atau cloud sync mengubah bukti. Jika perangkat terkunci, jangan mencoba menebak PIN karena bisa memicu wipe.",
       warning:
-        "A device left connected to cellular/Wi-Fi can be remotely wiped in seconds. Use a shielded container for transport and storage.",
+        "Perangkat yang tetap terhubung ke seluler/Wi‑Fi bisa di-wipe jarak jauh dalam hitungan detik. Gunakan wadah berpelindung untuk transport dan penyimpanan.",
     },
     {
-      title: "Enable USB debugging / developer mode",
+      title: "Aktifkan USB debugging / developer mode",
       description:
-        "On Android: boot into recovery mode or use a trusted MFD (Mobile Forensic Device) to enable ADB debugging without touching the screen. On iOS: place the device into DFU mode or use a checkpoint-compatible bootloader exploit for logical acquisition. Document every interaction.",
+        "Di Android: boot ke recovery mode atau gunakan MFD (Mobile Forensic Device) yang tepercaya untuk mengaktifkan ADB debugging tanpa menyentuh layar. Di iOS: masukkan perangkat ke DFU mode atau gunakan exploit bootloader yang kompatibel dengan checkpoint untuk logical acquisition. Dokumentasikan setiap interaksi.",
     },
     {
-      title: "Acquire logical backup",
+      title: "Ambil logical backup",
       description:
-        "Run the acquisition tool to create a logical backup of user data. For Android via ADB: `adb backup -apk -shared -all -system -f backup.ab`. For advanced extraction, use tools like AFLogical OSE or commercial suites. Collect call logs, SMS, contacts, installed apps, and media files.",
+        "Jalankan tool akuisisi untuk membuat logical backup data pengguna. Untuk Android via ADB: `adb backup -apk -shared -all -system -f backup.ab`. Untuk ekstraksi lanjutan, gunakan tool seperti AFLogical OSE atau suite komersial. Ambil call log, SMS, kontak, aplikasi terpasang, dan file media.",
     },
     {
-      title: "Hash and secure the backup",
+      title: "Hash dan amankan backup",
       description:
-        "Compute SHA-256 of all acquired files and the container file (`.ab` or `.zip`). Record the hashes in the CoC. Store on encrypted media. If the device supports file-level encryption, also capture the encryption metadata for later analysis.",
+        "Hitung SHA-256 untuk semua file yang diakuisisi dan file container (`.ab` atau `.zip`). Catat hash di CoC. Simpan pada media terenkripsi. Jika perangkat mendukung file-level encryption, tangkap juga metadata enkripsinya untuk analisis lanjutan.",
     },
   ],
   references: [
@@ -130,30 +130,30 @@ export const mobileTriageGuide = {
 
 /** @type {Guide} */
 export const cloudEvidenceGuide = {
-  title: "Cloud Evidence Guide",
+  title: "Panduan Cloud Evidence",
   icon: "☁",   // cloud
   steps: [
     {
-      title: "Generate temporary API credentials",
+      title: "Buat kredensial API sementara",
       description:
-        "Log into the cloud provider's IAM console and create a time-limited API key pair with read-only permissions. Set expiration to the minimum viable window (e.g., 2 hours). Scope the policy to only the target resources needed — never use full-admin keys.",
+        "Masuk ke console IAM penyedia cloud dan buat pasangan API key yang dibatasi waktu dengan izin read-only. Atur masa berlaku sekecil mungkin (mis. 2 jam). Batasi policy hanya ke resource target yang diperlukan — jangan pernah memakai full-admin key.",
       warning:
-        "API keys with excessive permissions or no expiration create a post-exercise risk. Always scope to least-privilege and set a revocation timer.",
+        "API key dengan izin terlalu besar atau tanpa masa berlaku akan menciptakan risiko setelah tugas selesai. Selalu gunakan least privilege dan tetapkan timer pencabutan.",
     },
     {
-      title: "Snapshot target resources",
+      title: "Snapshot resource target",
       description:
-        "Initiate snapshots of virtual machine disks (EBS volumes, Azure managed disks, GCP persistent disks) and database instances. Tag each snapshot with the case ID, timestamp, and operator name. Wait for snapshots to reach 'completed' status before proceeding.",
+        "Mulai snapshot disk virtual machine (EBS volume, Azure managed disk, GCP persistent disk) dan instance database. Tag setiap snapshot dengan case ID, timestamp, dan nama operator. Tunggu sampai status snapshot menjadi 'completed' sebelum lanjut.",
     },
     {
-      title: "Download configuration and logs",
+      title: "Unduh konfigurasi dan log",
       description:
-        "Use the cloud provider's CLI or API to export configuration data: IAM policies, network ACLs, VPC flow logs, CloudTrail / Activity Log events, and instance metadata. Save as structured data (JSON/CSV) with timestamps. Capture at least 90 days of logs when available.",
+        "Gunakan CLI atau API penyedia cloud untuk mengekspor data konfigurasi: policy IAM, network ACL, VPC flow logs, event CloudTrail / Activity Log, dan metadata instance. Simpan sebagai data terstruktur (JSON/CSV) dengan timestamp. Ambil minimal 90 hari log bila tersedia.",
     },
     {
-      title: "Revoke temporary credentials",
+      title: "Cabut kredensial sementara",
       description:
-        "Immediately revoke the temporary API keys after all data has been collected. Verify the keys are disabled in the IAM console. Log the revocation action in the CoC form with the key ID and revocation timestamp.",
+        "Segera cabut temporary API key setelah semua data dikumpulkan. Verifikasi bahwa key sudah nonaktif di IAM console. Catat aksi pencabutan di CoC dengan key ID dan timestamp pencabutan.",
     },
   ],
   references: [
@@ -165,30 +165,30 @@ export const cloudEvidenceGuide = {
 
 /** @type {Guide} */
 export const networkCaptureGuide = {
-  title: "Network Capture Guide",
+  title: "Panduan Network Capture",
   icon: "⊙",   // network
   steps: [
     {
-      title: "Configure SPAN / port mirroring",
+      title: "Atur SPAN / port mirroring",
       description:
-        "If capturing passively, configure a SPAN or port mirror on the managed switch to duplicate traffic from the target VLAN/port to the capture interface. Ensure the capture NIC is in promiscuous mode. For inline capture (honeypot), position the capture device between the target and the gateway.",
+        "Jika capture pasif, atur SPAN atau port mirror pada managed switch untuk menduplikasi traffic dari VLAN/port target ke interface capture. Pastikan NIC capture berada dalam promiscuous mode. Untuk inline capture (honeypot), posisikan device capture di antara target dan gateway.",
       warning:
-        "A poorly provisioned SPAN port can drop packets under high load. Ensure the switch CPU and capture storage can handle the expected bandwidth. Test with a known traffic pattern before beginning.",
+        "SPAN port yang tidak diprovisi dengan baik bisa menjatuhkan paket saat beban tinggi. Pastikan CPU switch dan storage capture mampu menahan bandwidth yang diperkirakan. Uji dengan pola traffic yang sudah dikenal sebelum mulai.",
     },
     {
-      title: "Set capture filter (BPF)",
+      title: "Set filter capture (BPF)",
       description:
-        "Define a Berkeley Packet Filter (BPF) to limit captured traffic to relevant protocols — e.g., `tcp` or `udp port 53` or `host 10.0.0.1`. This reduces noise and storage requirements. Use a capture length (snaplen) of at least 65535 bytes to avoid truncating packets.",
+        "Definisikan Berkeley Packet Filter (BPF) untuk membatasi traffic yang ditangkap ke protokol relevan — misalnya `tcp`, `udp port 53`, atau `host 10.0.0.1`. Ini mengurangi noise dan kebutuhan storage. Gunakan capture length (snaplen) minimal 65535 byte agar paket tidak terpotong.",
     },
     {
-      title: "Begin packet capture",
+      title: "Mulai packet capture",
       description:
-        "Launch tcpdump, tshark, or Wireshark with the configured filter and output file. For tcpdump: `tcpdump -i eth0 -s 65535 -w evidence.pcap -C 1024 -W 10 'tcp port 80 or tcp port 443'`. The `-C` and `-W` flags rotate files every 1024 MB, keeping the last 10.",
+        "Jalankan tcpdump, tshark, atau Wireshark dengan filter dan output file yang sudah diatur. Contoh tcpdump: `tcpdump -i eth0 -s 65535 -w evidence.pcap -C 1024 -W 10 'tcp port 80 or tcp port 443'`. Flag `-C` dan `-W` memutar file setiap 1024 MB dan menyimpan 10 file terakhir.",
     },
     {
-      title: "Verify and hash capture files",
+      title: "Verifikasi dan hash file capture",
       description:
-        "After capture completes, validate the pcap files by opening them in Wireshark or using `capinfos evidence.pcap`. Generate SHA-256 hashes for each pcap file and record alongside start/end timestamps and total packet count in the CoC.",
+        "Setelah capture selesai, validasi file pcap dengan membukanya di Wireshark atau memakai `capinfos evidence.pcap`. Buat SHA-256 untuk setiap file pcap dan catat bersama timestamp mulai/selesai serta total packet count di CoC.",
     },
   ],
   references: [
@@ -200,25 +200,25 @@ export const networkCaptureGuide = {
 
 /** @type {Guide} */
 export const writeBlockerGuide = {
-  title: "Write Blocker Guide",
+  title: "Panduan Write Blocker",
   icon: "⚷",   // password/encrypt
   steps: [
     {
-      title: "Inspect the write blocker hardware",
+      title: "Periksa hardware write blocker",
       description:
-        "Visually inspect the write blocker device for physical damage. Verify the correct interface (SATA, IDE, USB Bridge, NVMe) matches the source drive. Ensure the device's firmware is up-to-date and documented. Connect the write blocker to the acquisition workstation via USB or eSATA.",
+        "Periksa secara visual perangkat write blocker untuk memastikan tidak ada kerusakan fisik. Pastikan interface yang benar (SATA, IDE, USB Bridge, NVMe) cocok dengan source drive. Pastikan firmware perangkat terbaru dan terdokumentasi. Hubungkan write blocker ke workstation akuisisi via USB atau eSATA.",
       warning:
-        "Cheap or counterfeit write blockers may not enforce read-only at the hardware level. Use only devices listed on NIST's approved tools list or with a published hardware design.",
+        "Write blocker murah atau palsu bisa saja tidak benar-benar menegakkan read-only di level hardware. Gunakan hanya perangkat yang tercantum pada daftar tools yang disetujui NIST atau yang desain hardware-nya dipublikasikan.",
     },
     {
-      title: "Connect and enable the device",
+      title: "Hubungkan dan aktifkan perangkat",
       description:
-        "Connect the source drive to the write blocker, then power on the blocker before connecting to the workstation. Confirm the LED indicator shows 'Protected' / 'Read-Only'. CollectionLoom auto-detects Tableau/WiebeTech USB blockers and shows a green badge in the titlebar. Without hardware: click **Enable Software Write-Blocker** — Linux: BLKROSET (`/sys/block/<dev>/ro` = 1); macOS: `diskutil unmountDisk force` then image via `/dev/rdiskN`; Windows: IOCTL read-only (run as Administrator).",
+        "Hubungkan source drive ke write blocker, lalu nyalakan blocker sebelum menyambungkannya ke workstation. Pastikan indikator LED menunjukkan 'Protected' / 'Read-Only'. CollectionLoom otomatis mendeteksi blocker USB Tableau/WiebeTech dan menampilkan badge hijau di titlebar. Jika tanpa hardware: klik **Enable Software Write-Blocker** — Linux: BLKROSET (`/sys/block/<dev>/ro` = 1); macOS: `diskutil unmountDisk force` lalu imaging via `/dev/rdiskN`; Windows: IOCTL read-only (jalankan sebagai Administrator).",
     },
     {
-      title: "Verify read-only state before imaging",
+      title: "Verifikasi status read-only sebelum imaging",
       description:
-        "Attempt to write a test marker to the device: `dd if=/dev/zero of=/dev/sdX bs=512 count=1` should fail with 'Read-only file system' or 'Permission denied'. If the write succeeds, abort immediately and replace the blocker. Never image a drive connected through a failed blocker.",
+        "Coba tulis marker uji ke perangkat: `dd if=/dev/zero of=/dev/sdX bs=512 count=1` seharusnya gagal dengan pesan 'Read-only file system' atau 'Permission denied'. Jika penulisan berhasil, segera batalkan dan ganti blocker. Jangan pernah imaging drive yang tersambung melalui blocker yang gagal.",
     },
   ],
   references: [
@@ -230,35 +230,35 @@ export const writeBlockerGuide = {
 
 /** @type {Guide} */
 export const acquireAllGuide = {
-  title: "Acquire All Guide",
+  title: "Panduan Acquire All",
   icon: "◉",
   steps: [
     {
-      title: "Prepare evidence storage",
+      title: "Siapkan penyimpanan bukti",
       description:
-        "Choose an output folder on a dedicated evidence volume with free space at least equal to the source drive size plus 10% overhead. Use NTFS, APFS, or ext4 — avoid FAT32 for images larger than 4 GB unless you enable split (e.g., 4096 MB). CollectionLoom streams sector-by-sector with no application-level size limit.",
+        "Pilih folder output pada volume bukti khusus dengan ruang kosong minimal sebesar ukuran source drive ditambah overhead 10%. Gunakan NTFS, APFS, atau ext4 — hindari FAT32 untuk image di atas 4 GB kecuali split diaktifkan (mis. 4096 MB). CollectionLoom melakukan streaming sektor demi sektor tanpa batas ukuran di level aplikasi.",
     },
     {
-      title: "Detect and select modules",
+      title: "Deteksi dan pilih modul",
       description:
-        "Click **Detect Sources** to refresh disk, RAM tool, network interface, and mobile source lists (not the output folder). Enable only the modules you need (Disk, RAM, Network, Mobile). Each module runs in order; failures in one module do not stop the rest.",
+        "Klik **Detect Sources** untuk menyegarkan daftar disk, tool RAM, interface network, dan sumber mobile (bukan folder output). Aktifkan hanya modul yang dibutuhkan (Disk, RAM, Network, Mobile). Setiap modul berjalan berurutan; kegagalan satu modul tidak menghentikan modul lain.",
     },
     {
-      title: "Enable write protection before disk imaging",
+      title: "Aktifkan write protection sebelum disk imaging",
       description:
-        "When Disk is enabled, select the source device. CollectionLoom checks hardware blockers automatically (green titlebar badge). If inactive, click **Enable Software Write-Blocker** before starting — Linux BLKROSET, macOS unmount + raw disk path, Windows read-only IOCTL. Acquire All enables software blocking automatically when disk imaging starts if protection is not yet active.",
+        "Saat modul Disk aktif, pilih source device. CollectionLoom memeriksa hardware blocker secara otomatis (badge hijau di titlebar). Jika tidak aktif, klik **Enable Software Write-Blocker** sebelum mulai — Linux BLKROSET, macOS unmount + raw disk path, Windows read-only IOCTL. Acquire All akan mengaktifkan software blocking otomatis saat disk imaging dimulai bila proteksi belum aktif.",
       warning:
-        "Do not start disk acquisition on a mounted read-write volume. Software blocking on Windows requires Administrator privileges.",
+        "Jangan mulai disk acquisition pada volume yang ter-mount read-write. Software blocking di Windows membutuhkan hak Administrator.",
     },
     {
-      title: "Configure split for large drives",
+      title: "Atur split untuk drive besar",
       description:
-        "For drives over 4 GB (or multi-terabyte sources), set **Split (MB)** to 4096 or higher so each segment stays within filesystem limits and is easier to copy. Leave at 0 for a single contiguous image when the destination supports large files. Progress shows human-readable capacity (TB/GB) during imaging.",
+        "Untuk drive di atas 4 GB (atau source multi-terabyte), set **Split (MB)** ke 4096 atau lebih tinggi agar tiap segmen tetap dalam batas filesystem dan lebih mudah disalin. Biarkan 0 untuk image kontigu tunggal jika tujuan mendukung file besar. Progres akan menampilkan kapasitas yang mudah dibaca (TB/GB) saat imaging.",
     },
     {
-      title: "Run batch acquisition and verify",
+      title: "Jalankan akuisisi batch dan verifikasi",
       description:
-        "Click **Start Acquire All**. Modules run in order of volatility (RFC 3227 / NIST SP 800-86): **Network → RAM → Mobile → Disk → Cloud**. Volatile sources are captured first; disk imaging runs last when enabled. Each volatile output is SHA-256 hashed with dual-read verification. After completion, record hashes in the Chain of Custody tab and export the case bundle when ready.",
+        "Klik **Start Acquire All**. Modul berjalan mengikuti urutan volatilitas (RFC 3227 / NIST SP 800-86): **Network → RAM → Mobile → Disk → Cloud**. Source volatil diambil lebih dulu; disk imaging dijalankan terakhir bila diaktifkan. Setiap output volatil di-hash SHA-256 dengan verifikasi dual-read. Setelah selesai, catat hash di tab Chain of Custody dan ekspor case bundle saat siap.",
     },
   ],
   references: [
@@ -270,28 +270,28 @@ export const acquireAllGuide = {
 
 /** @type {Guide} */
 export const snapshotGuide = {
-  title: "Snapshot Guide",
+  title: "Panduan Snapshot",
   icon: "◈",   // snapshot
   steps: [
     {
-      title: "Take baseline snapshot of clean system",
+      title: "Ambil baseline snapshot sistem bersih",
       description:
-        "Before executing any potentially volatile tool, capture a baseline of the running system: list running processes (`ps aux`), active network connections (`ss -tulpn`), loaded kernel modules (`lsmod`), and open file handles (`lsof`). Save outputs to a dated directory under the case evidence folder.",
+        "Sebelum menjalankan tool yang berpotensi volatil, tangkap baseline sistem yang sedang berjalan: daftar proses aktif (`ps aux`), koneksi network aktif (`ss -tulpn`), kernel module yang ter-load (`lsmod`), dan file handle terbuka (`lsof`). Simpan output ke direktori bertanggal di bawah folder bukti case.",
     },
     {
-      title: "Execute target action or tool",
+      title: "Jalankan aksi atau tool target",
       description:
-        "Run the forensic tool or the application under test. Note the exact command, start time (UTC), and any parameters used. If the tool modifies system state (loads a kernel module, writes a log), record that as a side effect.",
+        "Jalankan tool forensik atau aplikasi yang sedang diuji. Catat command yang dipakai, start time (UTC), dan parameter apa pun yang digunakan. Jika tool mengubah state sistem (memuat kernel module, menulis log), catat sebagai efek samping.",
     },
     {
-      title: "Take post-execution snapshot",
+      title: "Ambil snapshot setelah eksekusi",
       description:
-        "Immediately after the tool completes, re-run the same information-gathering commands from step 1. Capture all outputs fresh — do not reuse the baseline files. Record the end time (UTC).",
+        "Segera setelah tool selesai, jalankan ulang perintah pengumpulan informasi yang sama seperti pada langkah 1. Ambil semua output baru — jangan pakai ulang file baseline. Catat end time (UTC).",
     },
     {
-      title: "Analyze the delta",
+      title: "Analisis perbedaannya",
       description:
-        "Diff the baseline and post-execution snapshots: compare process lists, network connections, loaded modules, and file handles. Identify new or terminated processes, opened ports, loaded kernel modules, and any file-system writes. Document all changes in the case report.",
+        "Bandingkan baseline dan snapshot setelah eksekusi: proses, koneksi network, module yang ter-load, dan file handle. Identifikasi proses baru atau yang berhenti, port yang terbuka, kernel module yang ter-load, dan penulisan ke filesystem. Dokumentasikan semua perubahan di laporan case.",
     },
   ],
   references: [
@@ -303,30 +303,30 @@ export const snapshotGuide = {
 
 /** @type {Guide} */
 export const verificationGuide = {
-  title: "Evidence Verification Guide",
+  title: "Panduan Verifikasi Bukti",
   icon: "✓",   // verify
   steps: [
     {
-      title: "Select verification algorithm",
+      title: "Pilih algoritma verifikasi",
       description:
-        "Choose a cryptographic hash algorithm for integrity verification. SHA-256 is the recommended minimum (NIST SP 800-131A). Avoid MD5 and SHA-1 for new cases unless required for legacy interoperability. The same algorithm must be used for both source and image hashing.",
+        "Pilih algoritma hash kriptografis untuk verifikasi integritas. SHA-256 adalah minimum yang direkomendasikan (NIST SP 800-131A). Hindari MD5 dan SHA-1 untuk kasus baru kecuali benar-benar diperlukan untuk interoperabilitas legacy. Algoritma yang sama harus dipakai untuk hash source dan image.",
     },
     {
-      title: "Provide the expected hash value",
+      title: "Masukkan nilai hash yang diharapkan",
       description:
-        "If an expected hash was recorded during acquisition (e.g., on the CoC form or in a signed hashset file), enter it in the 'Expected Hash' field. This value is compared against the computed hash of the acquired image to confirm integrity.",
+        "Jika expected hash sudah dicatat saat akuisisi (mis. di formulir CoC atau file hashset bertanda tangan), masukkan ke field 'Expected Hash'. Nilai ini akan dibandingkan dengan hash image hasil akuisisi untuk memastikan integritas.",
     },
     {
-      title: "Compute hash of evidence file",
+      title: "Hitung hash file bukti",
       description:
-        "Select the evidence file or device and run the verification. The tool computes the hash of the selected item and compares it against the expected value. A match confirms integrity; a mismatch indicates tampering, corruption, or a copy error and invalidates the evidence.",
+        "Pilih file bukti atau device lalu jalankan verifikasi. Tool akan menghitung hash item yang dipilih dan membandingkannya dengan nilai yang diharapkan. Jika cocok, integritas terkonfirmasi; jika tidak cocok, itu menunjukkan manipulasi, korupsi, atau kesalahan penyalinan dan bukti menjadi tidak valid.",
       warning:
-        "A hash mismatch does NOT automatically mean intentional tampering — it can also result from incomplete copies, disk errors, or bit-rot on storage media. Investigate the cause before concluding evidence integrity is compromised.",
+        "Hash mismatch TIDAK otomatis berarti manipulasi sengaja — bisa juga disebabkan salinan yang tidak lengkap, error disk, atau bit-rot pada media penyimpanan. Selidiki penyebabnya sebelum menyimpulkan integritas bukti terganggu.",
     },
     {
-      title: "Document verification result",
+      title: "Dokumentasikan hasil verifikasi",
       description:
-        "Record the verification result (passed/failed), computed hash, expected hash, algorithm, timestamp, and operator name in the CoC. A passed verification may also be printed and signed for physical chain-of-custody documentation.",
+        "Catat hasil verifikasi (passed/failed), hash yang dihitung, expected hash, algoritma, timestamp, dan nama operator di CoC. Hasil yang lulus juga bisa dicetak dan ditandatangani untuk dokumentasi chain-of-custody fisik.",
     },
   ],
   references: [
@@ -338,25 +338,25 @@ export const verificationGuide = {
 
 /** @type {Guide} */
 export const encryptionGuide = {
-  title: "Encryption Assessment Guide",
+  title: "Panduan Asesmen Enkripsi",
   icon: "⚷",   // encryption
   steps: [
     {
-      title: "Scan target for encrypted volumes / containers",
+      title: "Pindai volume/container terenkripsi pada target",
       description:
-        "Use the detection tool to scan the target system for encrypted volumes, containers, and files. The tool checks for common encryption markers: TrueCrypt/VeraCrypt headers, LUKS partitions, BitLocker volumes, FileVault containers, and encrypted ZIP archives. Review the scan results report.",
+        "Gunakan tool deteksi untuk memindai sistem target terhadap volume, container, dan file terenkripsi. Tool akan memeriksa penanda enkripsi umum: header TrueCrypt/VeraCrypt, partisi LUKS, volume BitLocker, container FileVault, dan ZIP terenkripsi. Tinjau laporan hasil scan.",
     },
     {
-      title: "Review findings and identify encryption type",
+      title: "Tinjau temuan dan identifikasi jenis enkripsi",
       description:
-        "For each detected encryption container, note the encryption type, algorithm (AES-256, Twofish, Serpent, etc.), and whether key material (recovery keys, key files) is locally cached. For BitLocker in AD-bound environments, check if the recovery key is escrowed in Active Directory.",
+        "Untuk setiap container enkripsi yang terdeteksi, catat jenis enkripsi, algoritma (AES-256, Twofish, Serpent, dll.), dan apakah material kunci (recovery key, key file) tersimpan lokal. Untuk BitLocker di lingkungan yang terhubung ke AD, cek apakah recovery key disimpan di Active Directory.",
     },
     {
-      title: "Act on recommendations",
+      title: "Tindak lanjuti rekomendasi",
       description:
-        "Based on the scan, take recommended actions: (a) if a recovery key is available, decrypt the volume and acquire the plaintext; (b) if the volume is unlocked by a logged-in user, perform live acquisition before shutdown; (c) if no key is obtainable, document the encryption as an obstacle and seal the device for forensic imaging with a note of encryption status.",
+        "Berdasarkan scan, lakukan aksi yang direkomendasikan: (a) jika recovery key tersedia, decrypt volume dan ambil plaintext; (b) jika volume sedang terbuka oleh user yang login, lakukan live acquisition sebelum shutdown; (c) jika tidak ada kunci yang bisa didapat, dokumentasikan enkripsi sebagai hambatan dan segel perangkat untuk imaging forensik dengan catatan status enkripsi.",
       warning:
-        "Never attempt brute-force or dictionary attacks on encrypted volumes unless explicitly authorised by the investigating authority. Doing so may alter the volume metadata and destroy evidence of decryption attempts.",
+        "Jangan pernah mencoba brute-force atau dictionary attack pada volume terenkripsi kecuali secara eksplisit diizinkan oleh otoritas penyidik. Tindakan itu dapat mengubah metadata volume dan merusak bukti percobaan dekripsi.",
     },
   ],
   references: [

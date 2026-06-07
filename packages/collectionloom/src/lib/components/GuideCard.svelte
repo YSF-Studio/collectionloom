@@ -10,9 +10,27 @@
    *   references  (string[], optional)
    *                              — Citation / resource links
    */
+  import { getResolvedLocale, subscribeLocale } from "../stores/locale.js";
+
+  const strings = {
+    en: { note: "Note:", refs: "References" },
+    id: { note: "Catatan:", refs: "Referensi" },
+  };
+
   let { title = "", icon = "", steps = [], references = [] } = $props();
 
   let expanded = $state(false);
+  let locale = $state(getResolvedLocale());
+
+  const unsubscribe = subscribeLocale((_, resolved) => {
+    locale = resolved;
+  });
+
+  $effect(() => () => unsubscribe());
+
+  function t(key) {
+    return strings[locale]?.[key] ?? strings.en[key] ?? key;
+  }
 
   function toggle() {
     expanded = !expanded;
@@ -38,7 +56,7 @@
               <p class="step-desc">{step.description}</p>
               {#if step.warning}
                 <div class="step-warning">
-                  <span class="warn-icon">Note:</span>
+                  <span class="warn-icon">{t("note")}</span>
                   <span>{step.warning}</span>
                 </div>
               {/if}
@@ -50,7 +68,7 @@
       <!-- References section -->
       {#if references.length > 0}
         <div class="references">
-          <div class="ref-header">References</div>
+          <div class="ref-header">{t("refs")}</div>
           <ul class="ref-list">
             {#each references as ref}
               <li class="ref-item">{ref}</li>

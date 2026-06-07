@@ -4,12 +4,57 @@ import { listCaseSummaries } from "../api/case.js";
 import MacCard from "./ui/MacCard.svelte";
 import SectionHeader from "./ui/SectionHeader.svelte";
 import PillBadge from "./ui/PillBadge.svelte";
+import { getResolvedLocale, subscribeLocale } from "../stores/locale.js";
 import { err, warn } from "../messages.js";
 
 let { busy, setBusy, setMsg, timeoutPromise } = $props();
 
 let summaries = $state([]);
 let loading = $state(false);
+let locale = $state(getResolvedLocale());
+
+const text = {
+  en: {
+    title: "Case Dashboard",
+    subtitle: "Overview of all investigations in ~/CollectionLoom/cases/",
+    loading: "Loading…",
+    refresh: "Refresh",
+    loadingCases: "Loading cases",
+    fetching: "Fetching case summaries…",
+    noCases: "No cases yet",
+    emptyHint: "Create a case from System Snapshot or Chain of Custody to get started.",
+    goToCoC: "Go to Chain of Custody",
+    snapshots: "Snapshots",
+    exports: "Exports",
+    diffs: "Diffs",
+    operator: "Operator",
+    caseFolder: "Case folder",
+  },
+  id: {
+    title: "Dasbor Kasus",
+    subtitle: "Ringkasan semua investigasi di ~/CollectionLoom/cases/",
+    loading: "Memuat…",
+    refresh: "Muat Ulang",
+    loadingCases: "Memuat kasus",
+    fetching: "Mengambil ringkasan kasus…",
+    noCases: "Belum ada kasus",
+    emptyHint: "Buat kasus dari System Snapshot atau Chain of Custody untuk memulai.",
+    goToCoC: "Ke Chain of Custody",
+    snapshots: "Snapshot",
+    exports: "Ekspor",
+    diffs: "Diff",
+    operator: "Operator",
+    caseFolder: "Folder kasus",
+  },
+};
+
+const t = (key) => text[locale]?.[key] ?? text.en[key] ?? key;
+
+const unsubscribe = subscribeLocale((_, resolved) => {
+  locale = resolved;
+});
+
+$effect(() => () => unsubscribe());
 
 async function load() {
   loading = true;
@@ -42,27 +87,27 @@ function statusVariant(status) {
 
 <div class="tab-content dashboard">
   <SectionHeader
-    title="Case Dashboard"
-    subtitle="Overview of all investigations in ~/CollectionLoom/cases/"
+    title={t("title")}
+    subtitle={t("subtitle")}
   />
 
   <div class="toolbar">
     <button class="btn-sm" onclick={load} disabled={busy || loading}>
       {#if loading}<span class="spinner">↻</span>{/if}
-      {loading ? "Loading…" : "Refresh"}
+      {loading ? t("loading") : t("refresh")}
     </button>
   </div>
 
   {#if loading && !summaries.length}
-    <MacCard title="Loading cases">
-      <p class="hint">Fetching case summaries…</p>
+    <MacCard title={t("loadingCases")}>
+      <p class="hint">{t("fetching")}</p>
     </MacCard>
   {:else if !summaries.length}
     <div class="empty-state">
       <span class="icon">📁</span>
-      <p>No cases yet</p>
-      <p class="empty-hint">Create a case from System Snapshot or Chain of Custody to get started.</p>
-      <button class="btn-sm primary" onclick={() => window.__goTo?.("coc")}>Go to Chain of Custody</button>
+      <p>{t("noCases")}</p>
+      <p class="empty-hint">{t("emptyHint")}</p>
+      <button class="btn-sm primary" onclick={() => window.__goTo?.("coc")}>{t("goToCoC")}</button>
     </div>
   {:else}
     {#each summaries as row}
@@ -73,13 +118,13 @@ function statusVariant(status) {
           <span class="date">{row.case.created_at?.slice(0, 10)}</span>
         </div>
         <div class="stats">
-          <div><strong>{row.snapshot_count}</strong><span>Snapshots</span></div>
-          <div><strong>{row.export_count}</strong><span>Exports</span></div>
-          <div><strong>{row.diff_count}</strong><span>Diffs</span></div>
+          <div><strong>{row.snapshot_count}</strong><span>{t("snapshots")}</span></div>
+          <div><strong>{row.export_count}</strong><span>{t("exports")}</span></div>
+          <div><strong>{row.diff_count}</strong><span>{t("diffs")}</span></div>
         </div>
-        <p class="operator">Operator: {row.case.operator?.name || "—"}</p>
+        <p class="operator">{t("operator")}: {row.case.operator?.name || "—"}</p>
         <div class="actions">
-          <button class="btn-sm" onclick={() => openCaseFolder(row.case_dir)}>Open Folder</button>
+          <button class="btn-sm" onclick={() => openCaseFolder(row.case_dir)}>{t("caseFolder")}</button>
         </div>
       </MacCard>
     {/each}

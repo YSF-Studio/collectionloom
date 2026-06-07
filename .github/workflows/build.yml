@@ -106,6 +106,12 @@ jobs:
       - name: Install npm deps
         run: npm ci
 
+      - name: Download bundled tools
+        working-directory: ${{ needs.detect.outputs.app_dir }}
+        run: npm run download-tools
+        env:
+          COLLECTIONLOOM_BUILD_FLAVOR: source
+
       - name: Build Frontend
         working-directory: ${{ needs.detect.outputs.app_dir }}
         run: npm run build
@@ -165,6 +171,12 @@ jobs:
       - name: Install npm deps
         run: npm ci
 
+      - name: Download bundled tools
+        working-directory: ${{ needs.detect.outputs.app_dir }}
+        run: npm run download-tools
+        env:
+          COLLECTIONLOOM_BUILD_FLAVOR: source
+
       - name: Install Playwright Chromium
         run: npx playwright install chromium --with-deps
 
@@ -204,6 +216,12 @@ jobs:
 
       - name: Install npm deps
         run: npm ci
+
+      - name: Download bundled tools
+        working-directory: ${{ needs.detect.outputs.app_dir }}
+        run: npm run download-tools
+        env:
+          COLLECTIONLOOM_BUILD_FLAVOR: source
 
       - name: Install tauri-driver
         run: cargo install tauri-driver --locked --force

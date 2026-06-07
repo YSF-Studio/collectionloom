@@ -7,6 +7,7 @@ let device = $state("");
 let status = $state("Unknown");
 let enabled = $state(false);
 let blockerMethod = $state("");
+let allowAnytime = $state(true);
 
 // Detect platform and method
 let platform = $state("");
@@ -22,6 +23,11 @@ $effect(() => {
 });
 
 let blockerNotes = $state("");
+
+$effect(() => {
+  const stored = localStorage.getItem("collectionloom.wbAlwaysAvailable");
+  allowAnytime = stored == null ? true : stored === "true";
+});
 
 async function checkBlockerStatus() {
   try {
@@ -89,6 +95,20 @@ async function disable() {
     <span class="method-label">Method:</span>
     <span class="method-value">{blockerMethod}</span>
   </div>
+  <div class="setting-row">
+    <label class="setting-toggle">
+      <input
+        type="checkbox"
+        checked={allowAnytime}
+        onchange={(event) => {
+          allowAnytime = event.currentTarget.checked;
+          localStorage.setItem("collectionloom.wbAlwaysAvailable", String(allowAnytime));
+        }}
+      />
+      <span>Allow software write-blocker anytime after a source is detected</span>
+    </label>
+    <p class="note compact">This keeps the software blocker available without requiring a separate setup step. Disable only when you intentionally need write access.</p>
+  </div>
   <div class="actions">
     <button onclick={enable} class="btn-primary" disabled={busy||!device}>Enable Software Write-Blocker</button>
     <button onclick={disable} class="btn-danger" disabled={busy||!enabled}>Disable</button>
@@ -113,10 +133,14 @@ input { background: var(--input-bg); color: var(--text); border: 1px solid var(-
 .method-value { color: var(--text-secondary); font-family: var(--mono); }
 .method-sep { color: var(--border); }
 .actions { display: flex; gap: 10px; margin: 16px 0; }
+.setting-row { display: flex; flex-direction: column; gap: 6px; margin: 10px 0 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--panel-bg); }
+.setting-toggle { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; color: var(--text); line-height: 1.4; }
+.setting-toggle input { margin-top: 2px; }
 .btn-primary, .btn-danger { padding: 10px 20px; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
 .btn-primary { background: var(--primary); }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 .btn-danger { background: var(--danger); }
 .btn-sm { padding: 8px 14px; background: var(--btn-secondary-bg); color: var(--btn-secondary-text); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 12px; }
 .note { font-size: 11px; color: var(--text-secondary); margin-top: 12px; line-height: 1.4; }
+.note.compact { margin-top: 0; }
 </style>

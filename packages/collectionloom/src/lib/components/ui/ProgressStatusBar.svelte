@@ -1,4 +1,6 @@
 <script>
+  import { getResolvedLocale, subscribeLocale } from "../../stores/locale.js";
+
   let {
     active = false,
     percent = 0,
@@ -7,6 +9,21 @@
     wbActive = false,
     busy = false,
   } = $props();
+
+  let locale = $state(getResolvedLocale());
+
+  const text = {
+    en: { processing: "Processing…", offline: "Offline", name: "CollectionLoom — Forensic Acquisition Toolkit" },
+    id: { processing: "Memproses…", offline: "Offline", name: "CollectionLoom — Toolkit Akuisisi Forensik" },
+  };
+
+  const t = (key) => text[locale]?.[key] ?? text.en[key] ?? key;
+
+  const unsubscribe = subscribeLocale((_, resolved) => {
+    locale = resolved;
+  });
+
+  $effect(() => () => unsubscribe());
 </script>
 
 <div class="statusbar">
@@ -16,13 +33,13 @@
       <span class="status-text">{percent.toFixed(0)}% • {label}{#if eta} — ETA {eta}{/if}</span>
       <div class="mini-bar"><div class="mini-fill" style="width:{percent}%"></div></div>
     {:else if busy}
-      <span class="status-text">Processing…</span>
+      <span class="status-text">{t("processing")}</span>
     {:else}
-      <span class="status-text">CollectionLoom — Forensic Acquisition Toolkit</span>
+      <span class="status-text">{t("name")}</span>
     {/if}
   </div>
   <div class="sb-right">
-    <span class="offline-badge">Offline</span>
+    <span class="offline-badge">{t("offline")}</span>
   </div>
 </div>
 

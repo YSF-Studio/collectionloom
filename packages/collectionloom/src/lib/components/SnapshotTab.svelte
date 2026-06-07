@@ -5,17 +5,12 @@ import MacCard from "./ui/MacCard.svelte";
 import SectionHeader from "./ui/SectionHeader.svelte";
 import PillBadge from "./ui/PillBadge.svelte";
 import { snapshotGuide } from "../guides.js";
+import { getResolvedLocale, subscribeLocale } from "../stores/locale.js";
 import { createCase, listCases } from "../api/case.js";
 import { startSnapshot, getSnapshotProgress, listSnapshots } from "../api/snapshot.js";
 import { compareSnapshots } from "../api/compare.js";
 
 let { busy, setBusy, setMsg, timeoutPromise } = $props();
-
-const profiles = [
-  { id: "triage_5m", label: "Triage 5m", desc: "System, process, network, autoruns, users — ~5 min" },
-  { id: "ir_30m", label: "IR 30m", desc: "Extended capture with log excerpts" },
-  { id: "deep_capture", label: "Deep Capture", desc: "Full collection with extended timeouts" },
-];
 
 let cases = $state([]);
 let selectedCaseId = $state("");
@@ -30,6 +25,78 @@ let compareA = $state("");
 let compareB = $state("");
 let compareResult = $state(null);
 let pollId = $state(null);
+let locale = $state(getResolvedLocale());
+
+const strings = {
+  en: {
+    title: "System Snapshot",
+    subtitle: "Modular collector — capture and compare system state",
+    case: "Case",
+    selectCase: "— Select case —",
+    newCase: "New Case",
+    caseTitle: "Case title",
+    create: "Create",
+    captureProfile: "Capture Profile",
+    capturing: "Capturing…",
+    start: "Start Snapshot",
+    collectorResults: "Collector Results",
+    compareSnapshots: "Compare Snapshots",
+    baseline: "Snapshot A (baseline)",
+    current: "Snapshot B (current)",
+    runCompare: "Run Compare",
+    newCaseReq: "Case title required",
+    selectCaseFirst: "Select or create a case first",
+    selectTwo: "Select two snapshots",
+    triage5m: "System, process, network, autoruns, users — ~5 min",
+    ir30m: "Extended capture with log excerpts",
+    deep: "Full collection with extended timeouts",
+    compare: "Compare",
+    added: "Added",
+    removed: "Removed",
+    changed: "Changed",
+  },
+  id: {
+    title: "Snapshot Sistem",
+    subtitle: "Collector modular — tangkap dan bandingkan state sistem",
+    case: "Kasus",
+    selectCase: "— Pilih kasus —",
+    newCase: "Kasus Baru",
+    caseTitle: "Judul kasus",
+    create: "Buat",
+    captureProfile: "Profil Capture",
+    capturing: "Merekam…",
+    start: "Mulai Snapshot",
+    collectorResults: "Hasil Collector",
+    compareSnapshots: "Bandingkan Snapshot",
+    baseline: "Snapshot A (baseline)",
+    current: "Snapshot B (current)",
+    runCompare: "Jalankan Bandingkan",
+    newCaseReq: "Judul kasus wajib diisi",
+    selectCaseFirst: "Pilih atau buat kasus terlebih dahulu",
+    selectTwo: "Pilih dua snapshot",
+    triage5m: "Sistem, proses, network, autorun, user — ~5 menit",
+    ir30m: "Capture lebih panjang dengan cuplikan log",
+    deep: "Koleksi penuh dengan timeout yang lebih panjang",
+    compare: "Bandingkan",
+    added: "Ditambah",
+    removed: "Dihapus",
+    changed: "Diubah",
+  },
+};
+
+const t = (key) => strings[locale]?.[key] ?? strings.en[key] ?? key;
+
+const unsubscribe = subscribeLocale((_, resolved) => {
+  locale = resolved;
+});
+
+const profileOptions = $derived([
+  { id: "triage_5m", label: "Triage 5m", desc: t("triage5m") },
+  { id: "ir_30m", label: "IR 30m", desc: t("ir30m") },
+  { id: "deep_capture", label: "Deep Capture", desc: t("deep") },
+]);
+
+$effect(() => () => unsubscribe());
 
 async function loadCases() {
   try {
@@ -59,7 +126,7 @@ $effect(() => {
 
 async function createNewCase() {
   if (!newCaseTitle.trim()) {
-    setMsg("WARN: Case title required");
+    setMsg(`WARN: ${t("newCaseReq")}`);
     return;
   }
   setBusy(true);
@@ -74,7 +141,7 @@ async function createNewCase() {
     selectedCaseId = c.case_id;
     newCaseTitle = "";
     showNewCase = false;
-    setMsg(`OK: Case created: ${c.title}`);
+    setMsg(locale === "id" ? `OK: Kasus dibuat: ${c.title}` : `OK: Case created: ${c.title}`);
   } catch (e) {
     setMsg(`ERR: ${typeof e === "string" ? e : String(e)}`);
   }
@@ -83,7 +150,7 @@ async function createNewCase() {
 
 async function runSnapshot() {
   if (!selectedCaseId) {
-    setMsg("WARN: Select or create a case first");
+    setMsg(`WARN: ${t("selectCaseFirst")}`);
     return;
   }
   running = true;
@@ -91,7 +158,7 @@ async function runSnapshot() {
   try {
     const meta = await timeoutPromise(startSnapshot(selectedCaseId, selectedProfile), 300000);
     lastSnapshot = meta;
-    setMsg(`OK: Snapshot ${meta.status}: ${meta.snapshot_id.slice(0, 8)}…`);
+    setMsg(locale === "id" ? `OK: Snapshot ${meta.status}: ${meta.snapshot_id.slice(0, 8)}…` : `OK: Snapshot ${meta.status}: ${meta.snapshot_id.slice(0, 8)}…`);
     await loadSnapshots();
   } catch (e) {
     setMsg(`ERR: ${typeof e === "string" ? e : String(e)}`);
@@ -103,7 +170,7 @@ async function runSnapshot() {
 
 async function runCompare() {
   if (!compareA || !compareB) {
-    setMsg("WARN: Select two snapshots");
+    setMsg(`WARN: ${t("selectTwo")}`);
     return;
   }
   setBusy(true);
@@ -113,7 +180,7 @@ async function runCompare() {
       60000
     );
     const s = compareResult.summary;
-    setMsg(`OK: Compare: +${s?.total_added || 0} / -${s?.total_removed || 0} / ~${s?.total_changed || 0}`);
+    setMsg(locale === "id" ? `OK: Bandingkan: +${s?.total_added || 0} / -${s?.total_removed || 0} / ~${s?.total_changed || 0}` : `OK: Compare: +${s?.total_added || 0} / -${s?.total_removed || 0} / ~${s?.total_changed || 0}`);
   } catch (e) {
     setMsg(`ERR: ${typeof e === "string" ? e : String(e)}`);
   }
@@ -129,29 +196,29 @@ function statusVariant(status) {
 </script>
 
 <div class="tab-content snapshot-tab">
-  <SectionHeader title="System Snapshot" subtitle="Modular collector — capture and compare system state" />
+  <SectionHeader title={t("title")} subtitle={t("subtitle")} />
 
-  <MacCard title="Case">
+  <MacCard title={t("case")}>
     <div class="row">
       <select bind:value={selectedCaseId} class="full">
-        <option value="">— Select case —</option>
+        <option value="">{t("selectCase")}</option>
         {#each cases as c}
           <option value={c.case_id}>{c.title}</option>
         {/each}
       </select>
-      <button class="btn-sm" onclick={() => (showNewCase = !showNewCase)}>New Case</button>
+      <button class="btn-sm" onclick={() => (showNewCase = !showNewCase)}>{t("newCase")}</button>
     </div>
     {#if showNewCase}
       <div class="row">
-        <input bind:value={newCaseTitle} placeholder="Case title" class="full" />
-        <button class="btn-sm" onclick={createNewCase}>Create</button>
+        <input bind:value={newCaseTitle} placeholder={t("caseTitle")} class="full" />
+        <button class="btn-sm" onclick={createNewCase}>{t("create")}</button>
       </div>
     {/if}
   </MacCard>
 
-  <MacCard title="Capture Profile">
+  <MacCard title={t("captureProfile")}>
     <div class="profile-grid">
-      {#each profiles as p}
+      {#each profileOptions as p}
         <label class="profile-card" class:selected={selectedProfile === p.id}>
           <input type="radio" bind:group={selectedProfile} value={p.id} disabled={running} />
           <span class="p-label">{p.label}</span>
@@ -160,12 +227,12 @@ function statusVariant(status) {
       {/each}
     </div>
     <button class="btn-primary" onclick={runSnapshot} disabled={running || busy || !selectedCaseId}>
-      {running ? "Capturing…" : "Start Snapshot"}
+      {running ? t("capturing") : t("start")}
     </button>
   </MacCard>
 
   {#if lastSnapshot?.modules}
-    <MacCard title="Collector Results">
+    <MacCard title={t("collectorResults")}>
       {#each lastSnapshot.modules as mod}
         <div class="mod-row">
           <span class="mod-name">{mod.name}</span>
@@ -179,27 +246,27 @@ function statusVariant(status) {
   {/if}
 
   {#if snapshots.length >= 2}
-    <MacCard title="Compare Snapshots">
+    <MacCard title={t("compareSnapshots")}>
       <div class="row">
         <select bind:value={compareA} class="full">
-          <option value="">Snapshot A (baseline)</option>
+          <option value="">{t("baseline")}</option>
           {#each snapshots as s}
             <option value={s.snapshot_id}>{s.started_at} — {s.profile}</option>
           {/each}
         </select>
         <select bind:value={compareB} class="full">
-          <option value="">Snapshot B (current)</option>
+          <option value="">{t("current")}</option>
           {#each snapshots as s}
             <option value={s.snapshot_id}>{s.started_at} — {s.profile}</option>
           {/each}
         </select>
       </div>
-      <button class="btn-sm" onclick={runCompare} disabled={busy}>Run Compare</button>
+      <button class="btn-sm" onclick={runCompare} disabled={busy}>{t("runCompare")}</button>
       {#if compareResult?.summary}
         <div class="compare-summary">
-          Added: {compareResult.summary.total_added} ·
-          Removed: {compareResult.summary.total_removed} ·
-          Changed: {compareResult.summary.total_changed}
+          {t("added")}: {compareResult.summary.total_added} ·
+          {t("removed")}: {compareResult.summary.total_removed} ·
+          {t("changed")}: {compareResult.summary.total_changed}
         </div>
       {/if}
     </MacCard>
@@ -215,8 +282,11 @@ function statusVariant(status) {
   .profile-card {
     display: grid; grid-template-columns: auto 1fr; gap: 2px 10px;
     padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; cursor: pointer;
+    width: 100%;
+    align-items: start;
   }
   .profile-card.selected { border-color: var(--primary); background: rgba(59,130,246,0.08); }
+  .profile-card input { margin-top: 3px; }
   .p-label { font-weight: 600; font-size: 13px; grid-column: 2; }
   .p-desc { font-size: 11px; color: var(--text-secondary); grid-column: 2; }
   .btn-primary { padding: 10px 24px; background: var(--primary); color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; }

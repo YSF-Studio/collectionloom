@@ -1,0 +1,54 @@
+name: Commercial Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_flavor:
+        description: Build flavor label written into the bundled tool manifest
+        required: false
+        default: commercial
+        type: choice
+        options:
+          - commercial
+          - portable
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  package:
+    name: Package Commercial Binary
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux dependencies
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libssl-dev libpcap-dev
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+          cache-workspaces: packages/collectionloom/src-tauri
+
+      - name: Install npm deps
+        run: npm ci
+
+      - name: Build commercial package
+        working-directory: packages/collectionloom
+        run: npm run build:commercial
+        env:
+          COLLECTIONLOOM_BUILD_FLAVOR: ${{ inputs.build_flavor }}
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: collectionloom-commercial-${{ inputs.build_flavor }}
+          path: |
+            packages/collectionloom/src-tauri/target/release/bundle/**
+            packages/collectionloom/dist/portable/**

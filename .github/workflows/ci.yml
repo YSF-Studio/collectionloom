@@ -56,6 +56,11 @@ jobs:
           cache-dependency-path: package-lock.json
       - name: Install npm deps
         run: npm ci
+      - name: Download bundled tools
+        working-directory: packages/collectionloom
+        run: npm run download-tools
+        env:
+          COLLECTIONLOOM_BUILD_FLAVOR: source
       - name: Build Frontend
         working-directory: packages/collectionloom
         run: npm run build

@@ -353,6 +353,7 @@ fn list_windows_logical_volumes() -> Result<Vec<DiskInfo>, String> {
 }
 
 #[cfg(not(target_os = "windows"))]
+#[allow(dead_code)]
 fn list_windows_logical_volumes() -> Result<Vec<DiskInfo>, String> {
     Ok(vec![])
 }

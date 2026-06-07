@@ -3,10 +3,40 @@ import { invoke } from "../api/tauri.js";
 import { defaultOutputPath } from "../api/portable.js";
 import GuideCard from "./GuideCard.svelte";
 import { mobileTriageGuide } from "../guides.js";
+import { getLocale, subscribeLocale } from "../stores/locale.js";
 let { busy, setBusy, setMsg, timeoutPromise } = $props();
 let androidDevices = $state([]);
 let iosDevices = $state([]);
 let outputPath = $state("");
+let locale = $state(getLocale());
+
+$effect(() => subscribeLocale((_, resolved) => {
+  locale = resolved;
+}));
+
+const text = {
+  en: {
+    title: "Mobile Triage",
+    backupDestination: "Backup destination:",
+    android: "Android",
+    ios: "iOS",
+    scanAdb: "Scan ADB",
+    scanIdevice: "Scan idevice",
+    backup: "Backup",
+    note: "Note: Faraday bag reminder: isolate mobile devices before acquisition",
+  },
+  id: {
+    title: "Triage Mobile",
+    backupDestination: "Tujuan backup:",
+    android: "Android",
+    ios: "iOS",
+    scanAdb: "Pindai ADB",
+    scanIdevice: "Pindai idevice",
+    backup: "Cadangkan",
+    note: "Catatan: ingat Faraday bag — isolasi perangkat mobile sebelum akuisisi",
+  },
+};
+function tr(key) { return text[locale]?.[key] || text.en[key] || key; }
 
 $effect(() => {
   defaultOutputPath("mobile_backup.ab").then((p) => {
@@ -57,20 +87,20 @@ async function backupIos(id) {
 </script>
 
 <div>
-  <h3>Mobile Triage</h3>
+  <h3>{tr("title")}</h3>
   <div class="row">
-    <label for="mobile-output">Backup destination:</label>
+    <label for="mobile-output">{tr("backupDestination")}</label>
     <input id="mobile-output" type="text" bind:value={outputPath} disabled={busy} placeholder="/tmp/mobile_backup.ab" />
   </div>
   <div class="cols">
     <div class="col">
-      <h4>Android</h4>
-      <button onclick={scanAndroid} disabled={busy} class="btn-sm">Scan ADB</button>
+      <h4>{tr("android")}</h4>
+      <button onclick={scanAndroid} disabled={busy} class="btn-sm">{tr("scanAdb")}</button>
       {#each androidDevices as d}
         <div class="device">
           <span>{d.model} ({d.id})</span>
           <span>
-            <button onclick={() => backupAndroid(d.id)} class="btn-sm" disabled={busy || !outputPath}>Backup</button>
+            <button onclick={() => backupAndroid(d.id)} class="btn-sm" disabled={busy || !outputPath}>{tr("backup")}</button>
             {#if androidBackupProgress[d.id]}
               <span class="progress-label">{androidBackupProgress[d.id]}</span>
             {/if}
@@ -79,13 +109,13 @@ async function backupIos(id) {
       {/each}
     </div>
     <div class="col">
-      <h4>iOS</h4>
-      <button onclick={scanIos} disabled={busy} class="btn-sm">Scan idevice</button>
+      <h4>{tr("ios")}</h4>
+      <button onclick={scanIos} disabled={busy} class="btn-sm">{tr("scanIdevice")}</button>
       {#each iosDevices as d}
         <div class="device">
           <span>{d.model} ({d.id})</span>
           <span>
-            <button onclick={() => backupIos(d.id)} class="btn-sm" disabled={busy || !outputPath}>Backup</button>
+            <button onclick={() => backupIos(d.id)} class="btn-sm" disabled={busy || !outputPath}>{tr("backup")}</button>
             {#if iosBackupProgress[d.id]}
               <span class="progress-label">{iosBackupProgress[d.id]}</span>
             {/if}
@@ -94,7 +124,7 @@ async function backupIos(id) {
       {/each}
     </div>
   </div>
-  <p class="note">Note: Faraday bag reminder: isolate mobile devices before acquisition</p>
+  <p class="note">{tr("note")}</p>
 
   <GuideCard title={mobileTriageGuide.title} icon={mobileTriageGuide.icon} steps={mobileTriageGuide.steps} references={mobileTriageGuide.references} />
 </div>

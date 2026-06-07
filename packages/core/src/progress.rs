@@ -14,7 +14,6 @@ pub struct ImagingSummary {
     pub duration_secs: f64,
     pub source_integrity_ok: bool,
     pub bytes_written: u64,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub bad_sectors_log: Option<String>,
 }
 
@@ -29,7 +28,6 @@ pub struct ProgressState {
     pub eta_secs: Option<f64>,
     pub bytes_processed: u64,
     pub total_bytes: u64,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub summary: Option<ImagingSummary>,
 }
 

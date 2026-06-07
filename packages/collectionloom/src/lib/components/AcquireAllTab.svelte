@@ -8,8 +8,14 @@ import PillBadge from "./ui/PillBadge.svelte";
 import ConfirmDialog from "./ui/ConfirmDialog.svelte";
 import { acquireAllGuide } from "../guides.js";
 import { wbPillLabel } from "../wb.js";
+import { getResolvedLocale, subscribeLocale } from "../stores/locale.js";
 
 let { sharedState, caseState = {}, busy, setBusy, setMsg, timeoutPromise, onProgressChange = () => {}, onDeviceSelect = () => {} } = $props();
+let locale = $state(getResolvedLocale());
+
+$effect(() => subscribeLocale((_, resolved) => {
+  locale = resolved;
+}));
 
 let diskEnabled = $state(false);
 let ramEnabled = $state(false);
@@ -27,6 +33,7 @@ let interfaces = $state([]);
 let selectedIface = $state("");
 let bpfFilter = $state("");
 let outputFolder = $state("");
+let kitRoot = $state("");
 let mobileDetected = $state(false);
 let mobileDeviceId = $state("");
 let cloudConfigured = $state(false);
@@ -44,17 +51,17 @@ let moduleProgress = $state({
 let moduleDetails = $state({ disk: "", ram: "", network: "", mobile: "", cloud: "" });
 
 const moduleOrder = [
-  { key: "network", label: "Network", enabled: () => networkEnabled },
-  { key: "ram", label: "RAM", enabled: () => ramEnabled },
-  { key: "mobile", label: "Mobile", enabled: () => mobileEnabled },
-  { key: "disk", label: "Disk", enabled: () => diskEnabled },
-  { key: "cloud", label: "Cloud", enabled: () => cloudEnabled },
+  { key: "network", label: () => (locale === "id" ? "Jaringan" : "Network"), enabled: () => networkEnabled },
+  { key: "ram", label: () => "RAM", enabled: () => ramEnabled },
+  { key: "mobile", label: () => "Mobile", enabled: () => mobileEnabled },
+  { key: "disk", label: () => "Disk", enabled: () => diskEnabled },
+  { key: "cloud", label: () => "Cloud", enabled: () => cloudEnabled },
 ];
 
 let selectedDiskInfo = $derived(devices.find((d) => d.device === selectedDevice) || null);
 
 function formatSize(bytes) {
-  if (!bytes) return "unknown size";
+  if (!bytes) return locale === "id" ? "ukuran tidak diketahui" : "unknown size";
   if (bytes >= 1e12) return `${(bytes / 1e12).toFixed(2)} TB`;
   if (bytes >= 1e9) return `${(bytes / 1e9).toFixed(1)} GB`;
   return `${(bytes / 1e6).toFixed(0)} MB`;
@@ -86,7 +93,7 @@ async function refreshWriteBlocker() {
 
 async function enableWriteBlocker() {
   if (!selectedDevice) {
-    setMsg("WARN: Select a disk first");
+    setMsg(locale === "id" ? "PERINGATAN: Pilih disk terlebih dahulu" : "WARN: Select a disk first");
     return;
   }
   setBusy(true);
@@ -94,7 +101,7 @@ async function enableWriteBlocker() {
     wbStatus = await timeoutPromise(invoke("enable_write_blocker", { device: selectedDevice }), 15000);
     const active = wbStatus?.active ?? wbStatus?.enabled ?? false;
     onDeviceSelect({ device: selectedDevice, wbActive: active });
-    setMsg(active ? "OK: Software write-blocker enabled" : "WARN: Write-blocker not confirmed active");
+    setMsg(active ? (locale === "id" ? "OK: Software write-blocker aktif" : "OK: Software write-blocker enabled") : (locale === "id" ? "PERINGATAN: Write-blocker belum aktif" : "WARN: Write-blocker not confirmed active"));
   } catch (e) {
     setMsg(`ERR: ${typeof e === "string" ? e : String(e)}`);
   }
@@ -165,7 +172,7 @@ async function ensureWriteBlocker() {
     const active = wbStatus?.active ?? wbStatus?.enabled ?? false;
     onDeviceSelect({ device: selectedDevice, wbActive: active });
     if (!active) {
-      throw new Error("Write-blocker could not be activated — enable manually or use hardware blocker");
+      throw new Error(locale === "id" ? "Write-blocker tidak dapat diaktifkan — aktifkan manual atau gunakan hardware blocker" : "Write-blocker could not be activated — enable manually or use hardware blocker");
     }
     moduleDetails.disk = "Software write-blocker enabled";
   } catch (e) {
@@ -182,7 +189,7 @@ async function checkStorage(outputPath, sourceDevice = null) {
     10000
   );
   if (!report.ok) {
-    throw new Error(`Storage check: ${report.notes}`);
+    throw new Error(locale === "id" ? `Pemeriksaan storage: ${report.notes}` : `Storage check: ${report.notes}`);
   }
   return report;
 }
@@ -225,7 +232,7 @@ async function startAcquireAll() {
       else if (key === "mobile") await runMobileAcquisition();
       else if (key === "cloud") {
         moduleProgress.cloud = { percent: 0, status: "Skipped", eta: "" };
-        moduleDetails.cloud = "Configure cloud credentials in Cloud Snapshot tab";
+        moduleDetails.cloud = locale === "id" ? "Atur kredensial cloud di tab Cloud Snapshot" : "Configure cloud credentials in Cloud Snapshot tab";
       }
     } catch (e) {
       moduleProgress[key].status = "Failed";
@@ -236,19 +243,19 @@ async function startAcquireAll() {
   running = false;
   setBusy(false);
   onProgressChange({ busy: false });
-  setMsg("OK: Batch acquisition complete");
+  setMsg(locale === "id" ? "OK: Akuisisi batch selesai" : "OK: Batch acquisition complete");
 }
 
 async function runDiskAcquisition() {
   if (!selectedDevice) {
     moduleProgress.disk = { percent: 0, status: "Failed", eta: "" };
-    moduleDetails.disk = "No device selected";
+    moduleDetails.disk = locale === "id" ? "Tidak ada perangkat dipilih" : "No device selected";
     return;
   }
   await ensureWriteBlocker();
   const split = effectiveSplitMb();
   const dest = joinPortablePath(outputFolder, "disk_image.dd");
-  moduleDetails.disk = `Split: ${split > 0 ? split + " MB" : "none"} · ${formatSize(selectedDiskInfo?.sizeBytes)}`;
+  moduleDetails.disk = `${locale === "id" ? "Pecah" : "Split"}: ${split > 0 ? split + " MB" : (locale === "id" ? "tidak ada" : "none")} · ${formatSize(selectedDiskInfo?.sizeBytes)}`;
   await invoke("start_disk_imaging", {
     source: selectedDevice,
     destination: dest,
@@ -331,6 +338,7 @@ function sleep(ms) {
 
 $effect(() => {
   getPortableLayout().then((layout) => {
+    kitRoot = layout.kitRoot || layout.defaultAcquisitionDir || "";
     if (!outputFolder) {
       outputFolder = layout.defaultAcquisitionDir + layout.pathSeparator;
     }
@@ -344,44 +352,44 @@ $effect(() => {
 </script>
 
 <div class="tab-content acquire-all-tab">
-  <SectionHeader title="Acquire All" subtitle="Run selected acquisition modules in sequence" />
+  <SectionHeader title={locale === "id" ? "Akuisisi Semua" : "Acquire All"} subtitle={locale === "id" ? "Jalankan modul akuisisi yang dipilih secara berurutan" : "Run selected acquisition modules in sequence"} />
 
   <div class="sources-toolbar">
     <button class="btn-sm" onclick={detectModules} disabled={detecting || running}>
       {#if detecting}<span class="spinner">↻</span>{/if}
-      {detecting ? "Detecting…" : "Detect Sources"}
+      {detecting ? (locale === "id" ? "Mendeteksi…" : "Detecting…") : (locale === "id" ? "Deteksi Sumber" : "Detect Sources")}
     </button>
-    <p class="hint">Refreshes disk, RAM, network, and mobile source lists — not the output folder.</p>
+    <p class="hint">{locale === "id" ? "Menyegarkan daftar sumber untuk modul disk, RAM, jaringan, dan mobile — bukan folder output atau file kit." : "Refreshes source lists for disk, RAM, network, and mobile modules — not the output folder or kit files."}</p>
   </div>
 
-  <MacCard title="Output">
+  <MacCard title={locale === "id" ? "Tujuan" : "Destination"}>
     <div class="output-row">
-      <label for="acquire-all-output">Output folder</label>
+      <label for="acquire-all-output">{locale === "id" ? "Folder keluaran bukti" : "Evidence output folder"}</label>
       <input
         id="acquire-all-output"
         bind:value={outputFolder}
         class="full"
-        placeholder="Choose a portable acquisition folder"
+        placeholder={locale === "id" ? "Pilih folder akuisisi portable" : "Choose a portable acquisition folder"}
       />
     </div>
-    <p class="hint">All module output paths are derived from this folder.</p>
+    <p class="hint">{locale === "id" ? "Semua output modul ditulis ke sini. Ini harus berada di penyimpanan penyidik, bukan di perangkat sumber atau flashdisk kit." : "All module outputs are written here. This should be on the investigator's storage, not the source device or the kit flashdisk."}</p>
   </MacCard>
 
   <div class="modules-grid">
-    <MacCard title="Disk" class="module-card">
-      <label class="toggle"><input type="checkbox" bind:checked={diskEnabled} /> Enable</label>
+    <MacCard title={locale === "id" ? "Disk" : "Disk"} class="module-card">
+      <label class="toggle"><input type="checkbox" bind:checked={diskEnabled} /> {locale === "id" ? "Aktifkan" : "Enable"}</label>
       {#if diskEnabled}
         <select bind:value={selectedDevice} class="full">
-          <option value="">— Select device —</option>
+          <option value="">{locale === "id" ? "— Pilih perangkat —" : "— Select device —"}</option>
           {#each devices as d}
             <option value={d.device}>{d.device} — {formatSize(d.sizeBytes)} {d.model || ""}</option>
           {/each}
         </select>
-        <label class="split-label" for="acquire-all-split">Split (MB, 0 = auto for drives &gt;4 GB):</label>
+        <label class="split-label" for="acquire-all-split">{locale === "id" ? "Pecah (MB, 0 = otomatis untuk drive &gt;4 GB):" : "Split (MB, 0 = auto for drives &gt;4 GB):"}</label>
         <input id="acquire-all-split" type="number" bind:value={splitSizeMb} class="full" placeholder="4096" />
         {#if wbStatus}
           <div class="wb-row">
-            <span class="wb-label">Write-Blocker:</span>
+            <span class="wb-label">{locale === "id" ? "Write-Blocker:" : "Write-Blocker:"}</span>
             <PillBadge
               variant={(wbStatus.active ?? wbStatus.enabled) ? "active" : "inactive"}
               label={wbPillLabel(wbStatus)}
@@ -389,14 +397,14 @@ $effect(() => {
           </div>
         {/if}
         <div class="wb-actions">
-          <button class="btn-sm" onclick={enableWriteBlocker} disabled={busy || !selectedDevice}>Enable Software Write-Blocker</button>
-          <button class="btn-sm" onclick={refreshWriteBlocker} disabled={busy || !selectedDevice}>Refresh</button>
+          <button class="btn-sm" onclick={enableWriteBlocker} disabled={busy || !selectedDevice}>{locale === "id" ? "Aktifkan Software Write-Blocker" : "Enable Software Write-Blocker"}</button>
+          <button class="btn-sm" onclick={refreshWriteBlocker} disabled={busy || !selectedDevice}>{locale === "id" ? "Segarkan" : "Refresh"}</button>
         </div>
       {/if}
     </MacCard>
 
     <MacCard title="RAM" class="module-card">
-      <label class="toggle"><input type="checkbox" bind:checked={ramEnabled} /> Enable</label>
+      <label class="toggle"><input type="checkbox" bind:checked={ramEnabled} /> {locale === "id" ? "Aktifkan" : "Enable"}</label>
       {#if ramEnabled}
         <select bind:value={selectedRamTool} class="full">
           {#each ramTools as t}<option value={t}>{t}</option>{/each}
@@ -404,36 +412,36 @@ $effect(() => {
       {/if}
     </MacCard>
 
-    <MacCard title="Network" class="module-card">
-      <label class="toggle"><input type="checkbox" bind:checked={networkEnabled} /> Enable</label>
+    <MacCard title={locale === "id" ? "Jaringan" : "Network"} class="module-card">
+      <label class="toggle"><input type="checkbox" bind:checked={networkEnabled} /> {locale === "id" ? "Aktifkan" : "Enable"}</label>
       {#if networkEnabled}
         <select bind:value={selectedIface} class="full">
-          <option value="">— Interface —</option>
+          <option value="">{locale === "id" ? "— Antarmuka —" : "— Interface —"}</option>
           {#each interfaces as i}<option value={i}>{i}</option>{/each}
         </select>
-        <input bind:value={bpfFilter} placeholder="BPF filter" class="full" />
+        <input bind:value={bpfFilter} placeholder={locale === "id" ? "Filter BPF" : "BPF filter"} class="full" />
       {/if}
     </MacCard>
 
     <MacCard title="Mobile" class="module-card">
-      <label class="toggle"><input type="checkbox" bind:checked={mobileEnabled} disabled={!mobileDetected} /> Enable</label>
+      <label class="toggle"><input type="checkbox" bind:checked={mobileEnabled} disabled={!mobileDetected} /> {locale === "id" ? "Aktifkan" : "Enable"}</label>
       {#if mobileEnabled}
-        <span class="hint">{mobileDetected ? "Device detected" : "No device detected"}</span>
+        <span class="hint">{mobileDetected ? (locale === "id" ? "Perangkat terdeteksi" : "Device detected") : (locale === "id" ? "Tidak ada perangkat terdeteksi" : "No device detected")}</span>
       {/if}
     </MacCard>
   </div>
 
-  <MacCard title="Output">
-    <input bind:value={outputFolder} class="full" />
-    <p class="hint">Use NTFS/APFS/ext4 for multi-TB images; enable split on FAT32 destinations.</p>
+  <MacCard title={locale === "id" ? "Kit Portable" : "Portable Kit"}>
+    <input value={kitRoot} class="full" readonly />
+    <p class="hint">{locale === "id" ? "Ini adalah lokasi kit USB/portable CollectionLoom. Terpisah dari folder tujuan bukti." : "This is the CollectionLoom USB/portable kit location. It is separate from the evidence destination folder."}</p>
   </MacCard>
 
   <button class="btn-acquire" onclick={requestStartAcquireAll} disabled={running || busy || !moduleOrder.some((m) => m.enabled())}>
-    {running ? "Acquiring…" : "Start Acquire All"}
+    {running ? (locale === "id" ? "Mengakuisisi…" : "Acquiring…") : (locale === "id" ? "Mulai Akuisisi Semua" : "Start Acquire All")}
   </button>
 
   {#if moduleOrder.some((m) => moduleProgress[m.key].status !== "Idle")}
-    <MacCard title="Progress">
+    <MacCard title={locale === "id" ? "Progres" : "Progress"}>
       {#each moduleOrder as mod}
         {@const prog = moduleProgress[mod.key]}
         {#if prog.status !== "Idle"}
@@ -455,9 +463,9 @@ $effect(() => {
 
 <ConfirmDialog
   open={showConfirmAcquire}
-  title="Start Acquire All?"
-  message="This will run all enabled acquisition modules in sequence. Ensure write-blocker is active and output path has sufficient space."
-  confirmLabel="Start Acquisition"
+  title={locale === "id" ? "Mulai Akuisisi Semua?" : "Start Acquire All?"}
+  message={locale === "id" ? "Ini akan menjalankan semua modul akuisisi yang aktif secara berurutan. Pastikan perangkat sumber terlindungi dan tujuan bukti memiliki ruang yang cukup." : "This will run all enabled acquisition modules in sequence. Ensure the source device is protected and the evidence destination has sufficient space."}
+  confirmLabel={locale === "id" ? "Mulai Akuisisi" : "Start Acquisition"}
   variant="primary"
   onConfirm={startAcquireAll}
   onCancel={() => (showConfirmAcquire = false)}

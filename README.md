@@ -9,7 +9,7 @@
   <img src="packages/collectionloom/public/icon.png" alt="CollectionLoom" width="120" />
 </p>
 
-> **Portable forensic acquisition toolkit** — evidence collection aligned with ISO/IEC 27037, built with **Tauri v2 + Rust + Svelte 5**. Runs fully offline on macOS, Windows, and Linux.
+> **Portable forensic acquisition toolkit** — evidence collection aligned with ISO/IEC 27037, built with **Tauri v2 + Rust + Svelte 5**. Runs fully offline on macOS, Windows, and Linux with a no-install portable workflow.
 
 CollectionLoom helps first responders and forensic analysts capture disk images, volatile memory, network traffic, mobile backups, and system snapshots — then package evidence with hash manifests and chain-of-custody records for analyst handoff.
 
@@ -108,6 +108,29 @@ node scripts/capture-screenshots.mjs
 
 ---
 
+## Distribution Model
+
+CollectionLoom is designed around three separate release paths so the project stays easy to audit while still allowing a polished paid portable binary.
+
+| Path | What you get | Who it's for |
+|------|--------------|--------------|
+| **Source build** | Full source tree, build scripts, and tool manifests | Developers, auditors, contributors |
+| **Portable build** | A self-contained kit with app + bundled third-party tools where available | Field use, USB kit, offline deployment |
+| **Commercial binary** | A ready-to-run paid portable build distributed outside GitHub | End users who want a no-setup download |
+
+GitHub remains the source-of-truth for code and build automation. Prebuilt commercial binaries are intentionally distributed outside the main GitHub release flow.
+
+See [docs/BUILD-MATRIX.md](docs/BUILD-MATRIX.md) for the OS-by-OS packaging matrix.
+
+### Why this split works
+
+- **For developers and auditors**: the source tree stays complete, transparent, and easy to review.
+- **For field users**: portable builds can include the tools that have official release artifacts, so there is less manual setup.
+- **For commercial distribution**: the paid binary can ship as a polished download without exposing your product release channel on GitHub.
+- **For maintainers**: tool staging, build flavors, and installer packaging stay reproducible and documented.
+
+If you are buying a prebuilt copy, you should expect a ready-to-run portable app with bundled helpers where the upstream project permits it, plus clear in-app guidance for any source-specific tool that must still be staged separately.
+
 ## Quick Start
 
 ### From source
@@ -121,29 +144,41 @@ npm run tauri:dev
 
 ### Build (local only)
 
-Pre-built binaries are **not published**. Build installers or a portable kit from source (from the repo root):
+Pre-built commercial binaries are **not published in this repository**. Build the portable kit from source (from the repo root):
 
 ```bash
 npm install
 
-# Downloads avml/winpmem into src-tauri/resources/tools/ then builds
+# Downloads available third-party tools into src-tauri/resources/tools/ then builds
 npm run tauri:build
 
 # Or explicitly:
-npm run build:install   # installers (DMG / NSIS / deb / AppImage)
-npm run build:portable  # installers + portable zip in dist/portable/
+npm run build:install   # platform bundles (DMG / NSIS / deb / AppImage)
+npm run build:portable  # portable zip in dist/portable/
 ```
 
-**Hybrid tooling:** Tauri ships as one static binary; RAM/WinPmem tools are downloaded at build time (`npm run download-tools`) and embedded in `src-tauri/resources/tools/`. No separate `tools/` folder needed for installed builds. USB kits can still override via `./tools/`.
+**Hybrid tooling:** Tauri ships as one static binary; third-party RAM tools that have official release artifacts are downloaded at build time (`npm run download-tools`) and embedded in `src-tauri/resources/tools/`. No separate `tools/` folder is needed for installed builds. USB kits can still override via `./tools/`.
 
 Skip tool download (offline dev): `SKIP_TOOL_DOWNLOAD=1 npm run tauri:build`
 
 | Output | Use case |
 |--------|----------|
-| **Installer** (DMG / NSIS / deb) | Daily workstation — cases in `~/CollectionLoom/cases/` |
+| **Platform bundle** (DMG / NSIS / deb) | Optional desktop packaging for local use | Cases in `~/CollectionLoom/cases/` |
 | **Portable zip** | USB / field kit — unzip and run; cases beside the app |
+| **Commercial binary** | Paid distribution channel outside GitHub releases |
 
 See **[docs/INSTALL.md](docs/INSTALL.md)** for using each artifact after a local build.
+
+### Buying a ready-to-run build
+
+If you want to skip the build process entirely, the commercial binary is the right path. It is intended to be:
+
+- already packaged as a portable app for your platform,
+- immediately usable after download,
+- separate from the GitHub source repository,
+- and documented with the same acquisition workflows as the source build.
+
+That keeps the public repo clean while still giving you a product you can sell and ship outside GitHub.
 
 ### Quality & debugging
 

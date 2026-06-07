@@ -15,11 +15,12 @@ import AcquireAllTab from "./lib/components/AcquireAllTab.svelte";
 import PreflightTab from "./lib/components/PreflightTab.svelte";
 import PillBadge from "./lib/components/ui/PillBadge.svelte";
 import ProgressStatusBar from "./lib/components/ui/ProgressStatusBar.svelte";
+import LocaleToggle from "./lib/components/ui/LocaleToggle.svelte";
 import ThemeToggle from "./lib/components/ui/ThemeToggle.svelte";
 import ConfirmDialog from "./lib/components/ui/ConfirmDialog.svelte";
-import { guessPlatform } from "./lib/window.js";
 import { invoke, isTauri } from "./lib/api/tauri.js";
 import { isError, isWarn } from "./lib/messages.js";
+import { initLocale, subscribeLocale } from "./lib/stores/locale.js";
 
 let activeSection = $state("disk");
 let msg = $state("");
@@ -36,7 +37,7 @@ let wbDisks = $state([]);
 let wbDisksLoading = $state(false);
 let showConfirmDisableWb = $state(false);
 let acquireAllState = {};
-let platform = $state(guessPlatform());
+let locale = $state("en");
 
 let statusBar = $state({
   active: false,
@@ -53,11 +54,51 @@ function timeoutPromise(promise, ms) {
   return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
 }
 
+$effect(() => {
+  initLocale();
+  const unsubscribe = subscribeLocale((_, resolved) => {
+    locale = resolved;
+  });
+  return unsubscribe;
+});
+
 function setBusy(v) {
   busy = v;
 }
 function setMsg(m) {
   msg = m;
+}
+
+const dictionary = {
+  en: {
+    acquisition: "ACQUISITION",
+    analysis: "ANALYSIS",
+    caseInfo: "CASE INFO",
+    writeBlockerActive: "Write-Blocker Active",
+    writeBlockerInactive: "Write-Blocker Inactive",
+    selectWbDisk: "Select disk for write-blocker",
+    refreshDiskList: "Refresh disk list",
+    selectDisk: "— Select disk —",
+    warnMissingPrereq: "WARN: {count} prerequisite tool(s) missing — open Prerequisites tab",
+    selectTargetFirst: "WARN: Select a target disk in the titlebar first",
+  },
+  id: {
+    acquisition: "AKUISISI",
+    analysis: "ANALISIS",
+    caseInfo: "INFO KASUS",
+    writeBlockerActive: "Write-Blocker Aktif",
+    writeBlockerInactive: "Write-Blocker Nonaktif",
+    selectWbDisk: "Pilih disk untuk write-blocker",
+    refreshDiskList: "Segarkan daftar disk",
+    selectDisk: "— Pilih disk —",
+    warnMissingPrereq: "PERINGATAN: {count} tool prasyarat hilang — buka tab Prerequisites",
+    selectTargetFirst: "PERINGATAN: Pilih disk target di titlebar dulu",
+  },
+};
+
+function t(key, vars = {}) {
+  const text = dictionary[locale]?.[key] || dictionary.en[key] || key;
+  return text.replace(/\{(\w+)\}/g, (_, name) => String(vars[name] ?? ""));
 }
 
 function handleDiskProgress({ progress, collBusy, eta, selectedDisk, imageFormat }) {
@@ -131,7 +172,7 @@ let wbSelectedDiskLabel = $derived.by(() => {
 
 function requestToggleWriteBlocker() {
   if (!wbDevice || wbBusy || busy) {
-    if (!wbDevice) setMsg("WARN: Select a target disk in the titlebar first");
+    if (!wbDevice) setMsg(t("selectTargetFirst"));
     return;
   }
   if (wbActive) {
@@ -156,7 +197,7 @@ async function toggleWriteBlocker() {
         ? active
           ? "OK: Software write-blocker enabled"
           : "WARN: Write-blocker not confirmed"
-        : "OK: Write-blocker disabled"
+        : "WARN: Software write-blocker disabled — writes may now be possible"
     );
   } catch (e) {
     setMsg(`ERR: ${typeof e === "string" ? e : String(e)}`);
@@ -166,43 +207,64 @@ async function toggleWriteBlocker() {
 
 const sidebarSections = [
   {
-    label: "ACQUISITION",
+    labelKey: "acquisition",
     items: [
-      { id: "disk", label: "Disk Imaging" },
-      { id: "ram", label: "RAM Capture" },
-      { id: "mobile", label: "Mobile Triage" },
-      { id: "cloud", label: "Cloud Snapshot" },
-      { id: "network", label: "Network Capture" },
-      { id: "snapshot", label: "System Snapshot" },
-      { id: "acquire-all", label: "Acquire All" },
+      { id: "disk", labelKey: "disk" },
+      { id: "ram", labelKey: "ram" },
+      { id: "mobile", labelKey: "mobile" },
+      { id: "cloud", labelKey: "cloud" },
+      { id: "network", labelKey: "network" },
+      { id: "snapshot", labelKey: "snapshot" },
+      { id: "acquire-all", labelKey: "acquireAll" },
     ],
   },
   {
-    label: "ANALYSIS",
+    labelKey: "analysis",
     items: [
-      { id: "encryption", label: "Encryption" },
-      { id: "verify", label: "Hash Verify" },
+      { id: "encryption", labelKey: "encryption" },
+      { id: "verify", labelKey: "hashVerify" },
     ],
   },
   {
-    label: "CASE INFO",
+    labelKey: "caseInfo",
     items: [
-      { id: "dashboard", label: "Case Dashboard" },
-      { id: "preflight", label: "Prerequisites" },
-      { id: "coc", label: "Custody Chain" },
-      { id: "export", label: "Export Bundle" },
-      { id: "about", label: "About" },
+      { id: "dashboard", labelKey: "caseDashboard" },
+      { id: "preflight", labelKey: "prerequisites" },
+      { id: "coc", labelKey: "custodyChain" },
+      { id: "export", labelKey: "exportBundle" },
+      { id: "about", labelKey: "about" },
     ],
   },
 ];
 
-$effect(() => {
+const navLabels = {
+  disk: { en: "Disk Imaging", id: "Imaging Disk" },
+  ram: { en: "RAM Capture", id: "Tangkap RAM" },
+  mobile: { en: "Mobile Triage", id: "Triage Mobile" },
+  cloud: { en: "Cloud Snapshot", id: "Snapshot Cloud" },
+  network: { en: "Network Capture", id: "Tangkap Jaringan" },
+  snapshot: { en: "System Snapshot", id: "Snapshot Sistem" },
+  acquireAll: { en: "Acquire All", id: "Akuisisi Semua" },
+  encryption: { en: "Encryption", id: "Enkripsi" },
+  hashVerify: { en: "Hash Verify", id: "Verifikasi Hash" },
+  caseDashboard: { en: "Case Dashboard", id: "Dasbor Kasus" },
+  prerequisites: { en: "Prerequisites", id: "Prasyarat" },
+  custodyChain: { en: "Custody Chain", id: "Rantai Custody" },
+  exportBundle: { en: "Export Bundle", id: "Paket Ekspor" },
+  about: { en: "About", id: "Tentang" },
+};
+
+function navLabel(key) {
+  return navLabels[key]?.[locale] || navLabels[key]?.en || key;
+}
+
+  $effect(() => {
   loadWbDisks();
   if (isTauri()) {
     invoke("run_preflight_check")
       .then((r) => {
         if (r?.missingCount > 0) {
-          setMsg(`WARN: ${r.missingCount} prerequisite tool(s) missing — open Prerequisites tab`);
+          setMsg(t("warnMissingPrereq", { count: r.missingCount }));
         } else if (r?.warningCount > 0) {
           setMsg(`WARN: ${r.summary}`);
         }
@@ -231,9 +293,9 @@ window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
       <img src="/icon.png" class="logo" alt="CollectionLoom" />
       <span class="title">CollectionLoom</span>
       {#if wbActive}
-        <PillBadge variant="active" label="Write-Blocker Active" />
+        <PillBadge variant="active" label={t("writeBlockerActive")} />
       {:else}
-        <PillBadge variant="inactive" label="Write-Blocker Inactive" />
+        <PillBadge variant="inactive" label={t("writeBlockerInactive")} />
       {/if}
     </div>
     <div class="wb-titlebar-controls">
@@ -243,9 +305,9 @@ window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
           onchange={onWbDeviceChange}
           disabled={wbBusy || wbDisksLoading}
           title={wbSelectedDiskLabel}
-          aria-label="Select disk for write-blocker"
+          aria-label={t("selectWbDisk")}
         >
-          <option value="">— Select disk —</option>
+          <option value="">{t("selectDisk")}</option>
           {#each wbDisks as disk}
             <option value={disk.device}>
               {disk.device} · {disk.model || "Unknown"} ({(disk.sizeBytes / 1e9).toFixed(1)} GB)
@@ -257,8 +319,8 @@ window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
           class="wb-icon-btn"
           onclick={loadWbDisks}
           disabled={wbDisksLoading}
-          title="Refresh disk list"
-          aria-label="Refresh disk list"
+          title={t("refreshDiskList")}
+          aria-label={t("refreshDiskList")}
         >
           {wbDisksLoading ? "…" : "↻"}
         </button>
@@ -281,15 +343,7 @@ window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
         </button>
     </div>
     <div class="titlebar-end">
-      {#if !isTauri()}
-        <span
-          class="preview-badge"
-          title="Preview Mode — uses fixture data without real hardware. Install the Tauri app for live acquisition."
-          aria-label="Preview Mode — fixture/demo data, no real hardware"
-        >
-          <PillBadge variant="warning" label="Preview Mode" />
-        </span>
-      {/if}
+      <LocaleToggle />
       <ThemeToggle />
     </div>
   </div>
@@ -298,15 +352,15 @@ window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
     <aside class="sidebar">
       {#each sidebarSections as section}
         <div class="sidebar-group">
-          <span class="sidebar-label">{section.label}</span>
-  {#each section.items as item}
+          <span class="sidebar-label">{t(section.labelKey)}</span>
+          {#each section.items as item}
             <button
               class="sidebar-item"
               class:active={activeSection === item.id}
               data-nav-id={item.id}
               onclick={() => (activeSection = item.id)}
             >
-              {item.label}
+              {navLabel(item.labelKey)}
             </button>
           {/each}
         </div>
@@ -367,15 +421,6 @@ window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
 
   <div class="platform-hint">
     <span class="platform-pill">{platform}</span>
-    <span class="platform-copy">
-      {#if platform === "macos"}
-        Optimized for a desktop workflow with native file pickers and a compact titlebar.
-      {:else if platform === "windows"}
-        Optimized for Windows with standard window controls and portable kit paths.
-      {:else}
-        Optimized for Linux with portable kit paths and system-library detection.
-      {/if}
-    </span>
   </div>
 
   <ProgressStatusBar
@@ -397,7 +442,7 @@ window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
   <ConfirmDialog
     open={showConfirmDisableWb}
     title="Disable Write-Blocker?"
-    message="Disabling the software write-blocker allows writes to the source drive. Only proceed if imaging is complete."
+    message="Disabling the software write-blocker can immediately allow writes to the selected source. Only proceed after imaging is complete or when you intentionally need write access."
     confirmLabel="Disable Write-Blocker"
     variant="danger"
     onConfirm={toggleWriteBlocker}
@@ -605,16 +650,6 @@ window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
     text-transform: uppercase;
     letter-spacing: 0.6px;
     font-weight: 700;
-  }
-  .platform-copy {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .preview-badge {
-    cursor: help;
-    display: inline-flex;
   }
   .toast {
     position: fixed;

@@ -1,6 +1,4 @@
-/** Shared Tauri bridge — safe in browser preview (vite preview / dev without backend). */
-
-import { fixtureInvoke, isFixtureMode } from "./fixtures.js";
+/** Shared Tauri bridge for the real Tauri runtime. */
 
 /**
  * Rust IPC types (generated from ysf-core via ts-rs).
@@ -36,9 +34,6 @@ export function isPreviewError(err) {
 }
 
 export async function invoke(cmd, args = {}) {
-  if (isFixtureMode()) {
-    return fixtureInvoke(cmd, args);
-  }
   if (!isTauri()) {
     throw new Error(PREVIEW_MODE);
   }

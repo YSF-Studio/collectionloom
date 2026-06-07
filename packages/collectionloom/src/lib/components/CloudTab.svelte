@@ -2,6 +2,7 @@
   import { invoke } from "../api/tauri.js";
   import GuideCard from "./GuideCard.svelte";
   import { cloudEvidenceGuide } from "../guides.js";
+  import { getResolvedLocale, subscribeLocale } from "../stores/locale.js";
 
   let { sharedState, busy, setBusy, setMsg, timeoutPromise } = $props();
 
@@ -14,6 +15,52 @@
   let result = $state(null);
   let resultRaw = $state("");
   let snapshotId = $state("");
+  let locale = $state(getResolvedLocale());
+
+  const text = {
+    en: {
+      title: "Cloud Snapshot",
+      note: "Credentials loaded via native file picker — never stored in browser memory",
+      provider: "Provider:",
+      region: "Region:",
+      resource: "Resource ID:",
+      credentials: "Credentials file:",
+      browse: "Browse…",
+      jsonHint: 'JSON: {"access_key","secret_key"} or AWS INI format. Leave empty to pick at snapshot time.',
+      required: "Resource ID is required",
+      create: "Create Snapshot",
+      creating: "Creating Snapshot...",
+      requestSent: "Snapshot Request Sent",
+      providerLabel: "Provider:",
+      snapshotId: "Snapshot ID:",
+      contacting: "Contacting cloud provider... (may take 15-30s)",
+    },
+    id: {
+      title: "Snapshot Cloud",
+      note: "Kredensial dimuat lewat native file picker — tidak pernah disimpan di memori browser",
+      provider: "Penyedia:",
+      region: "Region:",
+      resource: "Resource ID:",
+      credentials: "File kredensial:",
+      browse: "Telusuri…",
+      jsonHint: 'JSON: {"access_key","secret_key"} atau format AWS INI. Biarkan kosong untuk dipilih saat snapshot.',
+      required: "Resource ID wajib diisi",
+      create: "Buat Snapshot",
+      creating: "Membuat Snapshot...",
+      requestSent: "Permintaan Snapshot Terkirim",
+      providerLabel: "Penyedia:",
+      snapshotId: "Snapshot ID:",
+      contacting: "Menghubungi penyedia cloud... (mungkin 15-30 detik)",
+    },
+  };
+
+  const t = (key) => text[locale]?.[key] ?? text.en[key] ?? key;
+
+  const unsubscribe = subscribeLocale((_, resolved) => {
+    locale = resolved;
+  });
+
+  $effect(() => () => unsubscribe());
 
   $effect(() => {
     if (msg && !msg.startsWith("ERR:")) {
@@ -49,7 +96,7 @@
 
   async function doCreateSnapshot() {
     if (!resourceId) {
-      msg = "ERR: Resource ID is required";
+      msg = `ERR: ${t("required")}`;
       return;
     }
     setBusy(true);
@@ -97,56 +144,56 @@
 </script>
 
 <div>
-  <h3>Cloud Snapshot</h3>
-  <p class="note">Credentials loaded via native file picker — never stored in browser memory</p>
+  <h3>{t("title")}</h3>
+  <p class="note">{t("note")}</p>
 
   <div class="row">
-    <label>Provider:
+    <label>{t("provider")}
       <select bind:value={provider} disabled={collBusy}>
-        <option value="aws">AWS — Create EBS Snapshot</option>
-        <option value="azure">Azure — Create Disk Snapshot</option>
-        <option value="gcp">GCP — Create Persistent Disk Snapshot</option>
-        <option value="alibaba">Alibaba — Create Disk Snapshot</option>
+        <option value="aws">AWS — {locale === "id" ? "Buat Snapshot EBS" : "Create EBS Snapshot"}</option>
+        <option value="azure">Azure — {locale === "id" ? "Buat Snapshot Disk" : "Create Disk Snapshot"}</option>
+        <option value="gcp">GCP — {locale === "id" ? "Buat Snapshot Persistent Disk" : "Create Persistent Disk Snapshot"}</option>
+        <option value="alibaba">Alibaba — {locale === "id" ? "Buat Snapshot Disk" : "Create Disk Snapshot"}</option>
       </select>
     </label>
   </div>
 
   <div class="row">
-    <label>Region:
+    <label>{t("region")}
       <input type="text" bind:value={region} disabled={collBusy} />
     </label>
   </div>
 
   <div class="row">
-    <label>Resource ID:
+    <label>{t("resource")}
       <input type="text" bind:value={resourceId} disabled={collBusy} placeholder={placeholderText()} />
     </label>
     <span class="hint">{providerHint()}</span>
   </div>
 
   <div class="row cred-row">
-    <label>Credentials file:
-      <input type="text" bind:value={credentialPath} disabled={collBusy} placeholder="Select JSON/INI credentials file…" readonly />
+    <label>{t("credentials")}
+      <input type="text" bind:value={credentialPath} disabled={collBusy} placeholder={locale === "id" ? "Pilih file kredensial JSON/INI…" : "Select JSON/INI credentials file…"} readonly />
     </label>
-    <button class="btn-sm" onclick={pickCredentials} disabled={collBusy}>Browse…</button>
+    <button class="btn-sm" onclick={pickCredentials} disabled={collBusy}>{t("browse")}</button>
   </div>
-  <p class="hint">JSON: {"{"}"access_key","secret_key"{"}"} or AWS INI format. Leave empty to pick at snapshot time.</p>
+  <p class="hint">{t("jsonHint")}</p>
 
   {#if msg}
     <div class="result-card" class:error={msg.startsWith("ERR:")}>{msg}</div>
   {/if}
 
   <button class="btn-primary" onclick={doCreateSnapshot} disabled={collBusy}>
-    {collBusy ? "Creating Snapshot..." : "Create Snapshot"}
+    {collBusy ? t("creating") : t("create")}
   </button>
 
   {#if result}
     <div class="result-card success">
-      <strong>Snapshot Request Sent</strong><br />
-      <span class="muted">Provider: {result.provider || provider}</span>
+      <strong>{t("requestSent")}</strong><br />
+      <span class="muted">{t("providerLabel")} {result.provider || provider}</span>
       {#if snapshotId}
         <div class="snapshot-id">
-          <span class="snap-label">Snapshot ID:</span>
+          <span class="snap-label">{t("snapshotId")}</span>
           <span class="snap-value">{snapshotId}</span>
         </div>
       {/if}
@@ -157,7 +204,7 @@
   {/if}
 
   {#if collBusy}
-    <div class="spinner">⏳ Contacting cloud provider... (may take 15-30s)</div>
+    <div class="spinner">⏳ {t("contacting")}</div>
   {/if}
 
   <GuideCard title={cloudEvidenceGuide.title} icon={cloudEvidenceGuide.icon} steps={cloudEvidenceGuide.steps} references={cloudEvidenceGuide.references} />

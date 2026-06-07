@@ -1,103 +1,77 @@
 # Installing CollectionLoom
 
-CollectionLoom is available in two forms on every supported platform. **Pre-built binaries are not published** — build from source (see [Building from source](#building-from-source) below), then use the artifacts on your machine.
+CollectionLoom is portable-first on macOS, Windows, and Linux. The recommended experience is a self-contained app folder or zip that you can run directly without a traditional installer.
+
+There are three distribution paths:
+
+- **Source build**: clone the repo and build it yourself.
+- **Portable build**: the normal no-install experience for field use.
+- **Commercial binary**: a ready-to-run paid portable build distributed outside this repository.
 
 | Mode | Best for | Evidence storage |
 |------|----------|------------------|
-| **Installed** | Daily analyst workstation | `~/CollectionLoom/cases/` |
 | **Portable kit** | USB / field / suspect-adjacent machines | `./cases/` beside the app |
+| **Source build** | Developers and auditors who want to build locally | `./cases/` or your chosen kit root |
+| **Commercial binary** | Users who want a no-setup download | Same as portable, depending on how you package it |
 
 ---
 
 ## macOS
 
-### Installed (DMG)
-
-After `npm run build:install`, open the DMG under `packages/collectionloom/src-tauri/target/release/bundle/dmg/`.
-
-1. Open the DMG and drag **CollectionLoom** to **Applications**.
-2. Launch from Applications. macOS may prompt to allow the app on first run (unsigned builds: System Settings → Privacy & Security → Open Anyway).
-
-Cases and exports are stored under `~/CollectionLoom/cases/`.
-
-### Portable kit
+### Portable macOS build
 
 After `npm run build:portable`, extract the zip from `dist/portable/CollectionLoom-*-portable-macos-*.zip`.
 
-1. Extract anywhere (USB drive recommended).
+1. Extract anywhere, ideally on a USB drive.
 2. Run `./start-collectionloom.sh` or open `CollectionLoom.app` inside the extracted `CollectionLoom/` folder.
 3. Copy external tools into `tools/` before field use (see [tools/README.txt](../tools/README.txt)).
 
 The kit includes a `.portable` marker so cases stay in `./cases/acquisitions/` even before you add tools.
 
+If you are distributing a commercial binary, ship the same portable layout as a prebuilt package so the user can launch it immediately after download.
+
 ---
 
 ## Windows
 
-### Installed (NSIS)
-
-After `npm run build:install`, run the NSIS installer from `packages/collectionloom/src-tauri/target/release/bundle/nsis/`.
-
-1. Run the installer — choose **Install for all users** or **Current user** (both are offered).
-2. Launch from the Start menu shortcut.
-
-Cases are stored under `%USERPROFILE%\CollectionLoom\cases\`.
-
-### Portable kit
+### Portable Windows build
 
 After `npm run build:portable`, extract `dist/portable/CollectionLoom-*-portable-windows-*.zip`.
 
-1. Extract to a folder on USB or disk (e.g. `D:\CollectionLoom\`).
-2. Double-click **Start-CollectionLoom.bat** or run `collectionloom.exe`.
-3. Place `avml.exe`, `adb.exe`, etc. in `tools\` as needed.
+1. Extract to a folder on USB or disk, for example `D:\CollectionLoom\`.
+2. Double-click `Start-CollectionLoom.bat` or run `collectionloom.exe`.
+3. Place `avml.exe`, `adb.exe`, and any other external tools in `tools\` as needed.
 
 All DLLs required to run are included beside the executable.
+
+If you are distributing a commercial binary, ship this same portable layout as the paid download.
 
 ---
 
 ## Linux
 
-### Installed (deb or AppImage)
-
-Build artifacts are under `packages/collectionloom/src-tauri/target/release/bundle/`.
-
-**Debian/Ubuntu (.deb)**
-
-```bash
-sudo dpkg -i collectionloom_*_amd64.deb
-sudo apt-get install -f   # if dependencies are missing
-collectionloom
-```
-
-**AppImage**
-
-```bash
-chmod +x CollectionLoom_*_amd64.AppImage
-./CollectionLoom_*_amd64.AppImage
-```
-
-Installed packages use `~/CollectionLoom/cases/` for case data.
-
-### Portable kit
+### Portable Linux build
 
 After `npm run build:portable`, extract `dist/portable/CollectionLoom-*-portable-linux-*.zip`.
 
 1. Extract and run `./start-collectionloom.sh`.
 2. The kit includes an AppImage when built on Linux; otherwise a standalone `collectionloom` binary.
-3. Add RAM/mobile/network tools under `tools/`.
+3. Add RAM, mobile, and network tools under `tools/`.
 
-For AppImage-based kits, the kit root is the folder containing the AppImage (not the read-only mount).
+For AppImage-based kits, the kit root is the folder containing the AppImage, not the read-only mount.
+
+If you are distributing a commercial binary, ship the same portable layout as the paid download.
 
 ---
 
 ## External tools (all modes)
 
-CollectionLoom cannot redistribute licensed third-party binaries. For RAM capture, mobile triage, and similar modules, copy tools into `./tools/`:
+CollectionLoom cannot redistribute every third-party binary. For RAM capture, mobile triage, and similar modules, copy tools into `./tools/`:
 
 - See [tools/README.txt](../tools/README.txt) for layout.
 - Copy [tools/manifest.json.example](../tools/manifest.json.example) to `tools/manifest.json` and fill in SHA-256 hashes for verification.
 
-The in-app **Prerequisites** tab shows whether tools were found in `./tools/` or on PATH, and whether you are running in **Portable kit** or **Installed app** mode.
+The in-app **Prerequisites** tab shows whether tools were found in `./tools/` or on PATH, and whether you are running in portable mode or a source-built environment.
 
 ---
 
@@ -108,14 +82,25 @@ git clone https://github.com/YSF-Studio/collectionloom.git
 cd collectionloom
 npm install
 
-# Tauri app + platform installers
+# Portable app + bundled tools where available
 npm run tauri:build
 
-# Installers + portable zip
+# Portable zip package
 npm run build:portable
 ```
 
 Portable zips are written to `dist/portable/`.
+
+### Building the commercial package
+
+The commercial packaging workflow is intentionally separate from the normal source build path. It produces the paid portable binary that you can distribute through your own sales channel.
+
+```bash
+npm install
+npm run build:commercial
+```
+
+The resulting artifacts are written to the normal Tauri bundle directories and `dist/portable/` for the portable package.
 
 See the [README](../README.md) for development prerequisites (Rust, Node, platform-specific Tauri deps).
 
@@ -128,4 +113,4 @@ See the [README](../README.md) for development prerequisites (Rust, Node, platfo
 | `COLLECTIONLOOM_KIT_ROOT` | Override kit root (path containing `tools/` and `cases/`) |
 | `COLLECTIONLOOM_PORTABLE=1` | Force portable case storage under kit root |
 
-These apply to both installed and portable builds when you need a custom layout.
+These apply to both portable and source-built layouts when you need a custom folder structure.

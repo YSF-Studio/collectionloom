@@ -9,6 +9,7 @@ import PillBadge from "./ui/PillBadge.svelte";
 import ConfirmDialog from "./ui/ConfirmDialog.svelte";
 import { diskImagingGuide } from "../guides.js";
 import { wbPillLabel } from "../wb.js";
+import { getLocale, subscribeLocale } from "../stores/locale.js";
 
 let {
   sharedState,
@@ -53,6 +54,103 @@ let hpaBusy = $state(false);
 let imagingSummary = $state(null);
 let unlistenComplete = null;
 let unlistenError = null;
+let locale = $state(getLocale());
+
+$effect(() => subscribeLocale((_, resolved) => {
+  locale = resolved;
+}));
+
+const text = {
+  en: {
+    acquireDrive: "Acquire Drive",
+    sourceDrive: "Source Drive",
+    formatHashing: "Format & Hashing",
+    destination: "Destination",
+    noDisks: "WARN: No disks detected — connect a drive and click Refresh",
+    noDisksEmpty: "No disks detected",
+    noDisksHint: "Connect a source device and click Refresh.",
+    selectDisk: "WARN: Select a disk first",
+    writeBlockerOk: "OK: Software write-blocker enabled",
+    writeBlockerWarn: "WARN: Write-blocker not confirmed",
+    hpaWarn: "WARN: HPA/DCO anomaly detected — review report",
+    hpaOk: "OK: No HPA/DCO anomalies",
+    hpaInfo: "INFO: HPA/DCO not supported on this device",
+    diskFirst: "WARN: Select a disk first",
+    refresh: "Refresh",
+    sourceOnly: "All sources",
+    physicalOnly: "Physical only",
+    logicalOnly: "Logical only",
+    selectFromList: "Select a disk from the list beside this panel.",
+    startAcq: "Start Acquisition",
+    noDisk: "No disks detected",
+    wbLabel: "Write-Blocker:",
+    wbEnable: "Enable Software Write-Blocker",
+    wbDisable: "Disable",
+    checkHpa: "Check HPA/DCO",
+    sourcePhysical: "Physical source",
+    sourceLogical: "Logical source",
+    ssdRisk: "SSD — TRIM risk",
+    encDetected: "Encryption Detected",
+    ssdWarn: "SSD TRIM may have erased deleted data. Use a hardware write blocker when possible.",
+    acqSummary: "Acquisition Summary",
+    sectorsRead: "Sectors read",
+    duration: "Duration",
+    avgSpeed: "Avg speed",
+    errorSectors: "Error sectors",
+    zeroed: "zeroed in image",
+    sourceIntegrity: "Source integrity",
+    badSectorLog: "Bad-sector log",
+    startDiskAcq: "Start Disk Acquisition?",
+    startDiskMsg: "This will begin sector-by-sector imaging of the selected drive. Ensure write-blocker is active and the destination has sufficient free space.",
+    disableWbTitle: "Disable Write-Blocker?",
+    disableWbMsg: "Disabling the software write-blocker allows writes to the source drive. Only proceed if imaging is complete and you intend to modify the device.",
+    disableWbConfirm: "Disable Write-Blocker",
+  },
+  id: {
+    acquireDrive: "Akuisisi Drive",
+    sourceDrive: "Drive Sumber",
+    formatHashing: "Format & Hashing",
+    destination: "Tujuan",
+    noDisks: "PERINGATAN: Tidak ada disk terdeteksi — sambungkan drive lalu klik Segarkan",
+    selectDisk: "PERINGATAN: Pilih disk dulu",
+    writeBlockerOk: "OK: Software write-blocker aktif",
+    writeBlockerWarn: "PERINGATAN: Write-blocker belum terkonfirmasi",
+    hpaWarn: "PERINGATAN: Anomali HPA/DCO terdeteksi — tinjau laporan",
+    hpaOk: "OK: Tidak ada anomali HPA/DCO",
+    hpaInfo: "INFO: HPA/DCO tidak didukung pada perangkat ini",
+    diskFirst: "PERINGATAN: Pilih disk dulu",
+    refresh: "Segarkan",
+    sourceOnly: "Semua sumber",
+    physicalOnly: "Hanya fisik",
+    logicalOnly: "Hanya logis",
+    selectFromList: "Pilih disk dari daftar di samping panel ini.",
+    startAcq: "Mulai Akuisisi",
+    noDisk: "Tidak ada disk terdeteksi",
+    wbLabel: "Write-Blocker:",
+    wbEnable: "Aktifkan Software Write-Blocker",
+    wbDisable: "Nonaktifkan",
+    checkHpa: "Periksa HPA/DCO",
+    sourcePhysical: "Sumber fisik",
+    sourceLogical: "Sumber logis",
+    ssdRisk: "SSD — risiko TRIM",
+    encDetected: "Enkripsi Terdeteksi",
+    ssdWarn: "TRIM SSD mungkin telah menghapus data terhapus. Gunakan hardware write blocker bila memungkinkan.",
+    acqSummary: "Ringkasan Akuisisi",
+    sectorsRead: "Sektor terbaca",
+    duration: "Durasi",
+    avgSpeed: "Kecepatan rata-rata",
+    errorSectors: "Sektor error",
+    zeroed: "di-nol-kan di image",
+    sourceIntegrity: "Integritas sumber",
+    badSectorLog: "Log sektor rusak",
+    startDiskAcq: "Mulai Akuisisi Disk?",
+    startDiskMsg: "Ini akan memulai imaging sektor-per-sektor dari drive yang dipilih. Pastikan write-blocker aktif dan tujuan memiliki ruang yang cukup.",
+    disableWbTitle: "Nonaktifkan Write-Blocker?",
+    disableWbMsg: "Menonaktifkan software write-blocker akan memungkinkan penulisan ke drive sumber. Lanjutkan hanya jika imaging sudah selesai dan Anda memang ingin memodifikasi perangkat.",
+    disableWbConfirm: "Nonaktifkan Write-Blocker",
+  },
+};
+function tr(key) { return text[locale]?.[key] || text.en[key] || key; }
 
 function finishImagingPoll(p) {
   if (pollId) clearInterval(pollId);
@@ -113,7 +211,7 @@ async function listDisks() {
     if (selectedDisk && !disks.some((d) => d.device === selectedDisk)) {
       selectedDisk = "";
     }
-    if (!disks.length) setMsg("WARN: No disks detected — connect a drive and click Refresh");
+    if (!disks.length) setMsg(tr("noDisks"));
   } catch (e) {
     const err = typeof e === "string" ? e : String(e);
     if (err !== "TIMEOUT" && !isPreviewError(e)) setMsg(`ERR: ${err}`);
@@ -132,9 +230,9 @@ function selectDisk(disk) {
 }
 
 function sourceModeLabel(mode) {
-  if (mode === "physical") return "Physical only";
-  if (mode === "logical") return "Logical only";
-  return "All sources";
+  if (mode === "physical") return tr("physicalOnly");
+  if (mode === "logical") return tr("logicalOnly");
+  return tr("sourceOnly");
 }
 
 async function checkEncryption() {
@@ -169,8 +267,8 @@ async function checkWriteBlocker() {
 }
 
 async function enableWriteBlocker() {
-  if (!selectedDisk) {
-    setMsg("WARN: Select a disk first");
+    if (!selectedDisk) {
+    setMsg(tr("selectDisk"));
     return;
   }
   setBusy(true);
@@ -178,7 +276,7 @@ async function enableWriteBlocker() {
     wbStatus = await timeoutPromise(invoke("enable_write_blocker", { device: selectedDisk }), 15000);
     const active = wbStatus?.active ?? wbStatus?.enabled ?? false;
     onDeviceSelect({ device: selectedDisk, wbActive: active });
-    setMsg(active ? "OK: Software write-blocker enabled" : "WARN: Write-blocker not confirmed");
+    setMsg(active ? tr("writeBlockerOk") : tr("writeBlockerWarn"));
   } catch (e) {
     setMsg(`ERR: ${typeof e === "string" ? e : String(e)}`);
   }
@@ -187,7 +285,7 @@ async function enableWriteBlocker() {
 
 async function detectHpaDco() {
   if (!selectedDisk) {
-    setMsg("WARN: Select a disk first");
+    setMsg(tr("selectDisk"));
     return;
   }
   hpaBusy = true;
@@ -195,9 +293,9 @@ async function detectHpaDco() {
   try {
     hpaReport = await timeoutPromise(invoke("hpa_dco_detect", { device: selectedDisk }), 30000);
     if (hpaReport?.hpaDetected || hpaReport?.dcoDetected) {
-      setMsg("WARN: HPA/DCO anomaly detected — review report");
+      setMsg(tr("hpaWarn"));
     } else {
-      setMsg(hpaReport?.supported ? "OK: No HPA/DCO anomalies" : "INFO: HPA/DCO not supported on this device");
+      setMsg(hpaReport?.supported ? tr("hpaOk") : tr("hpaInfo"));
     }
   } catch (e) {
     setMsg(`ERR: ${typeof e === "string" ? e : String(e)}`);
@@ -254,7 +352,7 @@ function resolveDestPath() {
 
 function requestStartImaging() {
   if (!selectedDisk || !destPath) {
-    setMsg("WARN: Select a disk and destination");
+    setMsg(locale === "id" ? "PERINGATAN: Pilih disk dan tujuan" : "WARN: Select a disk and destination");
     return;
   }
   showConfirmStart = true;
@@ -327,29 +425,29 @@ $effect(() => {
 </script>
 
 <div class="tab-content disk-tab">
-  <SectionHeader title="Acquire Drive" subtitle="Disk Imaging — sector-by-sector acquisition with hash verification for physical or logical sources" />
+  <SectionHeader title={tr("acquireDrive")} subtitle={locale === "id" ? "Disk Imaging — akuisisi sektor-per-sektor dari disk sumber atau volume logis dengan verifikasi hash" : "Disk Imaging — sector-by-sector acquisition of a source disk or logical volume with hash verification"} />
 
-  <MacCard title="Source Drive">
+  <MacCard title={tr("sourceDrive")}>
     <div class="disk-layout">
       <aside class="disk-sidebar" aria-label="Available disks">
         <div class="disk-sidebar-head">
-          <span class="disk-sidebar-title">Physical and logical sources</span>
+          <span class="disk-sidebar-title">{locale === "id" ? "Daftar sumber" : "Source list"}</span>
           <select bind:value={sourceMode} class="source-mode" aria-label="Filter source type" disabled={collBusy || disksLoading}>
-            <option value="all">All sources</option>
-            <option value="physical">Physical only</option>
-            <option value="logical">Logical only</option>
+            <option value="all">{tr("sourceOnly")}</option>
+            <option value="physical">{tr("physicalOnly")}</option>
+            <option value="logical">{tr("logicalOnly")}</option>
           </select>
           <button onclick={listDisks} class="btn-sm" disabled={collBusy || disksLoading}>
             {#if disksLoading}<span class="spinner">↻</span>{/if}
-            {disksLoading ? "…" : "Refresh"}
+            {disksLoading ? "…" : tr("refresh")}
           </button>
         </div>
         {#if disksLoading}
-          <p class="disk-sidebar-msg">Loading disks…</p>
+          <p class="disk-sidebar-msg">{locale === "id" ? "Memuat disk…" : "Loading disks…"}</p>
         {:else if visibleDisks.length === 0}
           <div class="empty-state compact">
-            <p>No disks detected</p>
-            <p class="empty-hint">{sourceModeLabel(sourceMode)} is empty. Connect a drive and click Refresh.</p>
+            <p>{tr("noDisk")}</p>
+            <p class="empty-hint">{sourceModeLabel(sourceMode)} {locale === "id" ? "kosong." : "is empty."} {tr("noDisksHint")}</p>
           </div>
         {:else}
           <ul class="disk-list">
@@ -365,7 +463,7 @@ $effect(() => {
                   <span class="disk-item-device">{disk.device}</span>
                   <span class="disk-item-model">{disk.model || "Unknown"}</span>
                   <span class="disk-item-meta">
-                    {(disk.sizeBytes / 1e9).toFixed(1)} GB · {disk.isSsd ? "SSD" : "HDD"} · {disk.sourceKind === "logical" ? "Logical" : "Physical"}
+                    {(disk.sizeBytes / 1e9).toFixed(1)} GB · {disk.isSsd ? "SSD" : "HDD"} · {disk.sourceKind === "logical" ? (locale === "id" ? "Logis" : "Logical") : (locale === "id" ? "Fisik" : "Physical")}
                   </span>
                 </button>
               </li>
@@ -376,23 +474,23 @@ $effect(() => {
 
       <div class="disk-main">
         {#if !selectedDiskInfo}
-          <p class="disk-prompt">Select a disk from the list beside this panel.</p>
+          <p class="disk-prompt">{tr("selectFromList")}</p>
         {:else}
           <div class="drive-detail">
             <span>{selectedDiskInfo.device}</span>
-            <span>{selectedDiskInfo.model || "Unknown model"}</span>
+            <span>{selectedDiskInfo.model || (locale === "id" ? "Model tidak diketahui" : "Unknown model")}</span>
             <span>{(selectedDiskInfo.sizeBytes / 1e9).toFixed(1)} GB</span>
-            <PillBadge variant={selectedDiskInfo.sourceKind === "logical" ? "active" : "warning"} label={selectedDiskInfo.sourceKind === "logical" ? "Logical source" : "Physical source"} />
-            {#if selectedDiskInfo.isSsd}<PillBadge variant="warning" label="SSD — TRIM risk" />{/if}
-            {#if bitlockerDetected}<PillBadge variant="warning" label="Encryption Detected" />{/if}
+            <PillBadge variant={selectedDiskInfo.sourceKind === "logical" ? "active" : "warning"} label={selectedDiskInfo.sourceKind === "logical" ? tr("sourceLogical") : tr("sourcePhysical")} />
+            {#if selectedDiskInfo.isSsd}<PillBadge variant="warning" label={tr("ssdRisk")} />{/if}
+            {#if bitlockerDetected}<PillBadge variant="warning" label={tr("encDetected")} />{/if}
           </div>
           {#if selectedDiskInfo.isSsd}
-            <p class="warn-text">SSD TRIM may have erased deleted data. Use a hardware write blocker when possible.</p>
+            <p class="warn-text">{tr("ssdWarn")}</p>
           {/if}
           <div class="wb-section">
             {#if wbStatus}
               <div class="wb-row">
-                <span class="wb-label">Write-Blocker:</span>
+                <span class="wb-label">{tr("wbLabel")}</span>
                 <PillBadge
                   variant={(wbStatus.active ?? wbStatus.enabled) ? "active" : "inactive"}
                   label={wbPillLabel(wbStatus)}
@@ -400,18 +498,18 @@ $effect(() => {
               </div>
             {/if}
             <div class="wb-btns">
-              <button onclick={enableWriteBlocker} class="btn-sm" disabled={collBusy || busy || !selectedDisk}>Enable Software Write-Blocker</button>
-              <button onclick={requestDisableWriteBlocker} class="btn-sm" disabled={collBusy || busy || !selectedDisk || !wbStatus?.software}>Disable</button>
-              <button onclick={checkWriteBlocker} class="btn-sm" disabled={collBusy || !selectedDisk}>Refresh</button>
+              <button onclick={enableWriteBlocker} class="btn-sm" disabled={collBusy || busy || !selectedDisk}>{tr("wbEnable")}</button>
+              <button onclick={requestDisableWriteBlocker} class="btn-sm" disabled={collBusy || busy || !selectedDisk || !wbStatus?.software}>{tr("wbDisable")}</button>
+              <button onclick={checkWriteBlocker} class="btn-sm" disabled={collBusy || !selectedDisk}>{tr("refresh")}</button>
               <button onclick={detectHpaDco} class="btn-sm" disabled={collBusy || busy || hpaBusy || !selectedDisk}>
-                {hpaBusy ? "Checking HPA/DCO…" : "Check HPA/DCO"}
+                {hpaBusy ? (locale === "id" ? "Memeriksa HPA/DCO…" : "Checking HPA/DCO…") : tr("checkHpa")}
               </button>
             </div>
             {#if hpaReport}
               <div class="hpa-report">
-                {#if hpaReport.hpaDetected}<PillBadge variant="warning" label="HPA Detected" />{/if}
-                {#if hpaReport.dcoDetected}<PillBadge variant="warning" label="DCO Detected" />{/if}
-                {#if hpaReport.hiddenSectors != null}<span class="wb-detail">Hidden sectors: {hpaReport.hiddenSectors}</span>{/if}
+                {#if hpaReport.hpaDetected}<PillBadge variant="warning" label={locale === "id" ? "HPA Terdeteksi" : "HPA Detected"} />{/if}
+                {#if hpaReport.dcoDetected}<PillBadge variant="warning" label={locale === "id" ? "DCO Terdeteksi" : "DCO Detected"} />{/if}
+                {#if hpaReport.hiddenSectors != null}<span class="wb-detail">{locale === "id" ? "Sektor tersembunyi" : "Hidden sectors"}: {hpaReport.hiddenSectors}</span>{/if}
                 <span class="wb-detail">{hpaReport.notes}</span>
               </div>
             {/if}
@@ -422,43 +520,43 @@ $effect(() => {
     </div>
   </MacCard>
 
-  <MacCard title="Format & Hashing">
+  <MacCard title={tr("formatHashing")}>
     <FormatPicker bind:format={imageFormat} bind:hashMd5 bind:hashSha256 disabled={collBusy} />
-    <div class="split-row">
-      <label>Split (MB): <input type="number" bind:value={splitSize} disabled={collBusy} placeholder="0 = no split" /></label>
-      <label class="check"><input type="checkbox" bind:checked={shouldVerify} disabled={collBusy} /> Verify after write</label>
+      <div class="split-row">
+      <label>{locale === "id" ? "Pecah (MB):" : "Split (MB):"} <input type="number" bind:value={splitSize} disabled={collBusy} placeholder={locale === "id" ? "0 = tanpa pecah" : "0 = no split"} /></label>
+      <label class="check"><input type="checkbox" bind:checked={shouldVerify} disabled={collBusy} /> {locale === "id" ? "Verifikasi setelah penulisan" : "Verify after write"}</label>
     </div>
   </MacCard>
 
-  <MacCard title="Destination">
+  <MacCard title={tr("destination")}>
     <div class="row">
       <input type="text" bind:value={destPath} disabled={collBusy} class="full" placeholder="/path/to/image.dd" />
-      <button onclick={browseDestination} class="btn-sm" disabled={collBusy}>Browse</button>
+      <button onclick={browseDestination} class="btn-sm" disabled={collBusy}>{locale === "id" ? "Jelajah" : "Browse"}</button>
     </div>
   </MacCard>
 
   <div class="actions">
     {#if !collBusy}
-      <button onclick={requestStartImaging} class="btn-primary" disabled={!selectedDisk}>Start Acquisition</button>
+      <button onclick={requestStartImaging} class="btn-primary" disabled={!selectedDisk}>{tr("startAcq")}</button>
     {:else}
-      <button onclick={cancelImaging} class="btn-danger">Stop</button>
+      <button onclick={cancelImaging} class="btn-danger">{locale === "id" ? "Hentikan" : "Stop"}</button>
     {/if}
   </div>
 
   {#if imagingSummary}
-    <MacCard title="Acquisition Summary">
+    <MacCard title={tr("acqSummary")}>
       <div class="summary-grid">
-        <span class="summary-item">Sectors read: {imagingSummary.sectorsRead?.toLocaleString?.() ?? imagingSummary.sectorsRead ?? "—"}</span>
-        <span class="summary-item">Duration: {imagingSummary.durationSecs?.toFixed?.(1) ?? imagingSummary.durationSecs ?? "—"}s</span>
-        <span class="summary-item">Avg speed: {((imagingSummary.avgSpeedBytesPerSec ?? 0) / 1e6).toFixed(1)} MB/s</span>
+        <span class="summary-item">{tr("sectorsRead")}: {imagingSummary.sectorsRead?.toLocaleString?.() ?? imagingSummary.sectorsRead ?? "—"}</span>
+        <span class="summary-item">{tr("duration")}: {imagingSummary.durationSecs?.toFixed?.(1) ?? imagingSummary.durationSecs ?? "—"}s</span>
+        <span class="summary-item">{tr("avgSpeed")}: {((imagingSummary.avgSpeedBytesPerSec ?? 0) / 1e6).toFixed(1)} MB/s</span>
         <span class:warn-sector={(imagingSummary.errorSectors ?? 0) > 0}>
-          Error sectors: {imagingSummary.errorSectors ?? 0}
-          {#if (imagingSummary.errorSectors ?? 0) > 0} (zeroed in image){/if}
+          {tr("errorSectors")}: {imagingSummary.errorSectors ?? 0}
+          {#if (imagingSummary.errorSectors ?? 0) > 0} ({tr("zeroed")}){/if}
         </span>
-        <span>Source integrity: {imagingSummary.sourceIntegrityOk ? "OK" : "FAILED"}</span>
+        <span>{tr("sourceIntegrity")}: {imagingSummary.sourceIntegrityOk ? "OK" : "FAILED"}</span>
         <span class="mono">SHA-256: {imagingSummary.sha256 ?? "—"}</span>
         {#if imagingSummary.badSectorsLog}
-          <span class="mono">Bad-sector log: {imagingSummary.badSectorsLog}</span>
+          <span class="mono">{tr("badSectorLog")}: {imagingSummary.badSectorsLog}</span>
         {/if}
       </div>
     </MacCard>
@@ -469,9 +567,9 @@ $effect(() => {
 
 <ConfirmDialog
   open={showConfirmStart}
-  title="Start Disk Acquisition?"
-  message="This will begin sector-by-sector imaging of the selected drive. Ensure write-blocker is active and the destination has sufficient free space."
-  confirmLabel="Start Acquisition"
+  title={tr("startDiskAcq")}
+  message={tr("startDiskMsg")}
+  confirmLabel={tr("startAcq")}
   variant="primary"
   onConfirm={startImaging}
   onCancel={() => (showConfirmStart = false)}
@@ -479,9 +577,9 @@ $effect(() => {
 
 <ConfirmDialog
   open={showConfirmDisableWb}
-  title="Disable Write-Blocker?"
-  message="Disabling the software write-blocker allows writes to the source drive. Only proceed if imaging is complete and you intend to modify the device."
-  confirmLabel="Disable Write-Blocker"
+  title={tr("disableWbTitle")}
+  message={tr("disableWbMsg")}
+  confirmLabel={tr("disableWbConfirm")}
   variant="danger"
   onConfirm={disableWriteBlocker}
   onCancel={() => (showConfirmDisableWb = false)}

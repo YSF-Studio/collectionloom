@@ -4,6 +4,7 @@
   "tools": [
     {
       "id": "avml",
+      "kind": "portable_binary",
       "release": "v0.7.0",
       "assets": {
         "darwin-arm64": {
@@ -27,6 +28,7 @@
     },
     {
       "id": "winpmem",
+      "kind": "portable_binary",
       "release": "4.1",
       "assets": {
         "win32-x64": {
@@ -35,6 +37,18 @@
           "aliases": ["winpmem", "WinPmem"]
         }
       }
+    },
+    {
+      "id": "lime",
+      "kind": "source_specific",
+      "release": "kernel-module",
+      "assets": {}
+    },
+    {
+      "id": "mrs",
+      "kind": "source_specific",
+      "release": "macos-tool",
+      "assets": {}
     }
   ]
 }

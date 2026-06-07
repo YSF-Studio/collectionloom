@@ -9,9 +9,12 @@
     "preview": "vite preview",
     "tauri": "tauri",
     "tauri:dev": "tauri dev",
-    "tauri:build": "tauri build",
+    "sync-tools": "node scripts/sync-portable-tools.mjs",
+    "download-tools": "node ../../scripts/download-tools.mjs",
+    "tauri:build": "npm run download-tools && npm run sync-tools && tauri build",
     "build:install": "tauri build",
-    "build:portable": "tauri build && node ../../scripts/package-portable.mjs"
+    "build:portable": "npm run download-tools && npm run sync-tools && tauri build && node ../../scripts/package-portable.mjs",
+    "build:commercial": "COLLECTIONLOOM_BUILD_FLAVOR=commercial npm run download-tools && npm run sync-tools && tauri build && node ../../scripts/package-portable.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",

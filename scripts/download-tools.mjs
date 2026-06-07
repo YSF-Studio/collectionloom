@@ -5,6 +5,7 @@
  *
  * SKIP_TOOL_DOWNLOAD=1     — skip network fetch (dev/CI without downloads)
  * STRICT_TOOL_DOWNLOAD=1   — fail build if any tool download fails
+ * COLLECTIONLOOM_BUILD_FLAVOR=source|portable|commercial — labels manifest metadata
  */
 
 import { createHash } from "node:crypto";
@@ -22,6 +23,7 @@ const CONFIG_PATH = join(__dirname, "tools.config.json");
 
 const SKIP = process.env.SKIP_TOOL_DOWNLOAD === "1";
 const STRICT = process.env.STRICT_TOOL_DOWNLOAD === "1";
+const BUILD_FLAVOR = process.env.COLLECTIONLOOM_BUILD_FLAVOR || "source";
 
 function platformKey() {
   const p = process.platform;
@@ -69,8 +71,8 @@ async function main() {
   const pk = platformKey();
   console.log(`[download-tools] Platform: ${pk}`);
 
-  /** @type {Record<string, { file: string, sha256: string }>} */
-  const manifest = { tools: {} };
+  /** @type {Record<string, { file: string, sha256: string, release?: string }>} */
+  const manifest = { buildFlavor: BUILD_FLAVOR, tools: {} };
 
   for (const tool of config.tools) {
     const asset = tool.assets[pk];
@@ -86,7 +88,7 @@ async function main() {
       const hash = await sha256File(dest);
       const keys = [tool.id, ...(asset.aliases ?? [])];
       for (const key of keys) {
-        manifest.tools[key] = { file: asset.file, sha256: hash };
+        manifest.tools[key] = { file: asset.file, sha256: hash, release: tool.release };
       }
       console.log(`[download-tools] OK ${tool.id} (${hash.slice(0, 12)}…)`);
     } catch (err) {

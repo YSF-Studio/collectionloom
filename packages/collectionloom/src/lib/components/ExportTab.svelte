@@ -6,6 +6,7 @@ import PillBadge from "./ui/PillBadge.svelte";
 import { listCases } from "../api/case.js";
 import { listSnapshots } from "../api/snapshot.js";
 import { exportJson, exportMarkdown, exportZip, listExports } from "../api/export.js";
+import { getLocale, subscribeLocale } from "../stores/locale.js";
 
 let { busy, setBusy, setMsg, timeoutPromise } = $props();
 
@@ -17,12 +18,67 @@ let format = $state("json");
 let includeDiff = $state(true);
 let exports = $state([]);
 let lastResult = $state(null);
+let locale = $state(getLocale());
 
-const profiles = [
-  { id: "json", label: "JSON Pack", desc: "Normalized evidence_pack.json" },
-  { id: "markdown", label: "Markdown Report", desc: "Human-readable case_report.md" },
-  { id: "zip", label: "ZIP Bundle", desc: "Full case folder archive" },
-];
+$effect(() => subscribeLocale((_, resolved) => {
+  locale = resolved;
+}));
+
+const text = {
+  en: {
+    title: "Export Bundle",
+    subtitle: "Generate handover packages for investigation teams",
+    noCases: "No cases to export",
+    createFirst: "Create a case from System Snapshot or Chain of Custody first.",
+    goToSnapshot: "Go to System Snapshot",
+    selectCase: "— Select case —",
+    selectSnapshot: "— Select snapshot —",
+    includeDiff: "Include diff summary",
+    generate: "Generate Export",
+    lastExport: "Last Export",
+    previousExports: "Previous Exports",
+    type: "Type",
+    path: "Path",
+    size: "Size",
+    openFolder: "Open Folder",
+    case: "Case",
+    snapshot: "Snapshot",
+    format: "Format",
+    jsonPack: "JSON Pack",
+    markdownReport: "Markdown Report",
+    zipBundle: "ZIP Bundle",
+  },
+  id: {
+    title: "Paket Ekspor",
+    subtitle: "Buat paket serah terima untuk tim investigasi",
+    noCases: "Tidak ada kasus untuk diekspor",
+    createFirst: "Buat kasus dari System Snapshot atau Chain of Custody terlebih dahulu.",
+    goToSnapshot: "Ke System Snapshot",
+    selectCase: "— Pilih kasus —",
+    selectSnapshot: "— Pilih snapshot —",
+    includeDiff: "Sertakan ringkasan diff",
+    generate: "Buat Ekspor",
+    lastExport: "Ekspor Terakhir",
+    previousExports: "Ekspor Sebelumnya",
+    type: "Jenis",
+    path: "Path",
+    size: "Ukuran",
+    openFolder: "Buka Folder",
+    case: "Kasus",
+    snapshot: "Snapshot",
+    format: "Format",
+    jsonPack: "Paket JSON",
+    markdownReport: "Laporan Markdown",
+    zipBundle: "Paket ZIP",
+  },
+};
+function tr(key) { return text[locale]?.[key] || text.en[key] || key; }
+
+const profiles = $derived([
+  { id: "json", label: locale === "id" ? "Paket JSON" : "JSON Pack", desc: locale === "id" ? "evidence_pack.json yang dinormalisasi" : "Normalized evidence_pack.json" },
+  { id: "markdown", label: locale === "id" ? "Laporan Markdown" : "Markdown Report", desc: locale === "id" ? "case_report.md yang mudah dibaca manusia" : "Human-readable case_report.md" },
+  { id: "zip", label: locale === "id" ? "Paket ZIP" : "ZIP Bundle", desc: locale === "id" ? "Arsip penuh folder kasus" : "Full case folder archive" },
+]);
 
 async function loadCases() {
   try {
@@ -65,16 +121,16 @@ $effect(() => {
 
 async function generateExport() {
   if (!selectedCaseId) {
-    setMsg("WARN: Select a case first");
+    setMsg(locale === "id" ? "PERINGATAN: Pilih kasus terlebih dahulu" : "WARN: Select a case first");
     return;
   }
   setBusy(true);
   try {
     if (format === "json") {
-      if (!selectedSnapshotId) throw new Error("Select a snapshot for JSON export");
+      if (!selectedSnapshotId) throw new Error(locale === "id" ? "Pilih snapshot untuk ekspor JSON" : "Select a snapshot for JSON export");
       lastResult = await timeoutPromise(exportJson(selectedCaseId, selectedSnapshotId), 60000);
     } else if (format === "markdown") {
-      if (!selectedSnapshotId) throw new Error("Select a snapshot for Markdown export");
+      if (!selectedSnapshotId) throw new Error(locale === "id" ? "Pilih snapshot untuk ekspor Markdown" : "Select a snapshot for Markdown export");
       lastResult = await timeoutPromise(
         exportMarkdown(selectedCaseId, selectedSnapshotId, includeDiff),
         60000
@@ -103,20 +159,20 @@ async function openFolder() {
 </script>
 
 <div class="tab-content export-tab">
-  <SectionHeader title="Export Bundle" subtitle="Generate handover packages for investigation teams" />
+  <SectionHeader title={tr("title")} subtitle={tr("subtitle")} />
 
   {#if !cases.length}
     <div class="empty-state">
       <span class="icon">📦</span>
-      <p>No cases to export</p>
-      <p class="empty-hint">Create a case from System Snapshot or Chain of Custody first.</p>
-      <button class="btn-sm primary" onclick={() => window.__goTo?.("snapshot")}>Go to System Snapshot</button>
+      <p>{tr("noCases")}</p>
+      <p class="empty-hint">{tr("createFirst")}</p>
+      <button class="btn-sm primary" onclick={() => window.__goTo?.("snapshot")}>{tr("goToSnapshot")}</button>
     </div>
   {/if}
 
-  <MacCard title="Case">
+    <MacCard title={tr("case")}>
     <select bind:value={selectedCaseId} class="full" disabled={!cases.length}>
-      <option value="">— Select case —</option>
+      <option value="">{tr("selectCase")}</option>
       {#each cases as c}
         <option value={c.case_id}>{c.title} ({c.case_id.slice(0, 8)}…)</option>
       {/each}
@@ -124,9 +180,9 @@ async function openFolder() {
   </MacCard>
 
   {#if format !== "zip"}
-    <MacCard title="Snapshot">
+    <MacCard title={tr("snapshot")}>
       <select bind:value={selectedSnapshotId} class="full" disabled={!snapshots.length}>
-        <option value="">— Select snapshot —</option>
+        <option value="">{tr("selectSnapshot")}</option>
         {#each snapshots as s}
           <option value={s.snapshot_id}>{s.profile} — {s.started_at} ({s.status})</option>
         {/each}
@@ -134,7 +190,7 @@ async function openFolder() {
     </MacCard>
   {/if}
 
-  <MacCard title="Format">
+    <MacCard title={tr("format")}>
     <div class="format-grid">
       {#each profiles as p}
         <label class="format-card" class:selected={format === p.id}>
@@ -144,29 +200,29 @@ async function openFolder() {
         </label>
       {/each}
     </div>
-    {#if format === "markdown"}
-      <label class="check"><input type="checkbox" bind:checked={includeDiff} /> Include diff summary</label>
+          {#if format === "markdown"}
+      <label class="check"><input type="checkbox" bind:checked={includeDiff} /> {tr("includeDiff")}</label>
     {/if}
   </MacCard>
 
   <div class="action-row">
-    <button class="btn-primary" onclick={generateExport} disabled={busy || !selectedCaseId}>
-      Generate Export
+      <button class="btn-primary" onclick={generateExport} disabled={busy || !selectedCaseId}>
+      {tr("generate")}
     </button>
   </div>
 
   {#if lastResult}
-    <MacCard title="Last Export">
-      <div class="result-row"><span>Type</span><PillBadge variant="info" label={lastResult.export_type} /></div>
-      <div class="result-row"><span>Path</span><code>{lastResult.output_path}</code></div>
-      <div class="result-row"><span>Size</span><span>{(lastResult.size_bytes / 1024).toFixed(1)} KB</span></div>
-      <div class="result-row"><span>SHA-256</span><code class="hash">{lastResult.sha256.slice(0, 16)}…</code></div>
-      <button class="btn-sm" onclick={openFolder}>Open Folder</button>
+    <MacCard title={tr("lastExport")}>
+      <div class="result-row"><span>{tr("type")}</span><PillBadge variant="info" label={lastResult.export_type} /></div>
+      <div class="result-row"><span>{tr("path")}</span><code>{lastResult.output_path}</code></div>
+      <div class="result-row"><span>{tr("size")}</span><span>{(lastResult.size_bytes / 1024).toFixed(1)} KB</span></div>
+          <div class="result-row"><span>SHA-256</span><code class="hash">{lastResult.sha256.slice(0, 16)}…</code></div>
+      <button class="btn-sm" onclick={openFolder}>{tr("openFolder")}</button>
     </MacCard>
   {/if}
 
   {#if exports.length}
-    <MacCard title="Previous Exports">
+    <MacCard title={tr("previousExports")}>
       {#each exports as ex}
         <div class="export-item">
           <PillBadge variant="info" label={ex.export_type} />
