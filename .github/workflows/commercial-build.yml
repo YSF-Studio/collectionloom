@@ -51,4 +51,4 @@ jobs:
           name: collectionloom-commercial-${{ inputs.build_flavor }}
           path: |
             packages/collectionloom/src-tauri/target/release/bundle/**
-            packages/collectionloom/dist/portable/**
+            dist/portable/**

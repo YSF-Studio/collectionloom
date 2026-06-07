@@ -147,12 +147,13 @@ jobs:
       - name: Cargo Audit (core)
         run: |
           cargo install cargo-audit --locked 2>/dev/null
-          APPDIR="${{ needs.detect.outputs.app_dir }}"
-          if [ -d "packages/core" ]; then
-            cd packages/core && cargo audit
+          ROOT="$GITHUB_WORKSPACE"
+          if [ -f "$ROOT/packages/core/Cargo.toml" ]; then
+            (cd "$ROOT/packages/core" && cargo audit)
           fi
+          APPDIR="$ROOT/${{ needs.detect.outputs.app_dir }}"
           if [ -f "$APPDIR/src-tauri/Cargo.toml" ]; then
-            cd "$APPDIR/src-tauri" && cargo audit
+            (cd "$APPDIR/src-tauri" && cargo audit)
           fi
 
   e2e-ui:
