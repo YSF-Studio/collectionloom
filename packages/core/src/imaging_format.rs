@@ -95,6 +95,8 @@ pub fn normalize_block_source(source: &str) -> String {
     if cfg!(target_os = "macos") && source.starts_with("/dev/disk") && !source.starts_with("/dev/rdisk")
     {
         source.replacen("/dev/disk", "/dev/rdisk", 1)
+    } else if cfg!(target_os = "windows") {
+        crate::block_device::normalize_windows_path(source)
     } else {
         source.to_string()
     }

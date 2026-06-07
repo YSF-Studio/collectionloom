@@ -104,7 +104,8 @@ $effect(() => {
 
   <MacCard title="Filter & Output">
     <input type="text" bind:value={bpf} placeholder="BPF filter (e.g. not port 22)" class="full" />
-    <input type="text" bind:value={outFile} class="full" />
+    <label for="network-output" class="sr-only">Capture output file</label>
+    <input id="network-output" type="text" bind:value={outFile} class="full" />
     <label class="duration-row">
       Max duration (seconds):
       <input type="number" bind:value={maxDurationSecs} min="0" placeholder="3600" />
@@ -154,6 +155,17 @@ $effect(() => {
   .duration-row { display: flex; flex-direction: column; gap: 4px; font-size: 13px; margin-top: 4px; }
   .duration-row input { width: 120px; }
   .hint { font-size: 11px; color: var(--warn); }
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
   .btn-primary, .btn-danger { padding: 10px 24px; color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; margin-bottom: 12px; }
   .btn-primary { background: var(--primary); }
   .btn-danger { background: var(--danger); }

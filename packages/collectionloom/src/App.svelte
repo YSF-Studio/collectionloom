@@ -17,6 +17,7 @@ import PillBadge from "./lib/components/ui/PillBadge.svelte";
 import ProgressStatusBar from "./lib/components/ui/ProgressStatusBar.svelte";
 import ThemeToggle from "./lib/components/ui/ThemeToggle.svelte";
 import ConfirmDialog from "./lib/components/ui/ConfirmDialog.svelte";
+import { guessPlatform } from "./lib/window.js";
 import { invoke, isTauri } from "./lib/api/tauri.js";
 import { isError, isWarn } from "./lib/messages.js";
 
@@ -35,6 +36,7 @@ let wbDisks = $state([]);
 let wbDisksLoading = $state(false);
 let showConfirmDisableWb = $state(false);
 let acquireAllState = {};
+let platform = $state(guessPlatform());
 
 let statusBar = $state({
   active: false,
@@ -297,7 +299,7 @@ window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
       {#each sidebarSections as section}
         <div class="sidebar-group">
           <span class="sidebar-label">{section.label}</span>
-          {#each section.items as item}
+  {#each section.items as item}
             <button
               class="sidebar-item"
               class:active={activeSection === item.id}
@@ -361,6 +363,19 @@ window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
         <DisclaimerTab />
       {/if}
     </div>
+  </div>
+
+  <div class="platform-hint">
+    <span class="platform-pill">{platform}</span>
+    <span class="platform-copy">
+      {#if platform === "macos"}
+        Optimized for a desktop workflow with native file pickers and a compact titlebar.
+      {:else if platform === "windows"}
+        Optimized for Windows with standard window controls and portable kit paths.
+      {:else}
+        Optimized for Linux with portable kit paths and system-library detection.
+      {/if}
+    </span>
   </div>
 
   <ProgressStatusBar
@@ -565,18 +580,36 @@ window.__sections = sidebarSections.flatMap((s) => s.items.map((i) => i.id));
     color: var(--primary);
     font-weight: 600;
   }
-  .icon {
-    font-size: 11px;
-    opacity: 0.8;
-    width: 14px;
-    text-align: center;
-  }
-
   .content-area {
     flex: 1;
     overflow-y: auto;
     padding: 28px 32px;
     background: var(--bg);
+  }
+
+  .platform-hint {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 32px 0;
+    color: var(--text-muted);
+    font-size: 11px;
+  }
+  .platform-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    font-weight: 700;
+  }
+  .platform-copy {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .preview-badge {

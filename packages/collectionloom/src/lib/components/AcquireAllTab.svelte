@@ -354,6 +354,19 @@ $effect(() => {
     <p class="hint">Refreshes disk, RAM, network, and mobile source lists — not the output folder.</p>
   </div>
 
+  <MacCard title="Output">
+    <div class="output-row">
+      <label for="acquire-all-output">Output folder</label>
+      <input
+        id="acquire-all-output"
+        bind:value={outputFolder}
+        class="full"
+        placeholder="Choose a portable acquisition folder"
+      />
+    </div>
+    <p class="hint">All module output paths are derived from this folder.</p>
+  </MacCard>
+
   <div class="modules-grid">
     <MacCard title="Disk" class="module-card">
       <label class="toggle"><input type="checkbox" bind:checked={diskEnabled} /> Enable</label>
@@ -364,8 +377,8 @@ $effect(() => {
             <option value={d.device}>{d.device} — {formatSize(d.sizeBytes)} {d.model || ""}</option>
           {/each}
         </select>
-        <label class="split-label">Split (MB, 0 = auto for drives &gt;4 GB):</label>
-        <input type="number" bind:value={splitSizeMb} class="full" placeholder="4096" />
+        <label class="split-label" for="acquire-all-split">Split (MB, 0 = auto for drives &gt;4 GB):</label>
+        <input id="acquire-all-split" type="number" bind:value={splitSizeMb} class="full" placeholder="4096" />
         {#if wbStatus}
           <div class="wb-row">
             <span class="wb-label">Write-Blocker:</span>

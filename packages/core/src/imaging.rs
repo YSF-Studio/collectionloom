@@ -32,10 +32,13 @@ pub enum AcquisitionState {
 #[ts(export, export_to = "../../collectionloom/src/lib/generated/DiskInfo.ts")]
 pub struct DiskInfo {
     pub device: String,
+    pub source_kind: String,
     pub model: String,
     pub size_bytes: u64,
     pub sector_size: u64,
     pub is_ssd: bool,
+    pub mount_point: Option<String>,
+    pub file_system: Option<String>,
     pub partitions: Vec<PartitionInfo>,
 }
 
@@ -52,8 +55,8 @@ pub struct PartitionInfo {
 }
 
 impl DiskInfo {
-    #[cfg(target_os = "linux")]
-    pub fn list() -> Result<Vec<Self>, String> {
+#[cfg(target_os = "linux")]
+pub fn list() -> Result<Vec<Self>, String> {
         use std::process::Command;
         let output = Command::new("lsblk")
             .args(["-J", "-o", "NAME,SIZE,MODEL,ROTA,TYPE,MOUNTPOINT,FSTYPE"])
@@ -62,15 +65,19 @@ impl DiskInfo {
         let mut disks = vec![];
         if let Some(devices) = json["blockdevices"].as_array() {
             for d in devices {
-                if d["type"].as_str() == Some("disk") {
+                let kind = d["type"].as_str().unwrap_or("");
+                if kind == "disk" || kind == "part" {
                     let size_str = d["size"].as_str().unwrap_or("0");
                     let size = parse_size(size_str);
                     disks.push(DiskInfo {
                         device: format!("/dev/{}", d["name"].as_str().unwrap_or("?")),
+                        source_kind: if kind == "disk" { "physical".into() } else { "logical".into() },
                         model: d["model"].as_str().unwrap_or("Unknown").to_string(),
                         size_bytes: size,
                         sector_size: 512,
                         is_ssd: d["rota"].as_str() == Some("0"),
+                        mount_point: d["mountpoint"].as_str().filter(|s| !s.is_empty()).map(|s| s.to_string()),
+                        file_system: d["fstype"].as_str().filter(|s| !s.is_empty()).map(|s| s.to_string()),
                         partitions: vec![],
                     });
                 }
@@ -98,6 +105,13 @@ impl DiskInfo {
                 .output()
                 .map_err(|e| e.to_string())?;
             disks = parse_diskutil_list_text(&String::from_utf8_lossy(&fallback.stdout));
+        }
+        let logical = Command::new("diskutil")
+            .arg("list")
+            .output()
+            .map_err(|e| e.to_string())?;
+        if logical.status.success() {
+            disks.extend(parse_macos_logical_partitions(&String::from_utf8_lossy(&logical.stdout)));
         }
         Ok(disks)
     }
@@ -131,13 +145,17 @@ impl DiskInfo {
             let is_ssd = media.contains("ssd") || media.contains("nvme") || media.contains("solid");
             disks.push(DiskInfo {
                 device: format!(r"\\.\PhysicalDrive{index}"),
+                source_kind: "physical".into(),
                 model: if model.is_empty() { "Unknown".into() } else { model },
                 size_bytes,
                 sector_size: 512,
                 is_ssd,
+                mount_point: None,
+                file_system: None,
                 partitions: vec![],
             });
         }
+        disks.extend(list_windows_logical_volumes()?);
         disks.sort_by_key(|d| d.device.clone());
         Ok(disks)
     }
@@ -158,24 +176,55 @@ fn parse_diskutil_list_text(stdout: &str) -> Vec<DiskInfo> {
         if !trimmed.starts_with("/dev/disk") {
             continue;
         }
-        // Whole disks are /dev/diskN — skip partition paths like /dev/disk0s1.
         let device_part = trimmed.split_whitespace().next().unwrap_or("");
-        if !is_macos_whole_disk(device_part) {
-            continue;
+        if is_macos_whole_disk(device_part) {
+            if let Some((device, size_hint)) = current.take() {
+                push_macos_disk(&mut disks, device, size_hint, "physical");
+            }
+            let head = trimmed.split(':').next().unwrap_or(trimmed).trim();
+            let mut head_parts = head.split_whitespace();
+            let device = head_parts.next().unwrap_or("").to_string();
+            let hint = head_parts.collect::<Vec<_>>().join(" ");
+            current = Some((device, hint));
         }
-        if let Some((device, size_hint)) = current.take() {
-            push_macos_disk(&mut disks, device, size_hint);
-        }
-        let head = trimmed.split(':').next().unwrap_or(trimmed).trim();
-        let mut head_parts = head.split_whitespace();
-        let device = head_parts.next().unwrap_or("").to_string();
-        let hint = head_parts.collect::<Vec<_>>().join(" ");
-        current = Some((device, hint));
     }
     if let Some((device, size_hint)) = current {
-        push_macos_disk(&mut disks, device, size_hint);
+        push_macos_disk(&mut disks, device, size_hint, "physical");
     }
     disks
+}
+
+#[cfg(target_os = "macos")]
+fn parse_macos_logical_partitions(stdout: &str) -> Vec<DiskInfo> {
+    let mut volumes = vec![];
+    for line in stdout.lines() {
+        let trimmed = line.trim();
+        if !trimmed.starts_with(|c: char| c.is_ascii_digit()) {
+            continue;
+        }
+        let identifier = trimmed.split_whitespace().last().unwrap_or("");
+        if !identifier.starts_with("disk") || !identifier.contains('s') {
+            continue;
+        }
+        let device = format!("/dev/{identifier}");
+        let size_hint = trimmed
+            .split_whitespace()
+            .find(|part| part.ends_with("GB") || part.ends_with("MB") || part.ends_with("TB"))
+            .unwrap_or("")
+            .to_string();
+        volumes.push(DiskInfo {
+            device,
+            source_kind: "logical".into(),
+            model: size_hint,
+            size_bytes: 0,
+            sector_size: 512,
+            is_ssd: true,
+            mount_point: None,
+            file_system: None,
+            partitions: vec![],
+        });
+    }
+    volumes
 }
 
 #[cfg(target_os = "macos")]
@@ -189,16 +238,19 @@ fn is_macos_whole_disk(device: &str) -> bool {
 }
 
 #[cfg(target_os = "macos")]
-fn push_macos_disk(disks: &mut Vec<DiskInfo>, device: String, size_hint: String) {
+fn push_macos_disk(disks: &mut Vec<DiskInfo>, device: String, size_hint: String, source_kind: &str) {
     if let Ok(info) = disk_info_macos(&device) {
         disks.push(info);
     } else {
         disks.push(DiskInfo {
             device,
+            source_kind: source_kind.into(),
             model: size_hint,
             size_bytes: 0,
             sector_size: 512,
             is_ssd: true,
+            mount_point: None,
+            file_system: None,
             partitions: vec![],
         });
     }
@@ -245,12 +297,64 @@ fn disk_info_macos(device: &str) -> Result<DiskInfo, String> {
     }
     Ok(DiskInfo {
         device: device.to_string(),
+        source_kind: "physical".into(),
         model,
         size_bytes,
         sector_size: 512,
         is_ssd,
+        mount_point: None,
+        file_system: None,
         partitions: vec![],
     })
+}
+
+#[cfg(target_os = "windows")]
+fn list_windows_logical_volumes() -> Result<Vec<DiskInfo>, String> {
+    use std::process::Command;
+    let ps = r#"Get-CimInstance -ClassName Win32_LogicalDisk | ForEach-Object { "{0}|{1}|{2}|{3}" -f $_.DeviceID, ($_.VolumeName -replace '\|','/'), $_.Size, $_.FileSystem }"#;
+    let output = Command::new("powershell")
+        .args(["-NoProfile", "-NonInteractive", "-Command", ps])
+        .output()
+        .map_err(|e| format!("PowerShell logical disk query failed: {e}"))?;
+    if !output.status.success() {
+        return Ok(vec![]);
+    }
+    let mut volumes = vec![];
+    for line in String::from_utf8_lossy(&output.stdout).lines() {
+        let line = line.trim();
+        if line.is_empty() {
+            continue;
+        }
+        let parts: Vec<&str> = line.splitn(4, '|').collect();
+        if parts.is_empty() {
+            continue;
+        }
+        let drive = parts[0].trim().trim_end_matches(':');
+        if drive.is_empty() {
+            continue;
+        }
+        let size_bytes = parts.get(2).and_then(|s| s.trim().parse().ok()).unwrap_or(0);
+        volumes.push(DiskInfo {
+            device: format!(r"\\.\{}:", drive),
+            source_kind: "logical".into(),
+            model: parts.get(1).unwrap_or(&"").trim().to_string(),
+            size_bytes,
+            sector_size: 512,
+            is_ssd: false,
+            mount_point: Some(format!("{drive}\\\\")),
+            file_system: parts.get(3).and_then(|s| {
+                let fs = s.trim();
+                if fs.is_empty() { None } else { Some(fs.to_string()) }
+            }),
+            partitions: vec![],
+        });
+    }
+    Ok(volumes)
+}
+
+#[cfg(not(target_os = "windows"))]
+fn list_windows_logical_volumes() -> Result<Vec<DiskInfo>, String> {
+    Ok(vec![])
 }
 
 #[cfg(target_os = "linux")]

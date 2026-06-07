@@ -52,28 +52,32 @@
   <p class="note">Verify file integrity by comparing computed hash against expected value. Supports SHA-256, SHA-1, and MD5.</p>
 
   <div class="row">
-    <label>Algorithm:
-      <select bind:value={algorithm} disabled={busy}>
-        <option value="sha256">SHA-256</option>
-        <option value="sha1">SHA-1</option>
-        <option value="md5">MD5</option>
-      </select>
-    </label>
+    <label for="verify-algorithm">Algorithm:</label>
+    <select id="verify-algorithm" bind:value={algorithm} disabled={busy}>
+      <option value="sha256">SHA-256</option>
+      <option value="sha1">SHA-1</option>
+      <option value="md5">MD5</option>
+    </select>
   </div>
 
   <div class="row">
-    <label>File:</label>
+    <label for="verify-file">File:</label>
     <div class="file-row">
-      <input type="text" bind:value={filePath} disabled={busy} placeholder="/path/to/evidence.dd" />
+      <input id="verify-file" type="text" bind:value={filePath} disabled={busy} placeholder="/path/to/evidence.dd" />
       <button class="btn-ghost" onclick={browseFile} disabled={busy}>Browse</button>
     </div>
   </div>
 
   <div class="row">
-    <label>Expected Hash:
-      <input type="text" bind:value={expectedHash} disabled={busy}
-        placeholder="e.g. a1b2c3d4..." class="hash-input" />
-    </label>
+    <label for="verify-expected">Expected Hash:</label>
+    <input
+      id="verify-expected"
+      type="text"
+      bind:value={expectedHash}
+      disabled={busy}
+      placeholder="e.g. a1b2c3d4..."
+      class="hash-input"
+    />
   </div>
 
   {#if msg}

@@ -9,6 +9,7 @@ use collectionloom_lib::storage::{
     write_snapshot_meta,
 };
 use std::fs;
+use std::env;
 use tempfile::TempDir;
 
 fn test_case(case_id: &str) -> Case {
@@ -105,6 +106,8 @@ fn compare_engine_detects_diff() {
 
 #[test]
 fn export_json_pack_creates_file() {
+    let kit = TempDir::new().unwrap();
+    env::set_var("COLLECTIONLOOM_KIT_ROOT", kit.path());
     let case_id = new_case_id();
     let snap_id = new_snapshot_id();
     let case = test_case(&case_id);
@@ -151,4 +154,5 @@ fn export_json_pack_creates_file() {
     assert!(result.is_ok());
     let export = result.unwrap();
     assert!(std::path::Path::new(&export.output_path).exists());
+    env::remove_var("COLLECTIONLOOM_KIT_ROOT");
 }

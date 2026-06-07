@@ -194,8 +194,6 @@ async function openFolder() {
   .btn-primary { padding: 10px 24px; background: var(--primary); color: white; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; }
   .btn-primary:disabled { opacity: 0.5; }
   .action-row { display: flex; gap: 10px; flex-wrap: wrap; margin: 12px 0; align-items: center; }
-  .btn-secondary { padding: 10px 18px; background: var(--btn-secondary-bg); color: var(--btn-secondary-text); border: 1px solid var(--border); border-radius: 10px; font-weight: 600; cursor: pointer; }
-  .btn-secondary:disabled { opacity: 0.5; }
   .btn-sm { padding: 6px 12px; background: var(--btn-secondary-bg); border: 1px solid var(--border); border-radius: 6px; color: var(--btn-secondary-text); cursor: pointer; margin-top: 8px; }
   .result-row { display: flex; gap: 12px; align-items: center; font-size: 12px; margin-bottom: 6px; }
   .result-row span:first-child { color: var(--text-muted); min-width: 60px; }

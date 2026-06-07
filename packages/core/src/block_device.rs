@@ -127,7 +127,6 @@ fn windows_block_size(path: &str) -> Result<u64, String> {
     Ok(info.length as u64)
 }
 
-#[cfg(target_os = "windows")]
 pub fn normalize_windows_path(device: &str) -> String {
     let d = device.trim();
     if d.starts_with("\\\\.\\") {

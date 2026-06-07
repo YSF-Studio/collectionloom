@@ -18,11 +18,13 @@ let iosBackupProgress = $state({});
 
 async function scanAndroid() {
   setBusy(true);
+  androidDevices = [];
   try { androidDevices = await timeoutPromise(invoke("list_android_devices"), 10000); } catch(e) { setMsg(`ERR: ${typeof e === "string" ? e : String(e)}`); }
   setBusy(false);
 }
 async function scanIos() {
   setBusy(true);
+  iosDevices = [];
   try { iosDevices = await timeoutPromise(invoke("list_ios_devices"), 10000); } catch(e) { setMsg(`ERR: ${typeof e === "string" ? e : String(e)}`); }
   setBusy(false);
 }
@@ -57,7 +59,8 @@ async function backupIos(id) {
 <div>
   <h3>Mobile Triage</h3>
   <div class="row">
-    <label>Backup destination: <input type="text" bind:value={outputPath} disabled={busy} placeholder="/tmp/mobile_backup.ab" /></label>
+    <label for="mobile-output">Backup destination:</label>
+    <input id="mobile-output" type="text" bind:value={outputPath} disabled={busy} placeholder="/tmp/mobile_backup.ab" />
   </div>
   <div class="cols">
     <div class="col">
@@ -67,7 +70,7 @@ async function backupIos(id) {
         <div class="device">
           <span>{d.model} ({d.id})</span>
           <span>
-            <button onclick={() => backupAndroid(d.id)} class="btn-sm" disabled={busy}>Backup</button>
+            <button onclick={() => backupAndroid(d.id)} class="btn-sm" disabled={busy || !outputPath}>Backup</button>
             {#if androidBackupProgress[d.id]}
               <span class="progress-label">{androidBackupProgress[d.id]}</span>
             {/if}
@@ -82,7 +85,7 @@ async function backupIos(id) {
         <div class="device">
           <span>{d.model} ({d.id})</span>
           <span>
-            <button onclick={() => backupIos(d.id)} class="btn-sm" disabled={busy}>Backup</button>
+            <button onclick={() => backupIos(d.id)} class="btn-sm" disabled={busy || !outputPath}>Backup</button>
             {#if iosBackupProgress[d.id]}
               <span class="progress-label">{iosBackupProgress[d.id]}</span>
             {/if}

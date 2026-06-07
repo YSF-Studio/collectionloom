@@ -27,6 +27,7 @@ let disksLoading = $state(false);
 let showConfirmStart = $state(false);
 let showConfirmDisableWb = $state(false);
 let selectedDisk = $state("");
+let sourceMode = $state("all");
 let destPath = $state("");
 
 $effect(() => {
@@ -92,7 +93,10 @@ $effect(() => {
   };
 });
 
-let selectedDiskInfo = $derived(disks.find((d) => d.device === selectedDisk) || null);
+let visibleDisks = $derived(
+  disks.filter((disk) => sourceMode === "all" || disk.sourceKind === sourceMode)
+);
+let selectedDiskInfo = $derived(visibleDisks.find((d) => d.device === selectedDisk) || null);
 
 $effect(() => {
   sharedState.progress = progress;
@@ -106,6 +110,9 @@ async function listDisks() {
   disksLoading = true;
   try {
     disks = await timeoutPromise(invoke("list_disks"), 15000);
+    if (selectedDisk && !disks.some((d) => d.device === selectedDisk)) {
+      selectedDisk = "";
+    }
     if (!disks.length) setMsg("WARN: No disks detected — connect a drive and click Refresh");
   } catch (e) {
     const err = typeof e === "string" ? e : String(e);
@@ -122,6 +129,12 @@ function selectDisk(disk) {
   });
   checkEncryption();
   checkWriteBlocker();
+}
+
+function sourceModeLabel(mode) {
+  if (mode === "physical") return "Physical only";
+  if (mode === "logical") return "Logical only";
+  return "All sources";
 }
 
 async function checkEncryption() {
@@ -314,13 +327,18 @@ $effect(() => {
 </script>
 
 <div class="tab-content disk-tab">
-  <SectionHeader title="Acquire Drive" subtitle="Disk Imaging — sector-by-sector acquisition with hash verification" />
+  <SectionHeader title="Acquire Drive" subtitle="Disk Imaging — sector-by-sector acquisition with hash verification for physical or logical sources" />
 
   <MacCard title="Source Drive">
     <div class="disk-layout">
       <aside class="disk-sidebar" aria-label="Available disks">
         <div class="disk-sidebar-head">
-          <span class="disk-sidebar-title">Physical disks</span>
+          <span class="disk-sidebar-title">Physical and logical sources</span>
+          <select bind:value={sourceMode} class="source-mode" aria-label="Filter source type" disabled={collBusy || disksLoading}>
+            <option value="all">All sources</option>
+            <option value="physical">Physical only</option>
+            <option value="logical">Logical only</option>
+          </select>
           <button onclick={listDisks} class="btn-sm" disabled={collBusy || disksLoading}>
             {#if disksLoading}<span class="spinner">↻</span>{/if}
             {disksLoading ? "…" : "Refresh"}
@@ -328,14 +346,14 @@ $effect(() => {
         </div>
         {#if disksLoading}
           <p class="disk-sidebar-msg">Loading disks…</p>
-        {:else if disks.length === 0}
+        {:else if visibleDisks.length === 0}
           <div class="empty-state compact">
             <p>No disks detected</p>
-            <p class="empty-hint">Connect a drive and click Refresh.</p>
+            <p class="empty-hint">{sourceModeLabel(sourceMode)} is empty. Connect a drive and click Refresh.</p>
           </div>
         {:else}
           <ul class="disk-list">
-            {#each disks as disk}
+            {#each visibleDisks as disk}
               <li>
                 <button
                   type="button"
@@ -347,7 +365,7 @@ $effect(() => {
                   <span class="disk-item-device">{disk.device}</span>
                   <span class="disk-item-model">{disk.model || "Unknown"}</span>
                   <span class="disk-item-meta">
-                    {(disk.sizeBytes / 1e9).toFixed(1)} GB · {disk.isSsd ? "SSD" : "HDD"}
+                    {(disk.sizeBytes / 1e9).toFixed(1)} GB · {disk.isSsd ? "SSD" : "HDD"} · {disk.sourceKind === "logical" ? "Logical" : "Physical"}
                   </span>
                 </button>
               </li>
@@ -364,6 +382,7 @@ $effect(() => {
             <span>{selectedDiskInfo.device}</span>
             <span>{selectedDiskInfo.model || "Unknown model"}</span>
             <span>{(selectedDiskInfo.sizeBytes / 1e9).toFixed(1)} GB</span>
+            <PillBadge variant={selectedDiskInfo.sourceKind === "logical" ? "active" : "warning"} label={selectedDiskInfo.sourceKind === "logical" ? "Logical source" : "Physical source"} />
             {#if selectedDiskInfo.isSsd}<PillBadge variant="warning" label="SSD — TRIM risk" />{/if}
             {#if bitlockerDetected}<PillBadge variant="warning" label="Encryption Detected" />{/if}
           </div>
@@ -493,6 +512,15 @@ $effect(() => {
     border-bottom: 1px solid var(--border);
     background: var(--btn-secondary-bg);
   }
+  .source-mode {
+    min-width: 120px;
+    font-size: 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--input-bg);
+    color: var(--text);
+    padding: 6px 8px;
+  }
   .disk-sidebar-title {
     font-size: 11px;
     font-weight: 600;
@@ -568,7 +596,7 @@ $effect(() => {
   }
   .row { display: flex; gap: 8px; align-items: center; }
   .full { flex: 1; }
-  select, input {
+  .row input {
     background: var(--input-bg); color: var(--text); border: 1px solid var(--border);
     border-radius: 8px; padding: 8px 12px; font-size: 13px;
   }
