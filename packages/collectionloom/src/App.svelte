@@ -18,6 +18,7 @@ import ProgressStatusBar from "./lib/components/ui/ProgressStatusBar.svelte";
 import LocaleToggle from "./lib/components/ui/LocaleToggle.svelte";
 import ThemeToggle from "./lib/components/ui/ThemeToggle.svelte";
 import ConfirmDialog from "./lib/components/ui/ConfirmDialog.svelte";
+import { guessPlatform } from "./lib/window.js";
 import { invoke, isTauri } from "./lib/api/tauri.js";
 import { isError, isWarn } from "./lib/messages.js";
 import { initLocale, subscribeLocale } from "./lib/stores/locale.js";
@@ -38,6 +39,7 @@ let wbDisksLoading = $state(false);
 let showConfirmDisableWb = $state(false);
 let acquireAllState = {};
 let locale = $state("en");
+let platform = $state(guessPlatform());
 
 let statusBar = $state({
   active: false,
