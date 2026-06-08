@@ -64,32 +64,65 @@ export const ramCaptureGuide = {
     {
       title: "Periksa tool yang tersedia",
       description:
-        "Pastikan tool akuisisi memori (mis. LiME, avml, winpmem, atau DumpIt) tersedia di sistem target. Untuk Linux, pastikan kernel module LiME atau binary statik avml sudah disiapkan. Konfirmasi ruang kosong pada volume output cukup (minimal ukuran RAM + 256 MB).",
+        "Pastikan tool akuisisi memori tersedia untuk target yang benar. Linux memakai AVML sebagai jalur utama dan LiME sebagai opsi lanjutan. Windows memakai WinPmem v4. macOS tidak menyediakan raw RAM acquisition di CollectionLoom; gunakan jalur volatile data alternatif.",
       warning:
         "Menjalankan binary yang tidak tepercaya pada mesin tersangka dapat mengubah bukti. Gunakan utility akuisisi yang tepercaya dan sudah di-hash dari media read-only.",
     },
     {
       title: "Tutup aplikasi yang tidak perlu",
       description:
-        "Kurangi proses aktif pada target untuk menekan perubahan RAM saat capture. Jangan mematikan atau me-reboot sistem karena data volatil akan hilang saat shutdown. Hindari operasi disk-intensive selama capture berlangsung.",
+        "Kurangi proses aktif pada target untuk menekan perubahan data volatil. Jangan mematikan atau me-reboot sistem karena data volatil akan hilang saat shutdown. Hindari operasi disk-intensive selama capture berlangsung.",
     },
     {
       title: "Ambil memori volatil",
       description:
-        "Jalankan tool akuisisi dengan parameter yang sesuai. Untuk Linux dengan LiME: `insmod lime.ko path=/evidence/ram.lime format=lime`. Untuk avml: `./avml /evidence/ram.avml`. Untuk Windows: jalankan DumpIt atau winpmem dan tentukan output path. Tunggu sampai selesai dan jangan dihentikan.",
+        "Jalankan tool akuisisi dengan parameter yang sesuai. Untuk Linux: gunakan AVML sebagai jalur utama, atau LiME untuk kasus khusus. Untuk Windows: jalankan WinPmem v4 dan tentukan output path. Untuk macOS: gunakan Apple Volatile Data, bukan raw RAM dump.",
       warning:
         "Sebagian antivirus / EDR dapat menandai tool akuisisi memori sebagai berbahaya. Pre-authorise path tool atau jeda proteksi endpoint sementara jika itu aman dilakukan.",
     },
     {
       title: "Hitung dan catat hash",
       description:
-        "Buat hash SHA-256 dari file memory dump segera setelah capture selesai. Catat hash bersama timestamp akuisisi, versi tool, dan hostname target di dokumentasi CoC. Simpan dump pada media terenkripsi yang aksesnya terkontrol.",
+        "Buat hash SHA-256 dari file hasil akuisisi segera setelah capture selesai. Catat hash bersama timestamp akuisisi, versi tool, dan hostname target di dokumentasi CoC. Simpan output pada media terenkripsi yang aksesnya terkontrol.",
     },
   ],
   references: [
     "ISO/IEC 27037:2012 — Digital evidence acquisition procedures",
     "NIST SP 800-86 — Live response and volatile data collection",
     "RFC 3227 — Guidelines for Evidence Collection and Archiving",
+  ],
+};
+
+/** @type {Guide} */
+export const appleVolatileDataGuide = {
+  title: "Panduan Apple Volatile Data",
+  icon: "",
+  steps: [
+    {
+      title: "Pahami batasan platform",
+      description:
+        "CollectionLoom tidak menyediakan raw RAM dump universal untuk macOS, baik Intel maupun Apple Silicon. Fokuskan workflow pada alternatif volatile data seperti process list, network state, login/session artifacts, dan diagnostic output.",
+    },
+    {
+      title: "Kumpulkan artefak volatil",
+      description:
+        "Ambil data proses aktif, koneksi jaringan, status login, autorun yang relevan, dan artifact triage yang tersedia pada versi macOS target. Simpan setiap output dengan timestamp dan source label.",
+    },
+    {
+      title: "Tambahkan sistem diagnostik bila perlu",
+      description:
+        "Gunakan sysdiagnose atau live-response artifacts yang sesuai untuk membantu konteks investigasi. Ini bukan RAM acquisition, tetapi berguna untuk volatile-state preservation dan triage.",
+    },
+    {
+      title: "Hash dan dokumentasikan",
+      description:
+        "Hash semua output dan catat sebagai volatile triage evidence, bukan memory dump. Simpan bersama chain of custody dan jelaskan bahwa sumbernya adalah alternatif volatile data, bukan raw RAM.",
+    },
+  ],
+  references: [
+    "Apple Platform Security / SIP and runtime protections",
+    "ISO/IEC 27037:2012 — Volatile data handling",
+    "NIST SP 800-86 — Live response considerations",
   ],
 };
 

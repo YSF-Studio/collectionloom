@@ -25,7 +25,7 @@ CollectionLoom ships core acquisition in **pure Rust** (disk imaging, hashing, C
 | **Network Capture** | libpcap (Unix) or Npcap (Windows) | Linux: `libpcap-dev` · macOS: Xcode CLT · Windows: [Npcap](https://npcap.com) |
 | **RAM (Linux)** | avml or LiME | `cargo install avml` or build [LiME](https://github.com/504ensicsLabs/LiME) |
 | **RAM (Windows)** | WinPmem | [Velocidex/WinPmem](https://github.com/Velocidex/WinPmem) |
-| **RAM (macOS)** | MRS | Install MRS and ensure it is on `PATH` (sudo required) |
+| **macOS volatile triage** | sysdiagnose / process dump / network state | Use the Apple Volatile Data section in the RAM guide |
 | **Mobile Android** | adb | [Android Platform Tools](https://developer.android.com/tools/releases/platform-tools) |
 | **Mobile iOS** | libimobiledevice | macOS: `brew install libimobiledevice` · Linux: `libimobiledevice-utils` |
 | **Cloud Snapshot** | Internet HTTPS | Outbound access to AWS/Azure/GCP APIs |
@@ -120,6 +120,20 @@ CollectionLoom uses two RAM acquisition modes:
 **macOS note:** CollectionLoom does not provide a raw RAM dump workflow on macOS. Use the app for the supported acquisition paths on that platform, but plan on disk, triage, and artifact collection rather than universal live memory dumping.
 
 **Volatility note:** Volatility is an analysis framework for memory images, not a memory acquisition tool. You still need a separate acquisition step before Volatility can analyze the dump.
+
+## Apple Volatile Data
+
+**Platform:** macOS (Intel and Apple Silicon)
+
+CollectionLoom does not attempt raw RAM dumping on macOS. Instead, use this section for alternative volatile sources:
+
+1. Capture a process list and active process metadata.
+2. Collect network state and open connections.
+3. Gather login/session, autorun, and user activity artifacts where available.
+4. Capture system diagnostics or live-response artifacts that help preserve volatility context.
+5. Hash and record every output in chain of custody.
+
+This is intentionally an alternative-source workflow, not a raw memory dump workflow. Treat it as triage and live response support for macOS.
 
 ---
 

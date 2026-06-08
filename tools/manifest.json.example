@@ -15,8 +15,8 @@
     "file": "idevicebackup2",
     "sha256": ""
   },
-  "winpmem_mini_x64_rc2": {
-    "file": "winpmem_mini_x64_rc2.exe",
+  "winpmem": {
+    "file": "winpmem.exe",
     "sha256": ""
   }
 }

@@ -201,7 +201,7 @@ fn check_ram_tools() -> Vec<PreflightCheck> {
 
     #[cfg(target_os = "windows")]
     {
-        let winpmem = ["winpmem_mini_x64_rc2", "winpmem", "WinPmem"]
+        let winpmem = ["winpmem.exe", "winpmem", "WinPmem", "winpmem_v4", "winpmem_v4.exe"]
             .iter()
             .find_map(|n| crate::portable::resolve_tool(n));
         checks.push(if let Some(r) = winpmem {
@@ -212,12 +212,12 @@ fn check_ram_tools() -> Vec<PreflightCheck> {
                 required_for: "RAM Capture (Windows)".into(),
                 available: r.hash_verified != Some(false),
                 detail: format!("Found via {} at {}", r.source, r.path),
-                install_hint: Some("Copy winpmem_mini_x64_rc2.exe to ./tools/ on forensic USB".into()),
+                install_hint: Some("Copy winpmem.exe to ./tools/ on forensic USB".into()),
             }
         } else {
             check_external_tool(
                 "winpmem",
-                "winpmem_mini_x64_rc2",
+                "winpmem",
                 "WinPmem (RAM capture)",
                 "RAM Capture (Windows)",
             )
@@ -234,18 +234,15 @@ fn check_ram_tools() -> Vec<PreflightCheck> {
 
     #[cfg(target_os = "macos")]
     {
-        checks.push(check_external_tool(
-            "avml",
-            "avml",
-            "avml (RAM capture)",
-            "RAM Capture (macOS)",
-        ));
-        checks.push(check_external_tool(
-            "mrs",
-            "mrs",
-            "MRS (RAM capture, optional)",
-            "RAM Capture (macOS, optional)",
-        ));
+        checks.push(PreflightCheck {
+            id: "macos_volatile".into(),
+            name: "macOS volatile sources".into(),
+            category: PreflightCategory::ExternalBinary,
+            required_for: "macOS volatile triage".into(),
+            available: true,
+            detail: "Raw RAM acquisition intentionally disabled; use volatile artifacts and triage sources".into(),
+            install_hint: Some("See the Apple Volatile Data section in the RAM guide".into()),
+        });
     }
 
     checks
@@ -361,14 +358,14 @@ pub fn run_preflight() -> PreflightReport {
             id: "priv_root".into(),
             name: "Administrator / sudo".into(),
             category: PreflightCategory::Privilege,
-            required_for: "RAM capture (MRS), diskutil unmount".into(),
+            required_for: "Diskutil unmount, volatile triage helpers".into(),
             available: elevated,
             detail: if elevated {
                 "Running as root".into()
             } else {
                 "Standard user — some operations will prompt for sudo".into()
             },
-            install_hint: Some("Use sudo for MRS RAM capture; diskutil may require admin".into()),
+            install_hint: Some("Use sudo where prompted; macOS RAM acquisition itself is not provided".into()),
         });
     }
 

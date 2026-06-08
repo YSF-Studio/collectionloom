@@ -13,20 +13,15 @@ pub enum RamCaptureTool {
     LiME,
     Avml,
     WinPmem,
-    MRS,
-}
-
-fn ram_tool_available(names: &[&str]) -> bool {
-    names.iter().any(|n| crate::portable::tool_available(n))
 }
 
 /// Detect available RAM capture tools (./tools/ first, then PATH).
 pub fn detect_tools() -> Vec<RamCaptureTool> {
-    let mut tools = vec![];
+    let tools = Vec::new();
 
     #[cfg(target_os = "linux")]
     {
-        if ram_tool_available(&["avml"]) {
+        if crate::portable::tool_available("avml") {
             tools.push(RamCaptureTool::Avml);
         }
         let lime_in_kit = crate::portable::tools_dir()
@@ -39,21 +34,16 @@ pub fn detect_tools() -> Vec<RamCaptureTool> {
 
     #[cfg(target_os = "windows")]
     {
-        if ram_tool_available(&["winpmem_mini_x64_rc2", "winpmem", "WinPmem"]) {
+        if crate::portable::tool_available("winpmem.exe")
+            || crate::portable::tool_available("winpmem")
+            || crate::portable::tool_available("WinPmem")
+            || crate::portable::tool_available("winpmem_v4")
+            || crate::portable::tool_available("winpmem_v4.exe")
+        {
             tools.push(RamCaptureTool::WinPmem);
         }
-        if ram_tool_available(&["avml"]) {
+        if crate::portable::tool_available("avml") {
             tools.push(RamCaptureTool::Avml);
-        }
-    }
-
-    #[cfg(target_os = "macos")]
-    {
-        if ram_tool_available(&["avml"]) {
-            tools.push(RamCaptureTool::Avml);
-        }
-        if ram_tool_available(&["mrs", "MRS"]) {
-            tools.push(RamCaptureTool::MRS);
         }
     }
 
@@ -84,7 +74,7 @@ pub fn capture_avml(output: &str, compress: bool) -> Result<String, String> {
 }
 
 fn resolve_winpmem_command() -> Result<std::process::Command, String> {
-    for name in ["winpmem_mini_x64_rc2", "winpmem", "WinPmem"] {
+    for name in ["winpmem.exe", "winpmem", "WinPmem", "winpmem_v4", "winpmem_v4.exe"] {
         if let Ok(cmd) = crate::portable::command(name) {
             return Ok(cmd);
         }
@@ -101,21 +91,6 @@ pub fn capture_winpmem(output: &str) -> Result<String, String> {
 
     if !status.success() {
         return Err("WinPmem capture failed".into());
-    }
-    Ok(format!("Captured to {}", output))
-}
-
-/// Capture RAM on macOS using MRS
-pub fn capture_mrs(output: &str) -> Result<String, String> {
-    let mrs = crate::portable::tool_path("mrs")?;
-    let status = Command::new("sudo")
-        .arg(mrs)
-        .args(["-o", output])
-        .status()
-        .map_err(|e| format!("MRS failed: {}", e))?;
-
-    if !status.success() {
-        return Err("MRS capture failed — need sudo privileges".into());
     }
     Ok(format!("Captured to {}", output))
 }

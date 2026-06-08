@@ -10,8 +10,8 @@ CollectionLoom is portable-first. This repository supports three distribution mo
 
 | Platform | Source build | Portable build | Commercial binary | Notes |
 |----------|--------------|----------------|-------------------|-------|
-| macOS | `npm run tauri:build` | `npm run build:portable` | external distribution | Portable app launches directly; AVML is bundled when an official release artifact is available, while MRS remains source-specific/manual |
-| Windows | `npm run tauri:build` | `npm run build:portable` | external distribution | Portable app launches directly; AVML and WinPmem are bundled when official release artifacts are available |
+| macOS | `npm run tauri:build` | `npm run build:portable` | external distribution | Portable app launches directly; raw RAM acquisition is intentionally excluded; use Apple volatile-data triage artifacts instead |
+| Windows | `npm run tauri:build` | `npm run build:portable` | external distribution | Portable app launches directly; AVML and WinPmem v4 are bundled when official release artifacts are available |
 | Linux | `npm run tauri:build` | `npm run build:portable` | external distribution | Portable app launches directly; AVML is bundled when an official release artifact is available, while LiME remains source-specific/manual |
 
 ## Tool availability
@@ -19,7 +19,7 @@ CollectionLoom is portable-first. This repository supports three distribution mo
 | Tool | Status | Distribution guidance |
 |------|--------|-----------------------|
 | `avml` | downloadable | Include in source/portable builds when an official release artifact is available for the current platform |
-| `winpmem` | downloadable | Include in Windows builds from the official release artifact |
+| `winpmem` | downloadable | Include in Windows builds from the official WinPmem v4 release artifact |
 | `lime` | source-specific | Keep as an explicit manual or environment-specific staging step |
 | `mrs` | source-specific | Keep as a macOS-specific staging step rather than a generic binary download |
 

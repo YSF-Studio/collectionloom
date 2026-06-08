@@ -163,7 +163,6 @@ pub fn capture_ram(
     let result = match selected.as_str() {
         "Avml" => ram::capture_avml(&output, compress),
         "WinPmem" => ram::capture_winpmem(&output),
-        "MRS" => ram::capture_mrs(&output),
         "LiME" => Err("LiME capture is not yet implemented in the app flow; use AVML or a pre-staged LiME workflow".into()),
         _ => Err(format!("Unknown tool: {}", selected)),
     };

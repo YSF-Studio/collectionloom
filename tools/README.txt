@@ -15,7 +15,7 @@ Recommended layout
   ├── manifest.json       SHA-256 hashes (optional but recommended)
   ├── avml                  Linux RAM capture (static binary)
   ├── avml.exe              Windows RAM capture
-  ├── winpmem_mini_x64_rc2.exe
+  ├── winpmem.exe
   ├── adb / adb.exe
   ├── idevice_id
   ├── idevicebackup2

@@ -1,10 +1,11 @@
 <script>
 import { invoke } from "../api/tauri.js";
 import { defaultOutputPath } from "../api/portable.js";
+import { guessPlatform } from "../window.js";
 import GuideCard from "./GuideCard.svelte";
 import SectionHeader from "./ui/SectionHeader.svelte";
 import PillBadge from "./ui/PillBadge.svelte";
-import { ramCaptureGuide } from "../guides.js";
+import { ramCaptureGuide, appleVolatileDataGuide } from "../guides.js";
 import { getLocale, subscribeLocale } from "../stores/locale.js";
 let { sharedState, caseState = {}, busy, setBusy, setMsg, timeoutPromise } = $props();
 let tools = $state([]);
@@ -13,6 +14,7 @@ let selectedTool = $state("");
 let advancedOpen = $state(false);
 let outputPath = $state("");
 let locale = $state(getLocale());
+let platform = $state(guessPlatform());
 
 $effect(() => {
   defaultOutputPath("ram_capture.lime").then((p) => {
@@ -34,6 +36,8 @@ let showProcesses = $state(false);
 $effect(() => subscribeLocale((_, resolved) => {
   locale = resolved;
 }));
+
+const isMac = () => platform === "macos";
 
 const text = {
   en: {
@@ -82,7 +86,6 @@ function tr(key) { return text[locale]?.[key] || text.en[key] || key; }
 function toolLabel(tool) {
   if (tool === "Avml") return "AVML (recommended)";
   if (tool === "WinPmem") return "WinPmem (Windows)";
-  if (tool === "MRS") return "MRS (macOS)";
   if (tool === "LiME") return "LiME (manual / advanced)";
   return tool;
 }
@@ -166,49 +169,60 @@ $effect(() => { listTools(); });
 <div class="tab-content">
   <SectionHeader title={tr("title")} subtitle={tr("subtitle")} />
   {#if ramSize}<p class="info">System RAM: {(ramSize/1e9).toFixed(1)} GB</p>{/if}
-  <div class="recommendation">
-    <PillBadge variant="active" label={tr("mode1")} />
-    <span>{selectedTool ? toolLabel(selectedTool) : (locale === "id" ? "Memilih alat terbaik…" : "Selecting the best tool…")}</span>
-  </div>
-  {#if tools.length > 0}
-    <p class="helper">
-      {selectedTool === "Avml"
-        ? (locale === "id"
-            ? "AVML dipilih otomatis karena paling mudah dipakai lintas platform."
-            : "AVML is selected automatically because it is the easiest cross-platform option.")
-        : (locale === "id"
-            ? "Gunakan opsi lanjutan hanya jika perlu workflow khusus."
-            : "Use advanced options only if you need a special workflow.")}
-    </p>
-  {/if}
-  <div class="row">
-    <button class="btn-sm" onclick={() => (advancedOpen = !advancedOpen)} disabled={busy || toolsLoading}>
-      {advancedOpen ? "−" : "+"} {advancedOpen ? tr("mode2") : tr("advanced")}
-    </button>
-    <button onclick={listTools} class="btn-sm" disabled={busy || toolsLoading}>{toolsLoading ? "…" : tr("refresh")}</button>
-  </div>
-  {#if advancedOpen}
+  {#if !isMac()}
+    <div class="recommendation">
+      <PillBadge variant="active" label={tr("mode1")} />
+      <span>{selectedTool ? toolLabel(selectedTool) : (locale === "id" ? "Memilih alat terbaik…" : "Selecting the best tool…")}</span>
+    </div>
+    {#if tools.length > 0}
+      <p class="helper">
+        {selectedTool === "Avml"
+          ? (locale === "id"
+              ? "AVML dipilih otomatis karena paling mudah dipakai lintas platform."
+              : "AVML is selected automatically because it is the easiest cross-platform option.")
+          : (locale === "id"
+              ? "Gunakan opsi lanjutan hanya jika perlu workflow khusus."
+              : "Use advanced options only if you need a special workflow.")}
+      </p>
+    {/if}
     <div class="row">
-      <label>{tr("tool")} <select bind:value={selectedTool} disabled={busy || toolsLoading}>
-        <option value="">{toolsLoading ? tr("detect") : tr("selectTool")}</option>
-        {#each tools as tool}<option value={tool}>{toolLabel(tool)}</option>{/each}
-      </select></label>
+      <button class="btn-sm" onclick={() => (advancedOpen = !advancedOpen)} disabled={busy || toolsLoading}>
+        {advancedOpen ? "−" : "+"} {advancedOpen ? tr("mode2") : tr("advanced")}
+      </button>
+      <button onclick={listTools} class="btn-sm" disabled={busy || toolsLoading}>{toolsLoading ? "…" : tr("refresh")}</button>
+    </div>
+    {#if advancedOpen}
+      <div class="row">
+        <label>{tr("tool")} <select bind:value={selectedTool} disabled={busy || toolsLoading}>
+          <option value="">{toolsLoading ? tr("detect") : tr("selectTool")}</option>
+          {#each tools as tool}<option value={tool}>{toolLabel(tool)}</option>{/each}
+        </select></label>
+      </div>
+    {/if}
+    {#if !toolsLoading && tools.length === 0}
+      <p class="empty-hint">{tr("noTools")}</p>
+    {/if}
+    <div class="row">
+      <label>{tr("output")} <input type="text" bind:value={outputPath} disabled={busy} /></label>
+      <label><input type="checkbox" bind:checked={compress} disabled={busy} /> {tr("compress")}</label>
+    </div>
+    <div class="row">
+      <label><input type="checkbox" bind:checked={autoHash} disabled={busy} /> {tr("autoHash")}</label>
+    </div>
+    <div class="actions">
+      <button onclick={capture} class="btn-primary" disabled={busy || toolsLoading || tools.length === 0}>{tr("capture")}</button>
+      <button onclick={listProcesses} class="btn-sm" disabled={busy}>{tr("listProcesses")}</button>
+    </div>
+  {:else}
+    <div class="apple-note">
+      <PillBadge variant="warning" label={locale === "id" ? "Apple Volatile Data" : "Apple Volatile Data"} />
+      <p>
+        {locale === "id"
+          ? "CollectionLoom tidak menyediakan raw RAM dump di macOS. Gunakan alur volatile data alternatif untuk Intel dan Apple Silicon."
+          : "CollectionLoom does not provide raw RAM dumps on macOS. Use alternative volatile data workflows for Intel and Apple Silicon."}
+      </p>
     </div>
   {/if}
-  {#if !toolsLoading && tools.length === 0}
-    <p class="empty-hint">{tr("noTools")}</p>
-  {/if}
-  <div class="row">
-    <label>{tr("output")} <input type="text" bind:value={outputPath} disabled={busy} /></label>
-    <label><input type="checkbox" bind:checked={compress} disabled={busy} /> {tr("compress")}</label>
-  </div>
-  <div class="row">
-    <label><input type="checkbox" bind:checked={autoHash} disabled={busy} /> {tr("autoHash")}</label>
-  </div>
-  <div class="actions">
-    <button onclick={capture} class="btn-primary" disabled={busy || toolsLoading || tools.length === 0}>{tr("capture")}</button>
-    <button onclick={listProcesses} class="btn-sm" disabled={busy}>{tr("listProcesses")}</button>
-  </div>
 
   {#if hashResult}
   <div class="hash-result">{hashResult}</div>
@@ -229,12 +243,16 @@ $effect(() => { listTools(); });
   {/if}
 
   <GuideCard title={ramCaptureGuide.title} icon={ramCaptureGuide.icon} steps={ramCaptureGuide.steps} references={ramCaptureGuide.references} />
+  {#if isMac()}
+    <GuideCard title={appleVolatileDataGuide.title} icon={appleVolatileDataGuide.icon} steps={appleVolatileDataGuide.steps} references={appleVolatileDataGuide.references} />
+  {/if}
 </div>
 
 <style>
 .info { font-size:12px; color:var(--text-secondary); margin-bottom:10px; }
 .recommendation { display:flex; gap:10px; align-items:center; margin-bottom:8px; color:var(--text-secondary); font-size:12px; }
 .helper { margin:0 0 12px; font-size:12px; color:var(--text-muted); line-height:1.5; }
+.apple-note { display:flex; flex-direction:column; gap:8px; margin:12px 0; padding:12px; border:1px solid var(--border); border-radius:8px; background:var(--input-bg); color:var(--text-secondary); font-size:12px; line-height:1.5; }
 .empty-hint { font-size:12px; color:var(--text-muted); margin:-4px 0 12px; }
 .row { display:flex; gap:10px; align-items:center; margin-bottom:12px; }
 select, input { background: var(--input-bg); color: var(--text); border:1px solid var(--border); border-radius:6px; padding:6px 10px; }
