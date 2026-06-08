@@ -30,17 +30,46 @@ async function applyLightMode(page) {
   });
 }
 
+async function selectOptionSafely(locator, preferredValue) {
+  const optionValues = await locator.locator("option").evaluateAll((options) =>
+    options
+      .map((option) => option.value)
+      .filter((value) => value !== "")
+  ).catch(() => []);
+
+  if (!optionValues.length) return false;
+
+  const valueToUse = optionValues.includes(preferredValue)
+    ? preferredValue
+    : optionValues[0];
+
+  await locator.selectOption(valueToUse);
+  return true;
+}
+
 async function selectDisk(page, device = sampleDevice) {
-  const diskSelect = page.locator(".disk-tab select.full").first();
-  if (await diskSelect.count()) {
-    await diskSelect.selectOption(device);
-    await page.waitForTimeout(600);
+  const refresh = page.locator(".disk-tab button.btn-sm", {
+    hasText: /Refresh|Segarkan/i,
+  }).first();
+  if (await refresh.count()) {
+    await refresh.click();
+    await page.locator(".disk-tab .disk-item").first().waitFor({ state: "visible", timeout: 10000 }).catch(() => {});
   }
-  const wbSelect = page.locator(".wb-device-select");
-  if (await wbSelect.count()) {
-    await wbSelect.selectOption(device);
-    await page.waitForTimeout(400);
-  }
+
+  const diskButtons = page.locator(".disk-tab .disk-item");
+  const count = await diskButtons.count();
+  if (!count) return;
+
+  const targetIndex = await diskButtons.evaluateAll((buttons, preferred) => {
+    const preferredIndex = buttons.findIndex((button) => button.textContent?.includes(preferred));
+    return preferredIndex >= 0 ? preferredIndex : 0;
+  }, device);
+
+  await diskButtons.nth(targetIndex).click();
+  await page.waitForFunction(() => {
+    const btn = document.querySelector(".disk-tab button.btn-primary");
+    return Boolean(btn && !btn.disabled);
+  }, { timeout: 10000 }).catch(() => {});
 }
 
 const sections = [
@@ -49,22 +78,38 @@ const sections = [
     file: "collection_disk_imaging.png",
     setup: async (page) => {
       await selectDisk(page);
-      await page.locator(".disk-tab button.btn-sm", { hasText: "Check HPA/DCO" }).click();
-      await page.waitForTimeout(700);
+      const hpaButton = page.locator(".disk-tab button.btn-sm", {
+        hasText: /Check HPA\/DCO|Periksa HPA\/DCO|HPA\/DCO/i,
+      });
+      if (await hpaButton.count()) {
+        await hpaButton.click();
+        await page.waitForTimeout(700);
+      }
       await page.locator('.disk-tab input[placeholder="/path/to/image.dd"]').fill(ui.diskDestination ?? "~/Evidence/samples/source_disk.img.dd");
-      await page.locator(".disk-tab button.btn-primary", { hasText: "Start Acquisition" }).click();
-      await page.waitForTimeout(1800);
-      await page.locator(".summary-grid").waitFor({ timeout: 5000 }).catch(() => {});
+      await page.waitForTimeout(700);
     },
   },
   {
     id: "ram",
     file: "collection_ram_capture.png",
     setup: async (page) => {
-      const tool = page.locator("select").first();
-      if (await tool.count()) await tool.selectOption({ index: 1 });
-      await page.locator('input[type="text"]').first().fill("~/Evidence/samples/ram_capture.lime");
-      await page.locator("button", { hasText: "List Processes" }).click();
+      const ramTab = page.locator(".tab-content").filter({
+        hasText: /RAM Capture|Tangkap RAM/i,
+      }).first();
+      if (await ramTab.locator(".apple-note").count()) {
+        await page.waitForTimeout(800);
+        return;
+      }
+      const tool = ramTab.locator("select").first();
+      if (await tool.count()) await tool.selectOption({ index: 1 }).catch(() => {});
+      const outputInput = ramTab.locator('input[type="text"]').first();
+      if (await outputInput.count()) {
+        await outputInput.fill("~/Evidence/samples/ram_capture.lime").catch(() => {});
+      }
+      const listBtn = ramTab.locator("button", { hasText: /List Processes|Daftar Proses/i });
+      if (await listBtn.count()) {
+        await listBtn.click().catch(() => {});
+      }
       await page.waitForTimeout(800);
     },
   },
@@ -85,10 +130,9 @@ const sections = [
     file: "collection_network_capture.png",
     setup: async (page) => {
       await page.waitForTimeout(800);
-      await page.locator(".network-tab select.full").selectOption("en0");
+      await selectOptionSafely(page.locator(".network-tab select.full"), "en0");
       await page.locator('.network-tab input[placeholder="3600"]').fill("3600");
-      await page.locator(".network-tab button.btn-primary", { hasText: "Start Capture" }).click();
-      await page.waitForTimeout(1500);
+      await page.waitForTimeout(900);
     },
   },
   { id: "snapshot", file: "collection_system_snapshot.png" },

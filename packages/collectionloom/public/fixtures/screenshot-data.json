@@ -1,0 +1,279 @@
+{
+  "meta": {
+    "generatedAt": "2026-06-08T17:07:04.513Z",
+    "verifyMeSha256": "e9d3d9549f8c2dcb7d3d0c9da74749751551e8e6b1a9149ecbd7a7449c25020a",
+    "verifyMeSha256RawFile": "c08ec2e6664b42be807919270dd54048ac9b4fce00384c51852f0665fac37c06",
+    "sourceDiskBytes": 10485760,
+    "sourceDiskSha256": "209e1bee6144b99903122faf6ac827aa022ed239659be180ba98ade43f36aabe",
+    "theme": "light"
+  },
+  "commands": {
+    "about_info": {
+      "appName": "CollectionLoom",
+      "version": "0.1.0",
+      "developer": "YSF Studio — Yusuf Shalahuddin",
+      "build": "Portable Forensic Acquisition Toolkit — macOS / Windows / Linux",
+      "features": [
+        "Bit-for-bit disk imaging (RAW, E01, AFF4) with SHA-256 verification and split support for multi-TB drives",
+        "Hardware and one-click software write-blocker (Linux BLKROSET, macOS unmount, Windows IOCTL)",
+        "HPA/DCO detection via ATA IDENTIFY (Linux/Windows)",
+        "Pre-imaging source integrity check (sectors 0–99) and acquisition summary",
+        "Volatile RAM capture via avml / LiME with live process listing",
+        "Mobile triage — Android ADB and iOS logical backup workflows",
+        "Cloud snapshot — AWS EBS (SigV4), Azure managed disks, GCP persistent disks",
+        "Network packet capture with BPF filters and 1-hour default timeout",
+        "System snapshot profiles (triage, IR, deep) with A/B compare engine",
+        "Acquire All — orchestrated multi-module batch acquisition",
+        "Encryption detection (BitLocker, LUKS, VeraCrypt, FileVault)",
+        "Hash verification, chain of custody with Ed25519 signatures and QR labels",
+        "Case dashboard and export bundles (JSON, Markdown, ZIP)",
+        "100% offline — no telemetry, no cloud dependency for core workflows"
+      ],
+      "disclaimer": "This software is provided \"AS IS\" for forensic triage and evidence collection. Operators must follow organizational policy and jurisdictional requirements. Independently verify hashes and chain-of-custody before use in legal proceedings.",
+      "offline": true,
+      "privacy": "All processing runs locally on your workstation. CollectionLoom does not transmit evidence, telemetry, or analytics to external servers."
+    },
+    "list_disks": [
+      {
+        "device": "/dev/disk4",
+        "model": "Sample USB Evidence Drive",
+        "sizeBytes": 10485760,
+        "sectorSize": 512,
+        "isSsd": false,
+        "partitions": []
+      },
+      {
+        "device": "/dev/disk5",
+        "model": "WD Elements 2TB",
+        "sizeBytes": 2000398934016,
+        "sectorSize": 512,
+        "isSsd": false,
+        "partitions": []
+      }
+    ],
+    "scan_encryption": {
+      "drives": [
+        {
+          "device": "/dev/disk4",
+          "path": "/dev/disk4",
+          "encrypted": false,
+          "type": "Unencrypted"
+        },
+        {
+          "device": "/dev/disk2s2",
+          "path": "/dev/disk2s2",
+          "encrypted": true,
+          "type": "APFS FileVault"
+        }
+      ],
+      "volumes": []
+    },
+    "check_write_blocker": {
+      "active": true,
+      "enabled": true,
+      "method": "software",
+      "confidence": "high",
+      "hardware": false,
+      "software": true,
+      "notes": "Software write-blocker active — volumes unmounted, imaging via raw device path."
+    },
+    "hpa_dco_detect": {
+      "device": "/dev/disk4",
+      "supported": true,
+      "hpaDetected": false,
+      "dcoDetected": false,
+      "identifyMaxLba": 20479,
+      "nativeMaxLba": 20479,
+      "dcoMaxLba": null,
+      "hiddenSectors": null,
+      "model": "Sample USB Evidence Drive",
+      "notes": "No HPA/DCO anomalies detected (fixture — hashes from samples/source_disk.img)."
+    },
+    "list_ram_tools": [
+      "Avml",
+      "LiME",
+      "DumpIt"
+    ],
+    "get_ram_size": 17179869184,
+    "list_interfaces": [
+      "en0",
+      "en1",
+      "lo0",
+      "bridge0"
+    ],
+    "list_android_devices": [
+      {
+        "id": "R58M90ABCDE",
+        "model": "Pixel 7",
+        "state": "device"
+      }
+    ],
+    "list_ios_devices": [],
+    "list_processes": [
+      {
+        "pid": 1,
+        "name": "launchd",
+        "state": "Run",
+        "cpu_percent": 0.1,
+        "memory_bytes": 12582912
+      },
+      {
+        "pid": 4821,
+        "name": "CollectionLoom",
+        "state": "Run",
+        "cpu_percent": 2.4,
+        "memory_bytes": 195035136
+      },
+      {
+        "pid": 9012,
+        "name": "Google Chrome",
+        "state": "Run",
+        "cpu_percent": 5.1,
+        "memory_bytes": 536870912
+      }
+    ],
+    "get_imaging_progress": {
+      "percent": 67.4,
+      "status": "Imaging: 6.7 MB / 10.0 MB",
+      "bytesProcessed": 7067402,
+      "totalBytes": 10485760,
+      "isDone": false,
+      "error": null
+    },
+    "get_imaging_progress_done": {
+      "percent": 100,
+      "status": "Complete",
+      "bytesProcessed": 10485760,
+      "totalBytes": 10485760,
+      "isDone": true,
+      "error": null,
+      "summary": {
+        "sha256": "209e1bee6144b99903122faf6ac827aa022ed239659be180ba98ade43f36aabe",
+        "sectorsRead": 20480,
+        "avgSpeedBytesPerSec": 52428800,
+        "errorSectors": 0,
+        "durationSecs": 12.4,
+        "sourceIntegrityOk": true,
+        "bytesWritten": 10485760
+      }
+    },
+    "verify_hash": {
+      "algorithm": "sha256",
+      "expected": "e9d3d9549f8c2dcb7d3d0c9da74749751551e8e6b1a9149ecbd7a7449c25020a",
+      "actual": "e9d3d9549f8c2dcb7d3d0c9da74749751551e8e6b1a9149ecbd7a7449c25020a",
+      "matched": true,
+      "size": 20
+    },
+    "generate_evidence_id": "BR2026-DSK-001",
+    "generate_qr_label": null,
+    "create_cloud_snapshot": {
+      "provider": "aws",
+      "snapshot_id": "snap-0demo1234567890ab",
+      "SnapshotId": "snap-0demo1234567890ab",
+      "status": "completed",
+      "source": "/fixtures/samples/verify_me.txt"
+    },
+    "list_cases_cmd": [
+      {
+        "case_id": "CL-2026-DEMO",
+        "title": "Incident Response — Workstation Triage",
+        "operator": "J. Analyst",
+        "timezone": "UTC",
+        "status": "open",
+        "created_at": "2026-06-06T08:00:00Z"
+      }
+    ],
+    "list_case_summaries_cmd": [
+      {
+        "case": {
+          "case_id": "CL-2026-DEMO",
+          "title": "Incident Response — Workstation Triage",
+          "operator": "J. Analyst",
+          "timezone": "UTC",
+          "status": "open",
+          "created_at": "2026-06-06T08:00:00Z"
+        },
+        "snapshot_count": 2,
+        "export_count": 1,
+        "diff_count": 1,
+        "case_dir": "~/CollectionLoom/cases/CL-2026-DEMO"
+      }
+    ],
+    "list_snapshots_cmd": [
+      {
+        "snapshot_id": "snap-001-baseline",
+        "case_id": "CL-2026-DEMO",
+        "host": "macbook-pro.local",
+        "os": "macOS 15",
+        "profile": "triage_5m",
+        "timestamp": "2026-06-06T08:05:00Z",
+        "integrity_hash": "e9d3d9549f8c2dcb..."
+      },
+      {
+        "snapshot_id": "snap-002-post-containment",
+        "case_id": "CL-2026-DEMO",
+        "host": "macbook-pro.local",
+        "os": "macOS 15",
+        "profile": "ir_30m",
+        "timestamp": "2026-06-06T09:30:00Z",
+        "integrity_hash": "a3f2c8910d4e5f6a..."
+      }
+    ],
+    "get_snapshot_progress": {
+      "snapshotId": "snap-001-baseline",
+      "percent": 100,
+      "status": "Complete",
+      "modulesDone": 6,
+      "modulesTotal": 6
+    },
+    "list_exports": [
+      {
+        "export_id": "exp-001",
+        "case_id": "CL-2026-DEMO",
+        "format": "zip",
+        "path": "~/CollectionLoom/cases/CL-2026-DEMO/exports/case_bundle.zip",
+        "created_at": "2026-06-06T10:00:00Z"
+      }
+    ],
+    "get_capture_stats": {
+      "packets": 1247,
+      "bytes": 892416,
+      "bytes_captured": 892416
+    },
+    "get_capture_packets": [
+      {
+        "time": "08:01:02.441",
+        "src": "192.168.1.42",
+        "dst": "8.8.8.8",
+        "proto": "DNS",
+        "info": "Standard query A google.com"
+      },
+      {
+        "time": "08:01:02.512",
+        "src": "192.168.1.42",
+        "dst": "142.250.80.78",
+        "proto": "TLS",
+        "info": "Client Hello"
+      }
+    ],
+    "take_snapshot": {
+      "id": "snap-001-baseline",
+      "timestamp": "2026-06-06T08:05:00Z",
+      "file_count": 42,
+      "process_count": 156,
+      "network_count": 23
+    }
+  },
+  "uiState": {
+    "verifyFilePath": "/fixtures/samples/verify_me.txt",
+    "verifyExpectedHash": "e9d3d9549f8c2dcb7d3d0c9da74749751551e8e6b1a9149ecbd7a7449c25020a",
+    "cocCaseName": "Incident Response — Workstation Triage",
+    "cocOperator": "J. Analyst",
+    "cocDevice": "/dev/disk4",
+    "cocEvidenceId": "BR2026-DSK-001",
+    "diskDevice": "/dev/disk4",
+    "diskDestination": "~/Evidence/samples/source_disk.img.dd",
+    "cloudCredentialPath": "/fixtures/samples/demo-aws-credentials.json",
+    "cloudResourceId": "vol-0demo1234567890abcd"
+  }
+}

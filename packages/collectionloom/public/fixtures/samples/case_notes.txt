@@ -1,0 +1,5 @@
+=== EVIDENCE LOG ===
+Case: COL-20260606-0001
+Operator: Test Investigator
+Device: /dev/disk2
+Notes: Synthetic fixture for CollectionLoom forensic tests.
