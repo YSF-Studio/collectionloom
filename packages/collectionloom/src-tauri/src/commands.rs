@@ -150,12 +150,22 @@ pub fn capture_ram(
     case_id: Option<String>,
     operator: Option<String>,
 ) -> Result<serde_json::Value, String> {
-    let result = match tool.as_str() {
+    let selected = if tool.trim().is_empty() {
+        ram::detect_tools()
+            .into_iter()
+            .next()
+            .map(|t| format!("{:?}", t))
+            .unwrap_or_else(|| "Avml".into())
+    } else {
+        tool.trim().to_string()
+    };
+
+    let result = match selected.as_str() {
         "Avml" => ram::capture_avml(&output, compress),
         "WinPmem" => ram::capture_winpmem(&output),
         "MRS" => ram::capture_mrs(&output),
-        "LiME" => ram::capture_avml(&output, compress),
-        _ => Err(format!("Unknown tool: {}", tool)),
+        "LiME" => Err("LiME capture is not yet implemented in the app flow; use AVML or a pre-staged LiME workflow".into()),
+        _ => Err(format!("Unknown tool: {}", selected)),
     };
     match &result {
         Ok(msg) => {
@@ -164,7 +174,7 @@ pub fn capture_ram(
             log_acquisition(
                 case_id,
                 "ram_capture",
-                &tool,
+                &selected,
                 &output,
                 "completed",
                 sha256.clone(),
@@ -184,7 +194,7 @@ pub fn capture_ram(
             log_acquisition(
                 case_id,
                 "ram_capture",
-                &tool,
+                &selected,
                 &output,
                 "failed",
                 None,

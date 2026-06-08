@@ -3,12 +3,14 @@ import { invoke } from "../api/tauri.js";
 import { defaultOutputPath } from "../api/portable.js";
 import GuideCard from "./GuideCard.svelte";
 import SectionHeader from "./ui/SectionHeader.svelte";
+import PillBadge from "./ui/PillBadge.svelte";
 import { ramCaptureGuide } from "../guides.js";
 import { getLocale, subscribeLocale } from "../stores/locale.js";
 let { sharedState, caseState = {}, busy, setBusy, setMsg, timeoutPromise } = $props();
 let tools = $state([]);
 let toolsLoading = $state(false);
 let selectedTool = $state("");
+let advancedOpen = $state(false);
 let outputPath = $state("");
 let locale = $state(getLocale());
 
@@ -36,7 +38,9 @@ $effect(() => subscribeLocale((_, resolved) => {
 const text = {
   en: {
     title: "RAM Capture",
-    subtitle: "Volatile memory acquisition with optional compression and hashing",
+    subtitle: "Recommended flow picks the best available tool automatically",
+    recommended: "Recommended",
+    advanced: "Advanced options",
     tool: "Tool:",
     output: "Output:",
     compress: "Compress",
@@ -45,14 +49,16 @@ const text = {
     detect: "Detecting tools…",
     selectTool: "— Select tool —",
     refresh: "Refresh",
-    noTools: "Capture is disabled until a valid RAM tool is available. Bundled tools are auto-downloaded at build time when available; source-specific tools like LiME or some macOS-only modules may still need manual staging in ./tools/.",
+    noTools: "No supported RAM capture tool found. AVML is preferred when available; other tools may require manual staging in ./tools/.",
     listProcesses: "List Processes",
     runningProcesses: "Running Processes",
     refresh: "Refresh",
   },
   id: {
     title: "Tangkap RAM",
-    subtitle: "Akuisisi memori volatil dengan kompresi dan hashing opsional",
+    subtitle: "Alur yang direkomendasikan akan memilih alat terbaik secara otomatis",
+    recommended: "Rekomendasi",
+    advanced: "Opsi lanjutan",
     tool: "Alat:",
     output: "Keluaran:",
     compress: "Kompres",
@@ -61,7 +67,7 @@ const text = {
     detect: "Mendeteksi alat…",
     selectTool: "— Pilih alat —",
     refresh: "Segarkan",
-    noTools: "Akuisisi dinonaktifkan sampai ada alat RAM yang valid. Alat bundled diunduh otomatis saat build bila tersedia; alat source-specific seperti LiME atau modul macOS tertentu mungkin tetap perlu dipasang manual di ./tools/.",
+    noTools: "Tidak ada alat RAM capture yang didukung. AVML diprioritaskan jika tersedia; alat lain mungkin perlu staging manual di ./tools/.",
     listProcesses: "Daftar Proses",
     runningProcesses: "Proses Berjalan",
     refresh: "Segarkan",
@@ -69,11 +75,23 @@ const text = {
 };
 function tr(key) { return text[locale]?.[key] || text.en[key] || key; }
 
+function toolLabel(tool) {
+  if (tool === "Avml") return "AVML (recommended)";
+  if (tool === "WinPmem") return "WinPmem (Windows)";
+  if (tool === "MRS") return "MRS (macOS)";
+  if (tool === "LiME") return "LiME (manual / advanced)";
+  return tool;
+}
+
 async function listTools() {
   toolsLoading = true;
   try {
     tools = await timeoutPromise(invoke("list_ram_tools"), 10000);
-    if (tools.length && !selectedTool) selectedTool = tools[0];
+    if (tools.length) {
+      selectedTool = tools.includes("Avml") ? "Avml" : tools[0];
+    } else {
+      selectedTool = "";
+    }
     if (!tools.length) {
       setMsg(locale === "id" ? "PERINGATAN: Tidak ada alat RAM capture — tangkap dinonaktifkan sampai alat valid tersedia (lihat tab Prasyarat)" : "WARN: No RAM capture tools found — capture is disabled until a valid tool is available (see Prerequisites tab)");
     }
@@ -144,13 +162,35 @@ $effect(() => { listTools(); });
 <div class="tab-content">
   <SectionHeader title={tr("title")} subtitle={tr("subtitle")} />
   {#if ramSize}<p class="info">System RAM: {(ramSize/1e9).toFixed(1)} GB</p>{/if}
+  <div class="recommendation">
+    <PillBadge variant={selectedTool === "Avml" ? "active" : "info"} label={tr("recommended")} />
+    <span>{selectedTool ? toolLabel(selectedTool) : (locale === "id" ? "Memilih alat terbaik…" : "Selecting the best tool…")}</span>
+  </div>
+  {#if tools.length > 0}
+    <p class="helper">
+      {selectedTool === "Avml"
+        ? (locale === "id"
+            ? "AVML dipilih otomatis karena paling mudah dipakai lintas platform."
+            : "AVML is selected automatically because it is the easiest cross-platform option.")
+        : (locale === "id"
+            ? "Gunakan opsi lanjutan hanya jika perlu workflow khusus."
+            : "Use advanced options only if you need a special workflow.")}
+    </p>
+  {/if}
   <div class="row">
-    <label>{tr("tool")} <select bind:value={selectedTool} disabled={busy || toolsLoading}>
-      <option value="">{toolsLoading ? tr("detect") : tr("selectTool")}</option>
-      {#each tools as tool}<option value={tool}>{tool}</option>{/each}
-    </select></label>
+    <button class="btn-sm" onclick={() => (advancedOpen = !advancedOpen)} disabled={busy || toolsLoading}>
+      {advancedOpen ? "−" : "+"} {tr("advanced")}
+    </button>
     <button onclick={listTools} class="btn-sm" disabled={busy || toolsLoading}>{toolsLoading ? "…" : tr("refresh")}</button>
   </div>
+  {#if advancedOpen}
+    <div class="row">
+      <label>{tr("tool")} <select bind:value={selectedTool} disabled={busy || toolsLoading}>
+        <option value="">{toolsLoading ? tr("detect") : tr("selectTool")}</option>
+        {#each tools as tool}<option value={tool}>{toolLabel(tool)}</option>{/each}
+      </select></label>
+    </div>
+  {/if}
   {#if !toolsLoading && tools.length === 0}
     <p class="empty-hint">{tr("noTools")}</p>
   {/if}
@@ -162,7 +202,7 @@ $effect(() => { listTools(); });
     <label><input type="checkbox" bind:checked={autoHash} disabled={busy} /> {tr("autoHash")}</label>
   </div>
   <div class="actions">
-    <button onclick={capture} class="btn-primary" disabled={busy||!selectedTool}>{tr("capture")}</button>
+    <button onclick={capture} class="btn-primary" disabled={busy || toolsLoading || tools.length === 0}>{tr("capture")}</button>
     <button onclick={listProcesses} class="btn-sm" disabled={busy}>{tr("listProcesses")}</button>
   </div>
 
@@ -189,6 +229,8 @@ $effect(() => { listTools(); });
 
 <style>
 .info { font-size:12px; color:var(--text-secondary); margin-bottom:10px; }
+.recommendation { display:flex; gap:10px; align-items:center; margin-bottom:8px; color:var(--text-secondary); font-size:12px; }
+.helper { margin:0 0 12px; font-size:12px; color:var(--text-muted); line-height:1.5; }
 .empty-hint { font-size:12px; color:var(--text-muted); margin:-4px 0 12px; }
 .row { display:flex; gap:10px; align-items:center; margin-bottom:12px; }
 select, input { background: var(--input-bg); color: var(--text); border:1px solid var(--border); border-radius:6px; padding:6px 10px; }
