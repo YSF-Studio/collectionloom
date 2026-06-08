@@ -119,8 +119,6 @@ CollectionLoom uses two RAM acquisition modes:
 
 **macOS note:** CollectionLoom does not provide a raw RAM dump workflow on macOS. Use the app for the supported acquisition paths on that platform, but plan on disk, triage, and artifact collection rather than universal live memory dumping.
 
-**Volatility note:** Volatility is an analysis framework for memory images, not a memory acquisition tool. You still need a separate acquisition step before Volatility can analyze the dump.
-
 ## Apple Volatile Data
 
 **Platform:** macOS (Intel and Apple Silicon)
@@ -130,7 +128,7 @@ CollectionLoom does not attempt raw RAM dumping on macOS. Instead, use this sect
 1. Capture a process list and active process metadata.
 2. Collect network state and open connections.
 3. Gather login/session, autorun, and user activity artifacts where available.
-4. Capture system diagnostics or live-response artifacts that help preserve volatility context.
+4. Capture system diagnostics or live-response artifacts that help preserve volatile context.
 5. Hash and record every output in chain of custody.
 
 This is intentionally an alternative-source workflow, not a raw memory dump workflow. Treat it as triage and live response support for macOS.
