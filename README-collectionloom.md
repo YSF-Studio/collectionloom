@@ -13,6 +13,13 @@
 
 CollectionLoom helps first responders and forensic analysts capture disk images, volatile memory, network traffic, mobile backups, and system snapshots — then package evidence with hash manifests and chain-of-custody records for analyst handoff.
 
+RAM capture is organized into two modes:
+
+- **Mode 1** is the recommended path and automatically prefers the safest practical tool for the current platform.
+- **Mode 2** exposes advanced manual tool selection for investigators who need a specific workflow.
+
+macOS raw RAM acquisition is intentionally not supported. CollectionLoom still supports the rest of the acquisition workflow on macOS, but not a universal raw memory dump path across all versions.
+
 ---
 
 ## Features
@@ -21,7 +28,7 @@ CollectionLoom helps first responders and forensic analysts capture disk images,
 |--------|-------------|
 | **Disk Imaging** | Sector-by-sector acquisition in RAW, native E01, or AFF4 format. SHA-256 verification (single- and multi-part), split images, HPA/DCO check, pre-imaging source integrity, acquisition summary |
 | **Write Blocker** | Hardware auto-detect (Tableau/WiebeTech); software protection via titlebar or tab; disk picker in titlebar — no imaging tab required |
-| **RAM Capture** | Volatile memory via avml / LiME / DumpIt with optional compression |
+| **RAM Capture** | Volatile memory via Mode 1 recommended acquisition or Mode 2 advanced selection; macOS raw RAM capture is intentionally not supported |
 | **Mobile Triage** | Android ADB backup and iOS logical acquisition workflows |
 | **Cloud Snapshot** | AWS EBS (Signature V4), Azure managed disk, and GCP persistent disk snapshots |
 | **Network Capture** | Live packet capture with BPF filters and statistics |
@@ -171,6 +178,7 @@ CollectionLoom implements real HPA/DCO detection (Linux/Windows), AFF4 split siz
 | Area | Key constraint |
 |------|----------------|
 | HPA/DCO | Not on macOS/NVMe; needs root/admin + direct block device |
+| macOS RAM | Raw RAM acquisition intentionally not supported |
 | Source integrity | First 51,200 bytes only — not full-drive pre-hash |
 | AFF4 split | Each part is a separate AFF4-L container |
 | Network capture | Default 3600 s; `0` = infinite until manual stop |

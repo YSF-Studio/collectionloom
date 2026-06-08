@@ -12,6 +12,7 @@ This document describes what CollectionLoom **does not** guarantee, platform-spe
 | **Hardware validation** | Automated tests run in CI without physical evidence drives, write blockers, or live network taps. Field behaviour must be validated on your target OS and hardware. |
 | **Preview mode** | Running the UI in the browser (`VITE_FIXTURE_MODE=1` or without Tauri) uses fixture data — not real devices or imaging. |
 | **Administrator / root** | Disk imaging, software write-blocking, HPA/DCO checks, and RAM capture often require elevated privileges on the acquisition workstation. |
+| **macOS RAM capture** | CollectionLoom does **not** provide a raw RAM acquisition workflow for macOS. RAM capture is intentionally limited to platforms and methods that are realistically supportable across versions. |
 
 ---
 

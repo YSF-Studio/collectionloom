@@ -106,11 +106,20 @@ Use **Refresh** to re-check status before imaging. Software blocking is not a su
 
 **Tab:** RAM Capture
 
-1. Confirm a capture tool is available (avml, LiME, DumpIt).
-2. Ensure output volume has space ≥ RAM size.
-3. Select tool and output path.
-4. Run capture — do not sleep or hibernate the target during acquisition.
-5. Hash the output file and record in chain of custody.
+CollectionLoom uses two RAM acquisition modes:
+
+- **Mode 1 (Recommended)** - automatic, platform-aware selection that prefers the safest practical path on the current OS.
+- **Mode 2 (Advanced)** - manual tool selection for investigators who need a specific RAM workflow.
+
+1. Confirm that the selected mode matches the target platform.
+2. Ensure the output volume has space greater than or equal to the RAM size.
+3. In Mode 2, select the specific tool and output path.
+4. Run capture. Do not sleep or hibernate the target during acquisition.
+5. Hash the output file and record it in chain of custody.
+
+**macOS note:** CollectionLoom does not provide a raw RAM dump workflow on macOS. Use the app for the supported acquisition paths on that platform, but plan on disk, triage, and artifact collection rather than universal live memory dumping.
+
+**Volatility note:** Volatility is an analysis framework for memory images, not a memory acquisition tool. You still need a separate acquisition step before Volatility can analyze the dump.
 
 ---
 

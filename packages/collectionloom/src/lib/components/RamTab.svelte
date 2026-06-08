@@ -38,9 +38,11 @@ $effect(() => subscribeLocale((_, resolved) => {
 const text = {
   en: {
     title: "RAM Capture",
-    subtitle: "Recommended flow picks the best available tool automatically",
+    subtitle: "Mode 1 is recommended; Mode 2 exposes advanced tool selection",
     recommended: "Recommended",
-    advanced: "Advanced options",
+    advanced: "Mode 2: Advanced options",
+    mode1: "Mode 1: Recommended",
+    mode2: "Mode 2: Advanced",
     tool: "Tool:",
     output: "Output:",
     compress: "Compress",
@@ -56,9 +58,11 @@ const text = {
   },
   id: {
     title: "Tangkap RAM",
-    subtitle: "Alur yang direkomendasikan akan memilih alat terbaik secara otomatis",
+    subtitle: "Mode 1 direkomendasikan; Mode 2 membuka pemilihan alat lanjutan",
     recommended: "Rekomendasi",
-    advanced: "Opsi lanjutan",
+    advanced: "Mode 2: Opsi lanjutan",
+    mode1: "Mode 1: Rekomendasi",
+    mode2: "Mode 2: Lanjutan",
     tool: "Alat:",
     output: "Keluaran:",
     compress: "Kompres",
@@ -163,7 +167,7 @@ $effect(() => { listTools(); });
   <SectionHeader title={tr("title")} subtitle={tr("subtitle")} />
   {#if ramSize}<p class="info">System RAM: {(ramSize/1e9).toFixed(1)} GB</p>{/if}
   <div class="recommendation">
-    <PillBadge variant={selectedTool === "Avml" ? "active" : "info"} label={tr("recommended")} />
+    <PillBadge variant="active" label={tr("mode1")} />
     <span>{selectedTool ? toolLabel(selectedTool) : (locale === "id" ? "Memilih alat terbaik…" : "Selecting the best tool…")}</span>
   </div>
   {#if tools.length > 0}
@@ -179,7 +183,7 @@ $effect(() => { listTools(); });
   {/if}
   <div class="row">
     <button class="btn-sm" onclick={() => (advancedOpen = !advancedOpen)} disabled={busy || toolsLoading}>
-      {advancedOpen ? "−" : "+"} {tr("advanced")}
+      {advancedOpen ? "−" : "+"} {advancedOpen ? tr("mode2") : tr("advanced")}
     </button>
     <button onclick={listTools} class="btn-sm" disabled={busy || toolsLoading}>{toolsLoading ? "…" : tr("refresh")}</button>
   </div>

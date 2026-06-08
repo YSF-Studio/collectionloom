@@ -25,6 +25,7 @@ $effect(() => subscribeLocale((_, resolved) => { locale = resolved; }));
         </h3>
         <p style="color:var(--text-secondary);font-size:13px;margin:0">{locale === 'id' ? 'Perangkat Akuisisi Forensik Portable' : 'Portable Forensic Acquisition Toolkit'}</p>
         <p style="color:var(--text-muted);font-size:11px;margin:6px 0 0">{locale === 'id' ? 'Pengumpulan bukti selaras ISO 27037 untuk macOS, Windows, dan Linux' : 'ISO 27037-aligned evidence collection for macOS, Windows, and Linux'}</p>
+        <p style="color:var(--text-muted);font-size:11px;margin:6px 0 0">{locale === 'id' ? 'RAM Capture memakai Mode 1 (rekomendasi) dan Mode 2 (lanjutan); akuisisi RAM mentah di macOS sengaja tidak didukung.' : 'RAM Capture offers Mode 1 (recommended) and Mode 2 (advanced); raw macOS RAM acquisition is intentionally not supported.'}</p>
     </div>
 
     <div class="card" style="margin-bottom:12px">
