@@ -1,6 +1,7 @@
 use chrono::Utc;
 use serde::{Serialize, Deserialize};
 use std::path::PathBuf;
+use std::sync::{Mutex, OnceLock};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EvidenceId {
@@ -12,6 +13,8 @@ pub struct EvidenceId {
 impl EvidenceId {
     /// Create evidence ID: `[CASE-INITIALS]-[MEDIA-TYPE]-[SEQUENCE]` e.g. `BR2026-DSK-001`.
     pub fn new(case_initials: &str, media_type: &str) -> Self {
+        static COUNTER_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+        let _guard = COUNTER_LOCK.get_or_init(|| Mutex::new(())).lock().unwrap();
         let counter_path = evidence_counter_path(case_initials, media_type);
         let sequence = match std::fs::read_to_string(&counter_path) {
             Ok(s) => {

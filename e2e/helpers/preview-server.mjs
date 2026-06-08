@@ -7,7 +7,7 @@ const pkg = join(root, "packages/collectionloom");
 export const PREVIEW_URL = "http://127.0.0.1:4174";
 
 export function startFixturePreview() {
-  const proc = spawn("npm", ["run", "preview", "--", "--host", "127.0.0.1", "--port", "4174", "--strictPort"], {
+  const proc = spawn("npm", ["run", "preview", "--", "--host", "0.0.0.0", "--port", "4174", "--strictPort"], {
     cwd: pkg,
     env: { ...process.env, VITE_FIXTURE_MODE: "1" },
     stdio: ["ignore", "pipe", "pipe"],

@@ -317,11 +317,28 @@ fn property_entropy_text_data() {
 
 #[test]
 fn evidence_id_unique_across_calls() {
+    let temp_home = tempdir("evidence_home");
+    let old_home = std::env::var("HOME").ok();
+    let old_userprofile = std::env::var("USERPROFILE").ok();
+    unsafe {
+        std::env::set_var("HOME", &temp_home);
+        if old_userprofile.is_some() {
+            std::env::remove_var("USERPROFILE");
+        }
+    }
     let id1 = evidence::EvidenceId::new("TST2026", "DSK").to_string();
     let id2 = evidence::EvidenceId::new("TST2026", "DSK").to_string();
     let seq1: u16 = id1.rsplit('-').next().unwrap().parse().unwrap();
     let seq2: u16 = id2.rsplit('-').next().unwrap().parse().unwrap();
     assert!(seq2 > seq1, "Sequences should increment: {} → {}", seq1, seq2);
+    unsafe {
+        if let Some(home) = old_home {
+            std::env::set_var("HOME", home);
+        }
+        if let Some(userprofile) = old_userprofile {
+            std::env::set_var("USERPROFILE", userprofile);
+        }
+    }
 }
 
 #[test]
