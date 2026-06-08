@@ -1,7 +1,11 @@
 #!/usr/bin/env node
 /**
- * Download third-party forensic tools into Tauri bundle resources.
- * Run before `tauri build` — tools ship inside the app (no separate tools/ folder).
+ * Download third-party forensic tools into the repo-level `tools/` folder,
+ * then mirror them into Tauri bundle resources.
+ *
+ * Run before `tauri build`. The repo `tools/` directory is the source of truth
+ * for portable/manual staging; `packages/collectionloom/src-tauri/resources/tools/`
+ * is what the app bundle consumes at build time.
  *
  * SKIP_TOOL_DOWNLOAD=1     — skip network fetch (dev/CI without downloads)
  * STRICT_TOOL_DOWNLOAD=1   — fail build if any tool download fails
@@ -9,15 +13,13 @@
  */
 
 import { createHash } from "node:crypto";
-import { chmod, mkdir, readFile, writeFile } from "node:fs/promises";
-import { createWriteStream } from "node:fs";
+import { chmod, mkdirSync, readFileSync, readdirSync, writeFileSync, cpSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { pipeline } from "node:stream/promises";
-import { Readable } from "node:stream";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..");
+const SOURCE_TOOLS = join(ROOT, "tools");
 const RES_TOOLS = join(ROOT, "packages/collectionloom/src-tauri/resources/tools");
 const CONFIG_PATH = join(__dirname, "tools.config.json");
 
@@ -35,8 +37,15 @@ function platformKey() {
 }
 
 async function sha256File(path) {
-  const data = await readFile(path);
+  const data = await readFileSync(path);
   return createHash("sha256").update(data).digest("hex");
+}
+
+function syncContents(srcDir, destDir) {
+  mkdirSync(destDir, { recursive: true });
+  for (const entry of readdirSync(srcDir)) {
+    cpSync(join(srcDir, entry), join(destDir, entry), { recursive: true });
+  }
 }
 
 async function download(url, dest) {
@@ -44,26 +53,28 @@ async function download(url, dest) {
   if (!res.ok) {
     throw new Error(`HTTP ${res.status} for ${url}`);
   }
-  await mkdir(dirname(dest), { recursive: true });
-  const body = Readable.fromWeb(res.body);
-  await pipeline(body, createWriteStream(dest));
+  await mkdirSync(dirname(dest), { recursive: true });
+  const body = Buffer.from(await res.arrayBuffer());
+  writeFileSync(dest, body);
   if (process.platform !== "win32") {
     await chmod(dest, 0o755);
   }
 }
 
 async function main() {
-  await mkdir(RES_TOOLS, { recursive: true });
+  await mkdirSync(SOURCE_TOOLS, { recursive: true });
+  await mkdirSync(RES_TOOLS, { recursive: true });
 
   if (SKIP) {
     console.log("[download-tools] SKIP_TOOL_DOWNLOAD=1 — keeping existing resources/tools/");
-    const template = join(RES_TOOLS, "manifest.template.json");
+    const template = join(SOURCE_TOOLS, "manifest.json");
     const manifest = join(RES_TOOLS, "manifest.json");
     try {
-      await writeFile(manifest, await readFile(template));
+      await writeFileSync(manifest, readFileSync(template));
     } catch {
-      await writeFile(manifest, '{"tools":{}}\n');
+      await writeFileSync(manifest, '{"tools":{}}\n');
     }
+    syncContents(SOURCE_TOOLS, RES_TOOLS);
     return;
   }
 
@@ -75,13 +86,24 @@ async function main() {
   const manifest = { buildFlavor: BUILD_FLAVOR, tools: {} };
 
   for (const tool of config.tools) {
+    const assetKeys = Object.keys(tool.assets);
     const asset = tool.assets[pk];
     if (!asset) {
-      console.log(`[download-tools] Skip ${tool.id} (no asset for ${pk})`);
+      const supported = assetKeys.length ? assetKeys.join(", ") : "manual/source-specific";
+      console.log(`[download-tools] Note ${tool.id} is not downloadable on ${pk} (${supported})`);
+      if (tool.id === "lime" || tool.id === "mrs") {
+        const noteDir = join(SOURCE_TOOLS, tool.id);
+        mkdirSync(noteDir, { recursive: true });
+        writeFileSync(
+          join(noteDir, "README.txt"),
+          `${tool.id.toUpperCase()} is source-specific and has no official download artifact for ${pk}.\n` +
+            `Stage a compatible build manually in this folder when needed.\n`,
+        );
+      }
       continue;
     }
 
-    const dest = join(RES_TOOLS, asset.file);
+    const dest = join(SOURCE_TOOLS, asset.file);
     try {
       console.log(`[download-tools] Fetch ${tool.id} → ${asset.file}`);
       await download(asset.url, dest);
@@ -101,8 +123,9 @@ async function main() {
     }
   }
 
-  await writeFile(join(RES_TOOLS, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`);
-  console.log("[download-tools] Done → packages/collectionloom/src-tauri/resources/tools/");
+  writeFileSync(join(SOURCE_TOOLS, "manifest.json"), `${JSON.stringify(manifest, null, 2)}\n`);
+  syncContents(SOURCE_TOOLS, RES_TOOLS);
+  console.log("[download-tools] Done → tools/ and packages/collectionloom/src-tauri/resources/tools/");
 }
 
 main().catch((err) => {

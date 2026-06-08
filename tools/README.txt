@@ -1,8 +1,13 @@
 CollectionLoom Portable Forensic Kit — tools/
 ==============================================
 
-Place pre-positioned external binaries here for zero-install field use.
-CollectionLoom resolves ./tools/ BEFORE system PATH.
+This folder is the source of truth for external binaries.
+
+`npm run download-tools` downloads every upstream artifact that exists for the
+current platform into this folder, then mirrors the contents into
+`packages/collectionloom/src-tauri/resources/tools/` for the app bundle.
+
+CollectionLoom resolves `./tools/` BEFORE system PATH.
 
 Recommended layout
 ------------------
@@ -41,6 +46,8 @@ Platform notes
   Windows  — tools/ beside CollectionLoom.exe; resolves adb.exe and adb
   Linux    — tools/ beside binary; AppImage uses APPIMAGE path for kit root
   macOS    — kit root is folder containing CollectionLoom.app (not inside bundle)
+  Some tools are source-specific and do not have official downloadable artifacts
+  on every platform. Those are marked in the download log and may need manual staging.
 
 Environment
 -----------

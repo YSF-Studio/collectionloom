@@ -10,9 +10,9 @@ CollectionLoom is portable-first. This repository supports three distribution mo
 
 | Platform | Source build | Portable build | Commercial binary | Notes |
 |----------|--------------|----------------|-------------------|-------|
-| macOS | `npm run tauri:build` | `npm run build:portable` | external distribution | Portable app launches directly; AVML is bundled when an official release artifact is available, while MRS may still require manual staging |
-| Windows | `npm run tauri:build` | `npm run build:portable` | external distribution | Portable app launches directly; AVML and WinPmem can be bundled from official releases |
-| Linux | `npm run tauri:build` | `npm run build:portable` | external distribution | Portable app launches directly; AVML can be bundled from official releases, while LiME remains source-specific because it is typically built as a kernel module |
+| macOS | `npm run tauri:build` | `npm run build:portable` | external distribution | Portable app launches directly; AVML is bundled when an official release artifact is available, while MRS remains source-specific/manual |
+| Windows | `npm run tauri:build` | `npm run build:portable` | external distribution | Portable app launches directly; AVML and WinPmem are bundled when official release artifacts are available |
+| Linux | `npm run tauri:build` | `npm run build:portable` | external distribution | Portable app launches directly; AVML is bundled when an official release artifact is available, while LiME remains source-specific/manual |
 
 ## Tool availability
 
@@ -27,7 +27,7 @@ CollectionLoom is portable-first. This repository supports three distribution mo
 
 ### Source build
 
-Use this when developing, testing, or auditing CollectionLoom:
+Use this when developing, testing, or auditing CollectionLoom. The helper downloads every official artifact that exists for the current platform into `tools/`, then mirrors that folder into the app bundle:
 
 ```bash
 npm install

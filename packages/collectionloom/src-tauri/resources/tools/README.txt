@@ -1,19 +1,56 @@
-Bundled forensic tools (embedded in the app)
-============================================
+CollectionLoom Portable Forensic Kit — tools/
+==============================================
 
-Binaries are populated at build time by: npm run download-tools
+This folder is the source of truth for external binaries.
 
-They ship inside the Tauri app bundle (Resources/tools/) — no separate tools/
-folder is required for installed builds.
+`npm run download-tools` downloads every upstream artifact that exists for the
+current platform into this folder, then mirrors the contents into
+`packages/collectionloom/src-tauri/resources/tools/` for the app bundle.
 
-Priority at runtime:
-  1. ./tools/ on forensic USB kit (portable override)
-  2. Bundled resources (this folder inside the app)
-  3. System PATH / Homebrew
+CollectionLoom resolves `./tools/` BEFORE system PATH.
 
-Build flavors:
-  - source: build from GitHub source with downloaded official tools
-  - portable: same as source, packaged for USB/offline use
-  - commercial: same binaries, distributed outside GitHub by the publisher
+Recommended layout
+------------------
+  tools/
+  ├── manifest.json       SHA-256 hashes (optional but recommended)
+  ├── avml                  Linux RAM capture (static binary)
+  ├── avml.exe              Windows RAM capture
+  ├── winpmem_mini_x64_rc2.exe
+  ├── adb / adb.exe
+  ├── idevice_id
+  ├── idevicebackup2
+  └── lime/
+      ├── lime-6.2.ko
+      └── lime-6.5.ko
 
-Skip download (offline dev): SKIP_TOOL_DOWNLOAD=1 npm run tauri:build
+manifest.json example
+---------------------
+{
+  "avml": { "file": "avml", "sha256": "abc123..." },
+  "adb": { "file": "adb", "sha256": "def456..." }
+}
+
+Generate hashes: sha256sum tools/avml tools/adb
+
+Kit root layout (USB / forensic drive)
+--------------------------------------
+  CollectionLoom/
+  ├── CollectionLoom.app   (macOS) or collectionloom / CollectionLoom.exe
+  ├── tools/               ← this folder
+  └── cases/               ← evidence output
+
+Do NOT install apt/brew/choco on suspect machines — copy this folder and run.
+
+Platform notes
+--------------
+  Windows  — tools/ beside CollectionLoom.exe; resolves adb.exe and adb
+  Linux    — tools/ beside binary; AppImage uses APPIMAGE path for kit root
+  macOS    — kit root is folder containing CollectionLoom.app (not inside bundle)
+  Some tools are source-specific and do not have official downloadable artifacts
+  on every platform. Those are marked in the download log and may need manual staging.
+
+Environment
+-----------
+  COLLECTIONLOOM_KIT_ROOT  — override kit root path
+  COLLECTIONLOOM_PORTABLE=1 — force portable cases/ storage
+  .portable marker file in kit root — enable portable mode without tools/ yet
