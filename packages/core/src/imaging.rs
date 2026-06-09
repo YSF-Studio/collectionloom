@@ -1,7 +1,7 @@
 use serde::Serialize;
 use ts_rs::TS;
 use std::fs::{File, OpenOptions};
-use std::io::{Read, Seek, Write, BufWriter};
+use std::io::{BufWriter, Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 use std::sync::atomic::Ordering;
 use std::time::Instant;
@@ -611,7 +611,14 @@ impl DiskImager {
                 }
 
                 let chunk = &buf[..n];
-                writer.write_all(chunk).map_err(|e| format!("Write error: {}", e))?;
+                if is_all_zero(chunk) {
+                    writer.flush().map_err(|e| format!("Write error: {}", e))?;
+                    writer
+                        .seek(SeekFrom::Current(n as i64))
+                        .map_err(|e| format!("Sparse seek failed: {}", e))?;
+                } else {
+                    writer.write_all(chunk).map_err(|e| format!("Write error: {}", e))?;
+                }
                 hasher.update(chunk);
                 part_written += n as u64;
                 total_written += n as u64;
@@ -712,6 +719,10 @@ impl DiskImager {
 
         Ok((hash, summary))
     }
+}
+
+fn is_all_zero(buf: &[u8]) -> bool {
+    buf.iter().all(|&b| b == 0)
 }
 
 #[cfg(test)]

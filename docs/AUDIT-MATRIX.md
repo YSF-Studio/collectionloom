@@ -12,7 +12,7 @@ This matrix is a status view of the pain points report. It is intentionally spli
 | 1 | RAM | `capture_mrs()` Intel-only on macOS | Already fixed / design limitation | Raw macOS RAM capture is intentionally not supported in the current product flow |
 | 2 | RAM | Legacy WinPmem binary | Already fixed | Tooling now targets `winpmem.exe` / WinPmem v4 aliases |
 | 3 | Imaging | `list_disks()` placeholder on non-Linux | Already fixed | Disk enumeration is implemented |
-| 4 | Imaging | No sparse handling | Valid | Good optimization target for large images and SSDs |
+| 4 | Imaging | No sparse handling | Already fixed | Raw DD acquisition now avoids writing all-zero ranges as dense output |
 | 5 | RAM | AVML needs sudo / elevation UX | Valid | Needs clearer privilege handling on Linux |
 | 6 | Mobile | `adb_backup()` deprecated | Valid | Needs a modern alternative path for Android 12+ |
 | 7 | Imaging | E01 is not full parity | Valid | Native E01 support exists, but it is still a subset |

@@ -14,7 +14,7 @@ This backlog collects the currently relevant pain points after deduplication and
 
 | Area | Issue | Why it matters | Status |
 |---|---|---|---|
-| Imaging | Sparse file handling is still not optimized for zero-filled regions | Wastes time and output storage on large SSDs | Open |
+| Imaging | Sparse file handling is still not optimized for zero-filled regions | Wastes time and output storage on large SSDs | Done |
 | Imaging | E01 support is a subset, not full EnCase parity | Metadata/compression workflows remain incomplete | Open |
 | Snapshot | Filesystem scanning depth and non-Linux coverage are limited | Full-system volatile snapshots are incomplete outside Linux | Open |
 | Write Blocker | Windows software write-blocker UX is limited by platform privilege rules | Users need clearer expectations and fallback guidance | Open |
@@ -59,3 +59,4 @@ This backlog collects the currently relevant pain points after deduplication and
 | Archive | Format detection only used extensions | Magic-byte fallback now hardens detection |
 | Custody | Hardcoded operator name in CoC PDF | Operator now comes from UI input when available |
 | Snapshot | Legacy compare command produced a fake diff | Command now rejects the legacy path and points to the stored-snapshot workflow |
+| Imaging | Zero-filled raw blocks are now sparse-hole aware | Raw DD acquisition skips writing all-zero ranges |
