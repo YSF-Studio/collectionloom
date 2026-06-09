@@ -36,6 +36,7 @@ Use this checklist to verify the portable app on macOS, Windows, and Linux.
 - Confirm the output path is prefilled.
 - Confirm the capture button remains disabled until a valid tool is available.
 - Confirm the process list button opens a process list.
+- If on macOS, confirm the Apple volatile-data panel is shown instead of raw RAM controls.
 
 ## 5. Mobile, Network, Cloud, and Case tabs
 

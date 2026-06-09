@@ -143,6 +143,8 @@ This document describes what CollectionLoom **does not** guarantee, platform-spe
 ## Related Documentation
 
 - [User Guide](GUIDE.md) — step-by-step procedures
+- [Backlog](BACKLOG.md) — deduplicated pain points and priorities
+- [Audit Matrix](AUDIT-MATRIX.md) — status view of reported issues
 - [README](../README.md) — features and quick start
 - [PRD V1](PRD-EN.md) — product requirements
 
