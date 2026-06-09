@@ -55,13 +55,38 @@ pub fn list_android_devices() -> Result<Vec<MobileDevice>, String> {
 /// Run ADB backup
 pub fn adb_backup(device_id: &str, output_path: &str) -> Result<String, String> {
     validate_mobile_device_id(device_id)?;
-    let status = crate::portable::command("adb")?
-        .args(["-s", device_id, "backup", "-apk", "-shared", "-all", "-f", output_path])
-        .status()
-        .map_err(|e| format!("ADB backup failed: {}", e))?;
+    let path = std::path::Path::new(output_path);
+    let is_archive = path
+        .extension()
+        .and_then(|s| s.to_str())
+        .map(|ext| matches!(ext.to_lowercase().as_str(), "tar" | "tgz" | "gz" | "zip"))
+        .unwrap_or(false);
 
-    if !status.success() { return Err("ADB backup returned non-zero exit".into()); }
-    Ok(format!("Backup saved to {}", output_path))
+    if is_archive {
+        let output = crate::portable::command("adb")?
+            .args([
+                "-s",
+                device_id,
+                "exec-out",
+                "sh",
+                "-c",
+                "cd /sdcard && tar -cf - .",
+            ])
+            .output()
+            .map_err(|e| format!("ADB logical backup failed: {}", e))?;
+        if output.status.success() && !output.stdout.is_empty() {
+            std::fs::write(path, output.stdout).map_err(|e| format!("Write backup failed: {}", e))?;
+            return Ok(format!("Logical backup saved to {}", output_path));
+        }
+    }
+
+    let status = crate::portable::command("adb")?
+        .args(["-s", device_id, "pull", "/sdcard", output_path])
+        .status()
+        .map_err(|e| format!("ADB pull failed: {}", e))?;
+
+    if !status.success() { return Err("ADB logical acquisition returned non-zero exit".into()); }
+    Ok(format!("Logical acquisition saved to {}", output_path))
 }
 
 /// List paired iOS devices (via idevice_id or iTunes)

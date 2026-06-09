@@ -8,7 +8,7 @@ This backlog collects the currently relevant pain points after deduplication and
 |---|---|---|---|
 | RAM | Linux privilege UX for AVML is still rough | Capture fails without elevation or a clear prompt flow | Open |
 | RAM | Windows RAM capture needs clear signed-driver onboarding | Win 10/11 users need a predictable WinPmem path | In progress |
-| Mobile | `adb_backup()` still relies on the deprecated ADB backup API | Android 12+ behavior is inconsistent and often unusable | Open |
+| Mobile | `adb_backup()` still relies on the deprecated ADB backup API | Android 12+ behavior is inconsistent and often unusable | Done |
 
 ## P1 - Significant
 
@@ -60,3 +60,4 @@ This backlog collects the currently relevant pain points after deduplication and
 | Custody | Hardcoded operator name in CoC PDF | Operator now comes from UI input when available |
 | Snapshot | Legacy compare command produced a fake diff | Command now rejects the legacy path and points to the stored-snapshot workflow |
 | Imaging | Zero-filled raw blocks are now sparse-hole aware | Raw DD acquisition skips writing all-zero ranges |
+| Mobile | ADB backup API replaced by logical triage archive flow | Android capture now prefers shared storage archive/pull behavior |

@@ -23,6 +23,7 @@ const text = {
     scanAdb: "Scan ADB",
     scanIdevice: "Scan idevice",
     backup: "Backup",
+    androidHint: "Modern Android flow captures shared storage as a logical triage archive. Full app-data backup is no longer assumed.",
     note: "Note: Faraday bag reminder: isolate mobile devices before acquisition",
   },
   id: {
@@ -33,13 +34,14 @@ const text = {
     scanAdb: "Pindai ADB",
     scanIdevice: "Pindai idevice",
     backup: "Cadangkan",
+    androidHint: "Alur Android modern menangkap shared storage sebagai arsip logical triage. Full backup data aplikasi tidak lagi diasumsikan.",
     note: "Catatan: ingat Faraday bag — isolasi perangkat mobile sebelum akuisisi",
   },
 };
 function tr(key) { return text[locale]?.[key] || text.en[key] || key; }
 
 $effect(() => {
-  defaultOutputPath("mobile_backup.ab").then((p) => {
+  defaultOutputPath("mobile_backup.tar").then((p) => {
     if (!outputPath) outputPath = p;
   });
 });
@@ -90,8 +92,9 @@ async function backupIos(id) {
   <h3>{tr("title")}</h3>
   <div class="row">
     <label for="mobile-output">{tr("backupDestination")}</label>
-    <input id="mobile-output" type="text" bind:value={outputPath} disabled={busy} placeholder="/tmp/mobile_backup.ab" />
+    <input id="mobile-output" type="text" bind:value={outputPath} disabled={busy} placeholder="/tmp/mobile_backup.tar" />
   </div>
+  <p class="hint">{tr("androidHint")}</p>
   <div class="cols">
     <div class="col">
       <h4>{tr("android")}</h4>

@@ -146,12 +146,12 @@ export const mobileTriageGuide = {
     {
       title: "Ambil logical backup",
       description:
-        "Jalankan tool akuisisi untuk membuat logical backup data pengguna. Untuk Android via ADB: `adb backup -apk -shared -all -system -f backup.ab`. Untuk ekstraksi lanjutan, gunakan tool seperti AFLogical OSE atau suite komersial. Ambil call log, SMS, kontak, aplikasi terpasang, dan file media.",
+        "Jalankan tool akuisisi untuk membuat logical triage archive. Untuk Android, CollectionLoom mengutamakan shared storage capture sebagai arsip `.tar`/pull, bukan mengandalkan API ADB backup lama. Untuk ekstraksi lanjutan, gunakan tool seperti AFLogical OSE atau suite komersial. Ambil call log, SMS, kontak, aplikasi terpasang, dan file media sesuai izin dan kemampuan perangkat.",
     },
     {
       title: "Hash dan amankan backup",
       description:
-        "Hitung SHA-256 untuk semua file yang diakuisisi dan file container (`.ab` atau `.zip`). Catat hash di CoC. Simpan pada media terenkripsi. Jika perangkat mendukung file-level encryption, tangkap juga metadata enkripsinya untuk analisis lanjutan.",
+        "Hitung SHA-256 untuk semua file yang diakuisisi dan file container (`.tar`, `.ab`, atau `.zip`). Catat hash di CoC. Simpan pada media terenkripsi. Jika perangkat mendukung file-level encryption, tangkap juga metadata enkripsinya untuk analisis lanjutan.",
     },
   ],
   references: [

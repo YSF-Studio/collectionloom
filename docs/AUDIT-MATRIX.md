@@ -14,7 +14,7 @@ This matrix is a status view of the pain points report. It is intentionally spli
 | 3 | Imaging | `list_disks()` placeholder on non-Linux | Already fixed | Disk enumeration is implemented |
 | 4 | Imaging | No sparse handling | Already fixed | Raw DD acquisition now avoids writing all-zero ranges as dense output |
 | 5 | RAM | AVML needs sudo / elevation UX | Valid | Needs clearer privilege handling on Linux |
-| 6 | Mobile | `adb_backup()` deprecated | Valid | Needs a modern alternative path for Android 12+ |
+| 6 | Mobile | `adb_backup()` deprecated | Already fixed | Logical triage archive flow now replaces the deprecated ADB backup path |
 | 7 | Imaging | E01 is not full parity | Valid | Native E01 support exists, but it is still a subset |
 | 8 | Snapshot | `scan_filesystem()` depth / Linux-only scope | Valid | Cross-platform snapshot coverage is still limited |
 | 9 | Write Blocker | Windows software write blocker returns admin error | Design limitation | This is largely constrained by Windows privilege and driver model |
