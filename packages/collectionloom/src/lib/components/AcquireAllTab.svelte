@@ -37,6 +37,7 @@ let kitRoot = $state("");
 let mobileDetected = $state(false);
 let mobileDeviceId = $state("");
 let cloudConfigured = $state(false);
+let ramCaptureTimeoutMs = $state(120000);
 
 let running = $state(false);
 let detecting = $state(false);
@@ -73,6 +74,14 @@ function effectiveSplitMb() {
   const sz = selectedDiskInfo?.sizeBytes || 0;
   if (sz > 4_294_967_296) return 4096;
   return 0;
+}
+
+function computeRamCaptureTimeoutMs(bytes) {
+  const base = 120000;
+  if (!bytes || bytes <= 0) return base;
+  const gib = bytes / (1024 ** 3);
+  const scaled = Math.round(Math.max(base, gib * 45000));
+  return Math.min(Math.max(scaled, base), 30 * 60 * 1000);
 }
 
 async function refreshWriteBlocker() {
@@ -116,6 +125,8 @@ async function detectModules() {
     interfaces = await timeoutPromise(invoke("list_interfaces"), 5000).catch(() => []);
     ramTools = await timeoutPromise(invoke("list_ram_tools"), 5000).catch(() => []);
     if (ramTools.length) selectedRamTool = ramTools[0];
+    const ramSize = await timeoutPromise(invoke("get_ram_size"), 5000).catch(() => 0);
+    ramCaptureTimeoutMs = computeRamCaptureTimeoutMs(ramSize);
 
     const android = await timeoutPromise(invoke("list_android_devices"), 5000).catch(() => []);
     const ios = await timeoutPromise(invoke("list_ios_devices"), 5000).catch(() => []);
@@ -281,7 +292,7 @@ async function runRamAcquisition() {
       caseId: caseState.caseId || null,
       operator: caseState.operator || null,
     }),
-    120000
+    ramCaptureTimeoutMs
   );
   moduleProgress.ram = { percent: 100, status: "Done", eta: "" };
   if (result?.sha256) {

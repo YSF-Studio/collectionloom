@@ -13,7 +13,7 @@ This matrix is a status view of the pain points report. It is intentionally spli
 | 2 | RAM | Legacy WinPmem binary | Already fixed | Tooling now targets `winpmem.exe` / WinPmem v4 aliases |
 | 3 | Imaging | `list_disks()` placeholder on non-Linux | Already fixed | Disk enumeration is implemented |
 | 4 | Imaging | No sparse handling | Already fixed | Raw DD acquisition now avoids writing all-zero ranges as dense output |
-| 5 | RAM | AVML needs sudo / elevation UX | Valid | Needs clearer privilege handling on Linux |
+| 5 | RAM | AVML needs sudo / elevation UX | Valid | Privilege guidance is clearer, but automatic elevation is still not built in |
 | 6 | Mobile | `adb_backup()` deprecated | Already fixed | Logical triage archive flow now replaces the deprecated ADB backup path |
 | 7 | Imaging | E01 is not full parity | Valid | Native E01 support exists, but it is still a subset |
 | 8 | Snapshot | `scan_filesystem()` depth / Linux-only scope | Valid | Cross-platform snapshot coverage is still limited |
@@ -34,7 +34,7 @@ This matrix is a status view of the pain points report. It is intentionally spli
 | 23 | Report | PDF layout is basic | Valid | Polish / UX backlog item |
 | 24 | Preview | PDF & Office unsupported | Valid | Intentional current limitation |
 | 25 | Hash Verify | Blake3 missing from command output | Already fixed | Blake3 is exposed in the hashing path |
-| 26 | Frontend | Hardcoded 120s RAM timeout | Valid | Timeout should be format/workflow aware |
+| 26 | Frontend | Hardcoded 120s RAM timeout | Already fixed / improved | RAM capture timeout now scales with detected system memory, but workflow-specific tuning may still evolve |
 | 27 | Testing | No cross-platform integration tests | Valid | Regression risk remains |
 
 ## Practical reading guide

@@ -32,6 +32,7 @@ let hashResult = $state("");
 // Process list
 let processList = $state([]);
 let showProcesses = $state(false);
+let ramCaptureTimeoutMs = $state(120000);
 
 $effect(() => subscribeLocale((_, resolved) => {
   locale = resolved;
@@ -90,6 +91,14 @@ function toolLabel(tool) {
   return tool;
 }
 
+function computeRamCaptureTimeoutMs(bytes) {
+  const base = 120000;
+  if (!bytes || bytes <= 0) return base;
+  const gib = bytes / (1024 ** 3);
+  const scaled = Math.round(Math.max(base, gib * 45000));
+  return Math.min(Math.max(scaled, base), 30 * 60 * 1000);
+}
+
 async function listTools() {
   toolsLoading = true;
   try {
@@ -107,6 +116,7 @@ async function listTools() {
     if (err !== "TIMEOUT") setMsg(`ERR: ${err}`);
   }
   try { ramSize = await timeoutPromise(invoke("get_ram_size"), 5000); } catch(e) {}
+  ramCaptureTimeoutMs = computeRamCaptureTimeoutMs(ramSize);
   toolsLoading = false;
 }
 async function capture() {
@@ -128,7 +138,7 @@ async function capture() {
       compress,
       caseId: caseState.caseId || null,
       operator: caseState.operator || null,
-    }), 120000);
+    }), ramCaptureTimeoutMs);
     const sha256 = result?.sha256;
     const verified = result?.verified;
     setMsg(`OK: ${result?.message || "Capture complete"}`);
@@ -201,6 +211,13 @@ $effect(() => { listTools(); });
     {/if}
     {#if !toolsLoading && tools.length === 0}
       <p class="empty-hint">{tr("noTools")}</p>
+    {/if}
+    {#if selectedTool === "Avml"}
+      <p class="helper">
+        {locale === "id"
+          ? "AVML di Linux biasanya butuh hak elevasi. Jika capture gagal, jalankan CollectionLoom dari shell sudo atau buka portable session dengan root."
+          : "AVML on Linux usually needs elevated privileges. If capture fails, run CollectionLoom from a sudo shell or launch the portable session as root."}
+      </p>
     {/if}
     <div class="row">
       <label>{tr("output")} <input type="text" bind:value={outputPath} disabled={busy} /></label>

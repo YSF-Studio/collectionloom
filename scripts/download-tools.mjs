@@ -78,7 +78,7 @@ async function main() {
     return;
   }
 
-  const config = JSON.parse(await readFile(CONFIG_PATH, "utf8"));
+  const config = JSON.parse(readFileSync(CONFIG_PATH, "utf8"));
   const pk = platformKey();
   console.log(`[download-tools] Platform: ${pk}`);
 

@@ -59,6 +59,18 @@ pub fn capture_avml(output: &str, compress: bool) -> Result<String, String> {
     let result = cmd.output().map_err(|e| format!("avml failed: {}. Is avml installed?", e))?;
     if !result.status.success() {
         let stderr = String::from_utf8_lossy(&result.stderr);
+        let stderr_lower = stderr.to_lowercase();
+        if stderr_lower.contains("permission denied")
+            || stderr_lower.contains("operation not permitted")
+            || stderr_lower.contains("must be root")
+            || stderr_lower.contains("root privileges")
+            || stderr_lower.contains("sudo")
+        {
+            return Err(
+                "avml requires elevated privileges on Linux. Run CollectionLoom from a sudo shell or capture in a root-owned portable session, then retry."
+                    .into(),
+            );
+        }
         return Err(format!("avml capture failed: {}", stderr));
     }
 

@@ -6,7 +6,7 @@ This backlog collects the currently relevant pain points after deduplication and
 
 | Area | Issue | Why it matters | Status |
 |---|---|---|---|
-| RAM | Linux privilege UX for AVML is still rough | Capture fails without elevation or a clear prompt flow | Open |
+| RAM | Linux privilege UX for AVML is still rough | Capture fails without elevation or a clear prompt flow | In progress |
 | RAM | Windows RAM capture needs clear signed-driver onboarding | Win 10/11 users need a predictable WinPmem path | In progress |
 | Mobile | `adb_backup()` still relies on the deprecated ADB backup API | Android 12+ behavior is inconsistent and often unusable | Done |
 
@@ -42,7 +42,7 @@ This backlog collects the currently relevant pain points after deduplication and
 | Report | PDF report layout is basic | Output quality can be improved | Open |
 | Preview | PDF and Office document preview is still unsupported | Limits quick inspection workflows | Open |
 | Hash Verify | Additional hash families can still be exposed in the UI | Keeps UI aligned with core capabilities | Open |
-| Frontend | Long-running capture timeouts should be format-aware | Better UX for long imaging jobs | Open |
+| Frontend | Long-running capture timeouts should be format-aware | Better UX for long imaging jobs | In progress |
 | Testing | Cross-platform integration coverage is still thin | Higher regression risk for platform-specific paths | Open |
 
 ## Already Resolved / No Longer Applicable
