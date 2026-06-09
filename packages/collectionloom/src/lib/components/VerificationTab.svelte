@@ -49,7 +49,7 @@
 
 <div>
   <h3>Hash Verification</h3>
-  <p class="note">Verify file integrity by comparing computed hash against expected value. Supports SHA-256, SHA-1, and MD5.</p>
+  <p class="note">Verify file integrity by comparing computed hash against expected value. Supports SHA-256, SHA-1, MD5, and BLAKE3.</p>
 
   <div class="row">
     <label for="verify-algorithm">Algorithm:</label>
@@ -57,6 +57,7 @@
       <option value="sha256">SHA-256</option>
       <option value="sha1">SHA-1</option>
       <option value="md5">MD5</option>
+      <option value="blake3">BLAKE3</option>
     </select>
   </div>
 

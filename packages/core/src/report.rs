@@ -32,14 +32,38 @@ pub fn generate_pdf_report(report: &PdfReport) -> Result<Vec<u8>, String> {
     let font = doc.add_builtin_font(BuiltinFont::Helvetica).map_err(|e| e.to_string())?;
     let font_bold = doc.add_builtin_font(BuiltinFont::HelveticaBold).map_err(|e| e.to_string())?;
 
-    let mut y = Mm(275.0); // Start near top
+    let mut page = current_layer;
+    let mut y = Mm(275.0);
     let line_height = Mm(5.0);
 
-    // Title
-    current_layer.use_text(&report.title, 18.0, Mm(20.0), y, &font_bold);
+    let new_page = |doc: &PdfDocumentReference, title: &str| {
+        let (idx, layer) = doc.add_page(Mm(210.0), Mm(297.0), title);
+        (doc.get_page(idx).get_layer(layer), Mm(275.0))
+    };
+
+    let ensure_space = |page: &mut PdfLayerReference, y: &mut Mm, needed: f32, doc: &PdfDocumentReference| {
+        if y.0 < needed {
+            let (new_layer, new_y) = new_page(doc, "Evidence Layer");
+            *page = new_layer;
+            *y = new_y;
+            true
+        } else {
+            false
+        }
+    };
+
+    let render_wrapped = |page: &PdfLayerReference, text: &str, x: Mm, mut y: Mm, size: f32, font: &IndirectFontRef| -> Mm {
+        let max_chars = 88usize;
+        for line in wrap_text(text, max_chars) {
+            page.use_text(&line, size, x, y, font);
+            y -= Mm(5.0);
+        }
+        y
+    };
+
+    page.use_text(&report.title, 18.0, Mm(20.0), y, &font_bold);
     y -= Mm(10.0);
 
-    // Metadata
     let meta = vec![
         ("Evidence ID:", &report.evidence_id),
         ("Operator:", &report.operator),
@@ -48,22 +72,48 @@ pub fn generate_pdf_report(report: &PdfReport) -> Result<Vec<u8>, String> {
         ("Date:", &report.date),
     ];
     for (label, value) in meta {
-        current_layer.use_text(&format!("{} {}", label, value), 10.0, Mm(20.0), y, &font);
-        y -= line_height;
+        if ensure_space(&mut page, &mut y, 35.0, &doc) { page.use_text("Continued", 8.0, Mm(175.0), Mm(280.0), &font); }
+        y = render_wrapped(&page, &format!("{} {}", label, value), Mm(20.0), y, 10.0, &font);
     }
 
     y -= Mm(5.0);
 
-    // Sections
     for section in &report.sections {
-        if y < Mm(30.0) { break; } // Stop before page bottom
-        current_layer.use_text(&section.heading, 12.0, Mm(20.0), y, &font_bold);
+        if ensure_space(&mut page, &mut y, 40.0, &doc) { page.use_text("Continued", 8.0, Mm(175.0), Mm(280.0), &font); }
+        page.use_text(&section.heading, 12.0, Mm(20.0), y, &font_bold);
         y -= line_height;
-        current_layer.use_text(&section.content, 10.0, Mm(20.0), y, &font);
-        y -= line_height * 2.0;
+        y = render_wrapped(&page, &section.content, Mm(20.0), y, 10.0, &font);
+        y -= Mm(3.0);
     }
 
     // Encrypted PDF if needed
     let bytes = doc.save_to_bytes().map_err(|e| e.to_string())?;
     Ok(bytes)
+}
+
+fn wrap_text(text: &str, max_chars: usize) -> Vec<String> {
+    let mut lines = Vec::new();
+    for para in text.split('\n') {
+        let words: Vec<&str> = para.split_whitespace().collect();
+        if words.is_empty() {
+            lines.push(String::new());
+            continue;
+        }
+        let mut line = String::new();
+        for word in words {
+            if line.is_empty() {
+                line.push_str(word);
+            } else if line.len() + 1 + word.len() <= max_chars {
+                line.push(' ');
+                line.push_str(word);
+            } else {
+                lines.push(line);
+                line = word.to_string();
+            }
+        }
+        if !line.is_empty() {
+            lines.push(line);
+        }
+    }
+    if lines.is_empty() { vec![String::new()] } else { lines }
 }

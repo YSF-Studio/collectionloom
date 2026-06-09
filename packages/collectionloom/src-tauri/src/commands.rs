@@ -477,7 +477,8 @@ pub fn verify_hash(path: String, expected_hash: String, algorithm: String) -> Re
         "sha256" => hashes.sha256.clone(),
         "sha1" => hashes.sha1.clone(),
         "md5" => hashes.md5.clone(),
-        _ => return Err(format!("Unknown algorithm: {algorithm}. Use sha256, sha1, or md5.")),
+        "blake3" => hashes.blake3.clone(),
+        _ => return Err(format!("Unknown algorithm: {algorithm}. Use sha256, sha1, md5, or blake3.")),
     }.unwrap_or_default();
 
     let matched = actual.to_lowercase() == expected_hash.to_lowercase();

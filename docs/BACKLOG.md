@@ -39,9 +39,9 @@ This backlog collects the currently relevant pain points after deduplication and
 |---|---|---|---|
 | Carving | Signature library is still small compared with larger forensic suites | Reduces file-type recovery coverage | In progress |
 | NTFS | Parser coverage is partial beyond `$MFT` | Limits NTFS artifact extraction depth | In progress |
-| Report | PDF report layout is basic | Output quality can be improved | Open |
+| Report | PDF report layout is basic | Output quality can be improved | In progress |
 | Preview | PDF and Office document preview is still basic | Limits quick inspection workflows | In progress |
-| Hash Verify | Additional hash families can still be exposed in the UI | Keeps UI aligned with core capabilities | Open |
+| Hash Verify | Additional hash families can still be exposed in the UI | Keeps UI aligned with core capabilities | Done |
 | Frontend | Long-running capture timeouts should be format-aware | Better UX for long imaging jobs | In progress |
 | Testing | Cross-platform integration coverage is still thin | Higher regression risk for platform-specific paths | Open |
 
