@@ -24,7 +24,7 @@ This matrix is a status view of the pain points report. It is intentionally spli
 | 13 | Archive | RAR password support unimplemented | Valid | Password-aware archive loading is not complete |
 | 14 | Network | `pcap::Device::list()` not fully tested on Ventura+ | Needs verification | Likely real, but version/platform specific |
 | 15 | Cloud | AWS SigV4 omitted | Already fixed | Core SigV4 code exists now |
-| 16 | Cloud | Azure/GCP secrets passed via command line | Valid | Security hardening issue |
+| 16 | Cloud | Azure/GCP secrets passed via command line | Already fixed | Secrets are loaded from a native file picker and processed server-side |
 | 17 | Disk | HPA/DCO placeholder | Already fixed | Core HPA/DCO implementation exists |
 | 18 | Frontend | RAM tab calls missing `list_processes` command | Already fixed | The command exists and is wired in |
 | 19 | Custody | Hardcoded operator name | Already fixed | CoC PDF now uses the operator supplied from the UI when available |

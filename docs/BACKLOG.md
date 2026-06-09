@@ -28,7 +28,7 @@ This backlog collects the currently relevant pain points after deduplication and
 | Area | Issue | Why it matters | Status |
 |---|---|---|---|
 | Network | macOS packet-capture behavior needs more real-world testing | BPF permissions and device listing can vary by version | Open |
-| Cloud | Secret/token handling should avoid command-line exposure | Reduces accidental disclosure risk | Open |
+| Cloud | Secret/token handling should avoid command-line exposure | Reduces accidental disclosure risk | Done |
 | Disk | HPA/DCO detection can still be improved for edge cases | Hidden-area detection is not universal | Open |
 | Custody | Operator values should always come from case data | Prevents report/case mismatches | Done |
 | Snapshot | Snapshot comparison workflow should compare real historical snapshots directly | Improves diff credibility | Done |
@@ -61,3 +61,4 @@ This backlog collects the currently relevant pain points after deduplication and
 | Snapshot | Legacy compare command produced a fake diff | Command now rejects the legacy path and points to the stored-snapshot workflow |
 | Imaging | Zero-filled raw blocks are now sparse-hole aware | Raw DD acquisition skips writing all-zero ranges |
 | Mobile | ADB backup API replaced by logical triage archive flow | Android capture now prefers shared storage archive/pull behavior |
+| Cloud | Credentials are loaded from a native file picker and never passed as CLI secrets | Cloud snapshot flow keeps secrets server-side |

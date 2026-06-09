@@ -632,7 +632,7 @@ pub async fn create_cloud_snapshot(
     };
 
     let content = std::fs::read_to_string(&cred_path)
-        .map_err(|e| format!("Cannot read credentials file: {e}"))?;
+        .map_err(|_| "Cannot read credentials file".to_string())?;
     let (access_key, secret_key) = parse_cloud_credentials(&content, &provider)?;
 
     match provider.as_str() {
