@@ -31,7 +31,7 @@ This backlog collects the currently relevant pain points after deduplication and
 | Cloud | Secret/token handling should avoid command-line exposure | Reduces accidental disclosure risk | Open |
 | Disk | HPA/DCO detection can still be improved for edge cases | Hidden-area detection is not universal | Open |
 | Custody | Operator values should always come from case data | Prevents report/case mismatches | Done |
-| Snapshot | Snapshot comparison workflow should compare real historical snapshots directly | Improves diff credibility | Open |
+| Snapshot | Snapshot comparison workflow should compare real historical snapshots directly | Improves diff credibility | Done |
 
 ## P3 - Minor / Technical Debt
 
@@ -58,3 +58,4 @@ This backlog collects the currently relevant pain points after deduplication and
 | Cloud | AWS SigV4 was omitted | SigV4 implementation exists in core |
 | Archive | Format detection only used extensions | Magic-byte fallback now hardens detection |
 | Custody | Hardcoded operator name in CoC PDF | Operator now comes from UI input when available |
+| Snapshot | Legacy compare command produced a fake diff | Command now rejects the legacy path and points to the stored-snapshot workflow |

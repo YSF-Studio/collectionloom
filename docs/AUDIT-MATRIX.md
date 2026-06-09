@@ -28,7 +28,7 @@ This matrix is a status view of the pain points report. It is intentionally spli
 | 17 | Disk | HPA/DCO placeholder | Already fixed | Core HPA/DCO implementation exists |
 | 18 | Frontend | RAM tab calls missing `list_processes` command | Already fixed | The command exists and is wired in |
 | 19 | Custody | Hardcoded operator name | Already fixed | CoC PDF now uses the operator supplied from the UI when available |
-| 20 | Snapshot | Compare workaround is not a real diff | Valid | Compare workflow should be reviewed end to end |
+| 20 | Snapshot | Compare workaround is not a real diff | Already fixed | Legacy compare command now rejects the fake-diff path and directs users to the stored-snapshot workflow |
 | 21 | Carving | Only 17 magic signatures | Valid | Enhancement backlog item |
 | 22 | NTFS | Parser coverage is partial | Valid | Enhancement backlog item |
 | 23 | Report | PDF layout is basic | Valid | Polish / UX backlog item |
