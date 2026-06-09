@@ -298,7 +298,7 @@ pub fn create_chain_of_custody(
 }
 
 #[tauri::command]
-pub fn generate_coc_report(evidence_id: String) -> Result<String, String> {
+pub fn generate_coc_report(evidence_id: String, operator: Option<String>) -> Result<String, String> {
     if evidence_id.is_empty()
         || evidence_id.contains('/')
         || evidence_id.contains('\\')
@@ -307,11 +307,15 @@ pub fn generate_coc_report(evidence_id: String) -> Result<String, String> {
         return Err("Invalid evidence ID".into());
     }
     let report_path = format!("/tmp/{}_coc_report.pdf", evidence_id);
-    let _coc = evidence::ChainOfCustody::new("case", "operator", "device", 0);
+    let operator_value = operator
+        .as_deref()
+        .filter(|s| !s.trim().is_empty())
+        .unwrap_or("Case operator");
+    let _coc = evidence::ChainOfCustody::new("case", operator_value, "device", 0);
     let pdf = report::generate_pdf_report(&report::PdfReport {
         title: format!("Chain of Custody — {}", evidence_id),
         evidence_id: evidence_id.clone(),
-        operator: "Yusuf Shalahuddin".into(),
+        operator: operator_value.to_string(),
         case_name: "Forensic Case".into(),
         device: "Source Device".into(),
         date: chrono::Utc::now().format("%Y-%m-%d %H:%M UTC").to_string(),

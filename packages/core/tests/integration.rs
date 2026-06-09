@@ -120,6 +120,18 @@ fn forensic_load_format_detection() {
 }
 
 #[test]
+fn forensic_load_format_detection_magic_bytes() {
+    let dir = tempdir("magic_detect");
+    let zip_path = dir.join("renamed.bin");
+    std::fs::write(&zip_path, b"PK\x03\x04rest-of-zip").unwrap();
+    assert_eq!(archive::detect_format(&zip_path.to_string_lossy()), Some("zip"));
+
+    let rar_path = dir.join("renamed-rar.bin");
+    std::fs::write(&rar_path, b"Rar!\x1A\x07\x00rest").unwrap();
+    assert_eq!(archive::detect_format(&rar_path.to_string_lossy()), Some("rar"));
+}
+
+#[test]
 fn forensic_report_basic() {
     let dir = tempdir("report");
     create_sample_files(&dir);

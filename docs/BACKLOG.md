@@ -20,7 +20,7 @@ This backlog collects the currently relevant pain points after deduplication and
 | Write Blocker | Windows software write-blocker UX is limited by platform privilege rules | Users need clearer expectations and fallback guidance | Open |
 | Encryption | macOS hardware classification can be more specific | Apple Silicon vs T2 can influence triage guidance | Open |
 | Encryption | BitLocker To Go and VeraCrypt container coverage is partial | Encryption scan results are not comprehensive | Open |
-| Archive | Format detection is extension-first, not magic-byte-first | Renamed files can evade early detection | Open |
+| Archive | Format detection is extension-first, not magic-byte-first | Renamed files can evade early detection | Done |
 | Archive | RAR password handling is still incomplete | Encrypted RAR archives are not fully usable | Open |
 
 ## P2 - Moderate
@@ -30,7 +30,7 @@ This backlog collects the currently relevant pain points after deduplication and
 | Network | macOS packet-capture behavior needs more real-world testing | BPF permissions and device listing can vary by version | Open |
 | Cloud | Secret/token handling should avoid command-line exposure | Reduces accidental disclosure risk | Open |
 | Disk | HPA/DCO detection can still be improved for edge cases | Hidden-area detection is not universal | Open |
-| Custody | Operator values should always come from case data | Prevents report/case mismatches | Open |
+| Custody | Operator values should always come from case data | Prevents report/case mismatches | Done |
 | Snapshot | Snapshot comparison workflow should compare real historical snapshots directly | Improves diff credibility | Open |
 
 ## P3 - Minor / Technical Debt
@@ -56,4 +56,5 @@ This backlog collects the currently relevant pain points after deduplication and
 | Disk | HPA/DCO detection was a placeholder | Core detection is implemented |
 | Hash Verify | Blake3 was missing from command output | Blake3 is already exposed in the hashing path |
 | Cloud | AWS SigV4 was omitted | SigV4 implementation exists in core |
-
+| Archive | Format detection only used extensions | Magic-byte fallback now hardens detection |
+| Custody | Hardcoded operator name in CoC PDF | Operator now comes from UI input when available |

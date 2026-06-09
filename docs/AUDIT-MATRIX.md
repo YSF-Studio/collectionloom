@@ -20,14 +20,14 @@ This matrix is a status view of the pain points report. It is intentionally spli
 | 9 | Write Blocker | Windows software write blocker returns admin error | Design limitation | This is largely constrained by Windows privilege and driver model |
 | 10 | Encryption | macOS Secure Enclave classification is not detailed enough | Valid | Could be more specific for Apple Silicon vs T2 |
 | 11 | Encryption | Partial detection for BitLocker To Go / VeraCrypt | Valid | Coverage is incomplete |
-| 12 | Archive | Format detection only uses extension | Valid | Magic-byte detection would harden this path |
+| 12 | Archive | Format detection only uses extension | Already fixed | Magic-byte detection now hardens this path |
 | 13 | Archive | RAR password support unimplemented | Valid | Password-aware archive loading is not complete |
 | 14 | Network | `pcap::Device::list()` not fully tested on Ventura+ | Needs verification | Likely real, but version/platform specific |
 | 15 | Cloud | AWS SigV4 omitted | Already fixed | Core SigV4 code exists now |
 | 16 | Cloud | Azure/GCP secrets passed via command line | Valid | Security hardening issue |
 | 17 | Disk | HPA/DCO placeholder | Already fixed | Core HPA/DCO implementation exists |
 | 18 | Frontend | RAM tab calls missing `list_processes` command | Already fixed | The command exists and is wired in |
-| 19 | Custody | Hardcoded operator name | Needs verification | Must be checked against the current report generation path |
+| 19 | Custody | Hardcoded operator name | Already fixed | CoC PDF now uses the operator supplied from the UI when available |
 | 20 | Snapshot | Compare workaround is not a real diff | Valid | Compare workflow should be reviewed end to end |
 | 21 | Carving | Only 17 magic signatures | Valid | Enhancement backlog item |
 | 22 | NTFS | Parser coverage is partial | Valid | Enhancement backlog item |
@@ -43,4 +43,3 @@ This matrix is a status view of the pain points report. It is intentionally spli
 - Treat **Already fixed** items as historical notes only.
 - Treat **Design limitation** items as documentation material, not bugs.
 - Treat **Needs verification** items as the next audit pass.
-

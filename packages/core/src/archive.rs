@@ -1,6 +1,6 @@
 use serde::Serialize;
-use std::path::Path;
 use std::io::Read;
+use std::path::Path;
 
 pub const FORMATS_SUPPORTED: &[&str] = &["zip", "7z", "rar", "tar", "tar.gz", "tar.bz2", "tar.xz", "tar.zst", "gz", "bz2", "xz", "zst"];
 
@@ -52,7 +52,37 @@ pub struct Threat {
     pub detail: String,
 }
 
-/// Detect archive format from path extension
+fn detect_format_from_magic(path: &Path) -> Option<&'static str> {
+    let mut file = std::fs::File::open(path).ok()?;
+    let mut buf = [0u8; 12];
+    let n = file.read(&mut buf).ok()?;
+    let bytes = &buf[..n];
+
+    if bytes.starts_with(b"PK\x03\x04") || bytes.starts_with(b"PK\x05\x06") || bytes.starts_with(b"PK\x07\x08") {
+        return Some("zip");
+    }
+    if bytes.starts_with(b"7z\xBC\xAF\x27\x1C") {
+        return Some("7z");
+    }
+    if bytes.starts_with(b"Rar!\x1A\x07\x00") || bytes.starts_with(b"Rar!\x1A\x07\x01\x00") {
+        return Some("rar");
+    }
+    if bytes.len() >= 6 && bytes.starts_with(&[0xFD, b'7', b'z', b'X', b'Z', 0x00]) {
+        return Some("xz");
+    }
+    if bytes.len() >= 3 && bytes.starts_with(&[0x1F, 0x8B, 0x08]) {
+        return Some("gz");
+    }
+    if bytes.len() >= 3 && bytes.starts_with(b"BZh") {
+        return Some("bz2");
+    }
+    if bytes.len() >= 4 && bytes.starts_with(&[0x28, 0xB5, 0x2F, 0xFD]) {
+        return Some("zst");
+    }
+    None
+}
+
+/// Detect archive format from path extension, then magic bytes when possible.
 pub fn detect_format(path: &str) -> Option<&'static str> {
     let lower = path.to_lowercase();
     if lower.ends_with(".tar.zst") || lower.ends_with(".tzst") { return Some("tar.zst"); }
@@ -67,7 +97,8 @@ pub fn detect_format(path: &str) -> Option<&'static str> {
     if lower.ends_with(".bz2") { return Some("bz2"); }
     if lower.ends_with(".xz") { return Some("xz"); }
     if lower.ends_with(".zst") { return Some("zst"); }
-    None
+
+    detect_format_from_magic(Path::new(path))
 }
 
 /// Load archive entries (metadata only — fast)

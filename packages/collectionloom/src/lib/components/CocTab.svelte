@@ -113,7 +113,7 @@ async function addAction(act, det) {
 async function generatePdf() {
   setBusy(true);
   try {
-    const path = await timeoutPromise(invoke("generate_coc_report", { evidenceId }), 15000);
+    const path = await timeoutPromise(invoke("generate_coc_report", { evidenceId, operator: operator || null }), 15000);
     setMsg(`OK: PDF report saved to ${path}`);
   } catch (e) {
     setMsg(`ERR: ${typeof e === "string" ? e : String(e)}`);
