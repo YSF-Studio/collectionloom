@@ -97,6 +97,9 @@ use std::io::{Read, Seek};
         let mut si_accessed = None;
         let mut fn_created = None;
         let mut fn_modified = None;
+        let mut file_size = 0u64;
+        let mut has_data = false;
+        let mut attributes = vec![];
 
         // Walk attributes starting at offset 56
         let attr_offset = u16::from_le_bytes([buf[20], buf[21]]) as usize;
@@ -113,6 +116,23 @@ use std::io::{Read, Seek};
             let name_len = buf[pos + 9] as usize;
             let content_offset = u16::from_le_bytes([buf[pos + 20], buf[pos + 21]]) as usize;
             let _content_size = u32::from_le_bytes([buf[pos + 16], buf[pos + 17], buf[pos + 18], buf[pos + 19]]) as usize;
+            let attr_name = if name_len > 0 {
+                let name_offset = u16::from_le_bytes([buf[pos + 10], buf[pos + 11]]) as usize;
+                let start = pos + name_offset;
+                let end = start + name_len * 2;
+                if end <= buf.len() {
+                    Some(String::from_utf16_lossy(
+                        &buf[start..end]
+                            .chunks(2)
+                            .map(|c| u16::from_le_bytes([c[0], c[1]]))
+                            .collect::<Vec<u16>>(),
+                    ))
+                } else {
+                    None
+                }
+            } else {
+                None
+            };
 
             let _attr_header_size = if !resident { 64 } else { 24 + name_len * 2 };
 
@@ -124,6 +144,32 @@ use std::io::{Read, Seek};
                         si_modified = Some(ntfs_timestamp(&buf[si_pos + 8..si_pos + 16]));
                         si_accessed = Some(ntfs_timestamp(&buf[si_pos + 24..si_pos + 32]));
                     }
+                }
+                0x80 => {
+                    has_data = true;
+                    if resident {
+                        let content_size = u32::from_le_bytes([buf[pos + 16], buf[pos + 17], buf[pos + 18], buf[pos + 19]]) as u64;
+                        file_size = file_size.max(content_size);
+                    } else {
+                        let real_size = u64::from_le_bytes([
+                            buf[pos + 48], buf[pos + 49], buf[pos + 50], buf[pos + 51],
+                            buf[pos + 52], buf[pos + 53], buf[pos + 54], buf[pos + 55],
+                        ]);
+                        file_size = file_size.max(real_size);
+                    }
+                    attributes.push(FileAttribute {
+                        attr_type: if attr_type == 0x80 { "$DATA".into() } else { format!("0x{attr_type:02X}") },
+                        name: attr_name.clone(),
+                        size: if resident {
+                            u32::from_le_bytes([buf[pos + 16], buf[pos + 17], buf[pos + 18], buf[pos + 19]]) as u64
+                        } else {
+                            u64::from_le_bytes([
+                                buf[pos + 48], buf[pos + 49], buf[pos + 50], buf[pos + 51],
+                                buf[pos + 52], buf[pos + 53], buf[pos + 54], buf[pos + 55],
+                            ])
+                        },
+                        resident,
+                    });
                 }
                 0x30 => { // $FILE_NAME
                     if resident && content_offset + 66 <= buf.len() {
@@ -159,11 +205,11 @@ use std::io::{Read, Seek};
                 parent_record: parent,
                 is_directory: is_dir,
                 is_deleted,
-                file_size: 0,
+                file_size,
                 si_created, si_modified, si_accessed,
                 fn_created, fn_modified,
-                has_data: false,
-                attributes: vec![],
+                has_data,
+                attributes,
             });
         }
 

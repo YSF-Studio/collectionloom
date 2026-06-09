@@ -29,10 +29,10 @@ This matrix is a status view of the pain points report. It is intentionally spli
 | 18 | Frontend | RAM tab calls missing `list_processes` command | Already fixed | The command exists and is wired in |
 | 19 | Custody | Hardcoded operator name | Already fixed | CoC PDF now uses the operator supplied from the UI when available |
 | 20 | Snapshot | Compare workaround is not a real diff | Already fixed | Legacy compare command now rejects the fake-diff path and directs users to the stored-snapshot workflow |
-| 21 | Carving | Only 17 magic signatures | Valid | Enhancement backlog item |
-| 22 | NTFS | Parser coverage is partial | Valid | Enhancement backlog item |
+| 21 | Carving | Only 17 magic signatures | Valid | Expanded signature set, but more formats can still be added |
+| 22 | NTFS | Parser coverage is partial | Valid | Additional attributes and recovery heuristics were added, but coverage is still incomplete |
 | 23 | Report | PDF layout is basic | Valid | Polish / UX backlog item |
-| 24 | Preview | PDF & Office unsupported | Valid | Intentional current limitation |
+| 24 | Preview | PDF & Office unsupported | Valid | Preview is now text-first for PDF and Office files, but rendering remains basic |
 | 25 | Hash Verify | Blake3 missing from command output | Already fixed | Blake3 is exposed in the hashing path |
 | 26 | Frontend | Hardcoded 120s RAM timeout | Already fixed / improved | RAM capture timeout now scales with detected system memory, but workflow-specific tuning may still evolve |
 | 27 | Testing | No cross-platform integration tests | Valid | Regression risk remains |

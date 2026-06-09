@@ -8,6 +8,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::path::Path;
+use std::io::Read;
 use crate::hashing::compute_entropy;
 
 const TEXT_PREVIEW_LIMIT: usize = 50 * 1024;
@@ -123,10 +124,8 @@ fn generate_preview(path: &str, kind: &FileKind, data: &[u8]) -> Result<PreviewC
         FileKind::Text => preview_text(data),
         FileKind::Image => preview_image(path, data),
         FileKind::Archive => preview_archive(path),
-        FileKind::Pdf => Ok(PreviewContent::Unsupported(
-            "PDF preview not yet supported. Metadata available below.".into())),
-        FileKind::Office => Ok(PreviewContent::Unsupported(
-            "Office document preview not yet supported. Metadata available below.".into())),
+        FileKind::Pdf => preview_pdf(path),
+        FileKind::Office => preview_office(path),
         FileKind::Binary | FileKind::Unknown => preview_hex(data),
     }
 }
@@ -179,6 +178,120 @@ fn preview_archive(path: &str) -> Result<PreviewContent, String> {
         },
         Err(e) => Ok(PreviewContent::Unsupported(format!("Archive error: {}", e)))
     }
+}
+
+fn preview_pdf(path: &str) -> Result<PreviewContent, String> {
+    let data = std::fs::read(path).map_err(|e| format!("PDF read error: {e}"))?;
+    let mut text = extract_printable_runs(&data);
+    if text.is_empty() {
+        text = "PDF preview: no readable text streams were found; open in a dedicated PDF reader for rendering. Metadata remains available below.".into();
+    }
+    Ok(PreviewContent::Text(text))
+}
+
+fn preview_office(path: &str) -> Result<PreviewContent, String> {
+    let mut zip = zip::ZipArchive::new(std::fs::File::open(path).map_err(|e| format!("Cannot open office doc: {e}"))?)
+        .map_err(|e| format!("Office archive error: {e}"))?;
+    let mut text = String::new();
+    let mut candidates: Vec<&str> = vec![];
+    if path.to_lowercase().ends_with(".docx") {
+        candidates.push("word/document.xml");
+    } else if path.to_lowercase().ends_with(".pptx") {
+        candidates.push("ppt/slides/slide1.xml");
+        candidates.push("ppt/slides/slide2.xml");
+        candidates.push("ppt/slides/slide3.xml");
+    } else if path.to_lowercase().ends_with(".xlsx") {
+        candidates.push("xl/sharedStrings.xml");
+        candidates.push("xl/worksheets/sheet1.xml");
+        candidates.push("xl/worksheets/sheet2.xml");
+    } else {
+        candidates.push("content.xml");
+    }
+    for name in candidates {
+        if let Ok(mut f) = zip.by_name(name) {
+            let mut xml = String::new();
+            f.read_to_string(&mut xml).ok();
+            text.push_str(&strip_xml_text(&xml));
+            text.push('\n');
+        }
+    }
+    let text = text.trim().to_string();
+    if text.is_empty() {
+        Ok(PreviewContent::Unsupported("Office text extraction produced no visible text. Metadata available below.".into()))
+    } else {
+        Ok(PreviewContent::Text(text))
+    }
+}
+
+fn strip_xml_text(xml: &str) -> String {
+    let mut out = String::with_capacity(xml.len());
+    let mut in_tag = false;
+    let mut last_space = false;
+    let mut chars = xml.chars().peekable();
+    while let Some(c) = chars.next() {
+        match c {
+            '<' => in_tag = true,
+            '>' => {
+                in_tag = false;
+                if !last_space {
+                    out.push(' ');
+                    last_space = true;
+                }
+            }
+            '&' if !in_tag => {
+                let mut ent = String::new();
+                while let Some(&ch) = chars.peek() {
+                    chars.next();
+                    if ch == ';' { break; }
+                    ent.push(ch);
+                }
+                let decoded = match ent.as_str() {
+                    "amp" => "&",
+                    "lt" => "<",
+                    "gt" => ">",
+                    "quot" => "\"",
+                    "apos" => "'",
+                    _ => " ",
+                };
+                out.push_str(decoded);
+                last_space = false;
+            }
+            _ if !in_tag => {
+                if c.is_whitespace() {
+                    if !last_space {
+                        out.push(' ');
+                        last_space = true;
+                    }
+                } else {
+                    out.push(c);
+                    last_space = false;
+                }
+            }
+            _ => {}
+        }
+    }
+    out.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
+fn extract_printable_runs(data: &[u8]) -> String {
+    let mut runs = Vec::new();
+    let mut current = String::new();
+    for &b in data {
+        let ch = b as char;
+        if ch.is_ascii_graphic() || ch == ' ' {
+            current.push(ch);
+        } else {
+            if current.len() >= 4 {
+                runs.push(current.clone());
+            }
+            current.clear();
+        }
+    }
+    if current.len() >= 4 {
+        runs.push(current);
+    }
+    runs.truncate(20);
+    runs.join("\n")
 }
 
 fn mime_for(ext: &str) -> String {
