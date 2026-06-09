@@ -270,6 +270,24 @@ Full details: **[docs/LIMITATIONS.md](docs/LIMITATIONS.md)**
 
 ---
 
+## Current Status
+
+Most of the originally reported build blockers and UX regressions have been resolved. The remaining items are either:
+
+- deliberate scope boundaries, documented in [Known Limitations](docs/LIMITATIONS.md)
+- or platform-specific behaviors that need live verification on real hardware
+
+Recent highlights:
+
+- RAM tooling now defaults to the recommended Linux/Windows path and clearly separates macOS volatile-data triage
+- Disk imaging handles sparse zero-filled regions more efficiently
+- Archive detection uses magic bytes, not just filename extensions
+- Hash verification now includes BLAKE3
+- PDF reporting and file preview are more useful out of the box
+- The backlog has been deduplicated and reclassified into actionable items versus documented limitations
+
+---
+
 ## License
 
 MIT © [YSF Studio](https://github.com/YSF-Studio) — Yusuf Shalahuddin
