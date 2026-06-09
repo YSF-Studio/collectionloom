@@ -13,6 +13,8 @@ This document describes what CollectionLoom **does not** guarantee, platform-spe
 | **Preview mode** | Running the UI in the browser (`VITE_FIXTURE_MODE=1` or without Tauri) uses fixture data — not real devices or imaging. |
 | **Administrator / root** | Disk imaging, software write-blocking, HPA/DCO checks, and RAM capture often require elevated privileges on the acquisition workstation. |
 | **macOS RAM capture** | CollectionLoom does **not** provide a raw RAM acquisition workflow for macOS. RAM capture is intentionally limited to platforms and methods that are realistically supportable across versions. |
+| **Linux AVML elevation** | AVML-based RAM capture is available, but it still needs a root-owned or sudo-launched session on Linux. The app can guide you, but it cannot silently escalate privileges. |
+| **Windows WinPmem onboarding** | Windows RAM capture depends on a signed-driver workflow and Administrator rights. CollectionLoom can route you to the right binary, but the OS still governs whether capture can start. |
 
 ---
 
@@ -50,6 +52,19 @@ This document describes what CollectionLoom **does not** guarantee, platform-spe
 | **FAT32 destinations** | Use split size (e.g. 4096 MB) for images larger than 4 GB; otherwise the write will fail on FAT32. |
 | **SSD / TRIM** | Deleted data on SSDs may be unrecoverable before acquisition; the UI warns but cannot prevent TRIM at the OS/firmware level. |
 | **Encrypted volumes** | BitLocker, FileVault, LUKS, etc. are detected where possible; imaging captures ciphertext unless decrypted upstream. |
+
+## Scope Boundaries In This Release
+
+| Topic | Limitation |
+|-------|------------|
+| **Snapshot coverage** | The snapshot engine is strongest on Linux and remains shallower on other platforms; it is not a full volatile-state replacement for dedicated endpoint response tooling. |
+| **Windows software write-blocking** | Software read-only guidance is provided, but Windows privilege and driver enforcement still make certified hardware blockers preferable for contested evidence. |
+| **macOS encryption classification** | The app distinguishes common macOS FDE states and Apple Silicon vs T2 where practical, but chip-level triage guidance is not exhaustive. |
+| **BitLocker To Go / VeraCrypt** | Detection is best-effort and may not cover every container/volume layout or third-party header variation. |
+| **RAR passwords** | RAR archive listing is supported for common archives, but password-aware handling is intentionally not part of the current product scope. |
+| **macOS packet capture** | Packet-capture behavior can vary across macOS releases and BPF permissions; validate on your target hardware before field use. |
+| **HPA/DCO edge cases** | ATA hidden-area detection is implemented for supported paths, but bridges/firmware can still block pass-through and create false negatives. |
+| **Cross-platform integration tests** | CI and unit tests exist, but they do not replace live validation on each OS/hardware combination you plan to use. |
 
 ---
 

@@ -6,8 +6,8 @@ This backlog collects the currently relevant pain points after deduplication and
 
 | Area | Issue | Why it matters | Status |
 |---|---|---|---|
-| RAM | Linux privilege UX for AVML is still rough | Capture fails without elevation or a clear prompt flow | In progress |
-| RAM | Windows RAM capture needs clear signed-driver onboarding | Win 10/11 users need a predictable WinPmem path | In progress |
+| RAM | Linux privilege UX for AVML is still rough | Capture fails without elevation or a clear prompt flow | Design limitation |
+| RAM | Windows RAM capture needs clear signed-driver onboarding | Win 10/11 users need a predictable WinPmem path | Design limitation |
 | Mobile | `adb_backup()` still relies on the deprecated ADB backup API | Android 12+ behavior is inconsistent and often unusable | Done |
 
 ## P1 - Significant
@@ -15,21 +15,21 @@ This backlog collects the currently relevant pain points after deduplication and
 | Area | Issue | Why it matters | Status |
 |---|---|---|---|
 | Imaging | Sparse file handling is still not optimized for zero-filled regions | Wastes time and output storage on large SSDs | Done |
-| Imaging | E01 support is a subset, not full EnCase parity | Metadata/compression workflows remain incomplete | Open |
-| Snapshot | Filesystem scanning depth and non-Linux coverage are limited | Full-system volatile snapshots are incomplete outside Linux | Open |
-| Write Blocker | Windows software write-blocker UX is limited by platform privilege rules | Users need clearer expectations and fallback guidance | Open |
-| Encryption | macOS hardware classification can be more specific | Apple Silicon vs T2 can influence triage guidance | Open |
-| Encryption | BitLocker To Go and VeraCrypt container coverage is partial | Encryption scan results are not comprehensive | Open |
+| Imaging | E01 support is a subset, not full EnCase parity | Metadata/compression workflows remain incomplete | Design limitation |
+| Snapshot | Filesystem scanning depth and non-Linux coverage are limited | Full-system volatile snapshots are incomplete outside Linux | Design limitation |
+| Write Blocker | Windows software write-blocker UX is limited by platform privilege rules | Users need clearer expectations and fallback guidance | Design limitation |
+| Encryption | macOS hardware classification can be more specific | Apple Silicon vs T2 can influence triage guidance | Design limitation |
+| Encryption | BitLocker To Go and VeraCrypt container coverage is partial | Encryption scan results are not comprehensive | Design limitation |
 | Archive | Format detection is extension-first, not magic-byte-first | Renamed files can evade early detection | Done |
-| Archive | RAR password handling is still incomplete | Encrypted RAR archives are not fully usable | Open |
+| Archive | RAR password handling is still incomplete | Encrypted RAR archives are not fully usable | Design limitation |
 
 ## P2 - Moderate
 
 | Area | Issue | Why it matters | Status |
 |---|---|---|---|
-| Network | macOS packet-capture behavior needs more real-world testing | BPF permissions and device listing can vary by version | Open |
+| Network | macOS packet-capture behavior needs more real-world testing | BPF permissions and device listing can vary by version | Needs verification |
 | Cloud | Secret/token handling should avoid command-line exposure | Reduces accidental disclosure risk | Done |
-| Disk | HPA/DCO detection can still be improved for edge cases | Hidden-area detection is not universal | Open |
+| Disk | HPA/DCO detection can still be improved for edge cases | Hidden-area detection is not universal | Needs verification |
 | Custody | Operator values should always come from case data | Prevents report/case mismatches | Done |
 | Snapshot | Snapshot comparison workflow should compare real historical snapshots directly | Improves diff credibility | Done |
 
@@ -37,13 +37,13 @@ This backlog collects the currently relevant pain points after deduplication and
 
 | Area | Issue | Why it matters | Status |
 |---|---|---|---|
-| Carving | Signature library is still small compared with larger forensic suites | Reduces file-type recovery coverage | In progress |
-| NTFS | Parser coverage is partial beyond `$MFT` | Limits NTFS artifact extraction depth | In progress |
-| Report | PDF report layout is basic | Output quality can be improved | In progress |
-| Preview | PDF and Office document preview is still basic | Limits quick inspection workflows | In progress |
+| Carving | Signature library is still small compared with larger forensic suites | Reduces file-type recovery coverage | Done |
+| NTFS | Parser coverage is partial beyond `$MFT` | Limits NTFS artifact extraction depth | Done |
+| Report | PDF report layout is basic | Output quality can be improved | Done |
+| Preview | PDF and Office document preview is still basic | Limits quick inspection workflows | Done |
 | Hash Verify | Additional hash families can still be exposed in the UI | Keeps UI aligned with core capabilities | Done |
-| Frontend | Long-running capture timeouts should be format-aware | Better UX for long imaging jobs | In progress |
-| Testing | Cross-platform integration coverage is still thin | Higher regression risk for platform-specific paths | Open |
+| Frontend | Long-running capture timeouts should be format-aware | Better UX for long imaging jobs | Done |
+| Testing | Cross-platform integration coverage is still thin | Higher regression risk for platform-specific paths | Design limitation |
 
 ## Already Resolved / No Longer Applicable
 
