@@ -609,9 +609,16 @@ pub fn same_volume(output_path: &str, source_device: Option<&str>) -> bool {
 mod tests {
     use super::*;
     use std::fs;
+    use std::sync::{Mutex, MutexGuard, OnceLock};
+
+    fn test_lock() -> MutexGuard<'static, ()> {
+        static TEST_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+        TEST_LOCK.get_or_init(|| Mutex::new(())).lock().unwrap()
+    }
 
     #[test]
     fn resolve_bundled_resource_tool() {
+        let _guard = test_lock();
         let tmp = std::env::temp_dir().join("cl_bundled_tools_test");
         let _ = fs::remove_dir_all(&tmp);
         fs::create_dir_all(&tmp).unwrap();
@@ -631,6 +638,7 @@ mod tests {
 
     #[test]
     fn resolve_bundled_tool_first() {
+        let _guard = test_lock();
         let tmp = std::env::temp_dir().join("cl_portable_test");
         let _ = fs::remove_dir_all(&tmp);
         fs::create_dir_all(tmp.join("tools")).unwrap();
@@ -649,6 +657,7 @@ mod tests {
 
     #[test]
     fn portable_mode_when_tools_present() {
+        let _guard = test_lock();
         let tmp = std::env::temp_dir().join("cl_portable_mode_test");
         let _ = fs::remove_dir_all(&tmp);
         fs::create_dir_all(tmp.join("tools")).unwrap();
@@ -661,6 +670,7 @@ mod tests {
 
     #[test]
     fn join_acquisition_path_uses_kit() {
+        let _guard = test_lock();
         let tmp = std::env::temp_dir().join("cl_portable_join_test");
         let _ = fs::remove_dir_all(&tmp);
         fs::create_dir_all(tmp.join("tools")).unwrap();
